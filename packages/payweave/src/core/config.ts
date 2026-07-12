@@ -66,21 +66,31 @@ const flwV4ConfigSchema = z.object({
   ...commonFields,
 });
 
+/** Flutterwave union, discriminated on `version` (`v3` default applied below). */
+const flutterwaveConfigSchema = z.discriminatedUnion("version", [
+  flwV3ConfigSchema,
+  flwV4ConfigSchema,
+]);
+
 /**
- * Flutterwave union. `version` defaults to `"v3"`: a config object with no
- * `version` key is preprocessed to inject `"v3"` before discrimination, so the
- * v3 credential shape (`secretKey`) is required and `version: "v4"` opts into
- * the OAuth shape (`clientId` + `clientSecret`).
+ * Top-level SDK config schema: a `discriminatedUnion` on `provider` (faster and
+ * with precise, targeted errors vs a sequential `z.union`). The preprocess
+ * injects the default `version: "v3"` for a Flutterwave config that omits it,
+ * BEFORE discrimination, so the nested version-discriminated union can route it
+ * — `version: "v4"` opts into the OAuth shape (`clientId` + `clientSecret`).
  */
-const flutterwaveConfigSchema = z.preprocess((val) => {
-  if (val !== null && typeof val === "object" && !Array.isArray(val) && !("version" in val)) {
+export const sdkConfigSchema = z.preprocess((val) => {
+  if (
+    val !== null &&
+    typeof val === "object" &&
+    !Array.isArray(val) &&
+    (val as Record<string, unknown>).provider === "flutterwave" &&
+    !("version" in val)
+  ) {
     return { ...(val as Record<string, unknown>), version: "v3" };
   }
   return val;
-}, z.discriminatedUnion("version", [flwV3ConfigSchema, flwV4ConfigSchema]));
-
-/** Top-level SDK config schema (discriminated union on `provider`). */
-export const sdkConfigSchema = z.union([paystackConfigSchema, flutterwaveConfigSchema]);
+}, z.discriminatedUnion("provider", [paystackConfigSchema, flutterwaveConfigSchema]));
 
 export type PaystackConfig = z.input<typeof paystackConfigSchema>;
 export type FlutterwaveV3Config = z.input<typeof flwV3ConfigSchema>;

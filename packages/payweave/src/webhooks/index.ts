@@ -83,7 +83,18 @@ function computeDedupeKey(
   data: Record<string, unknown> | undefined,
   webhookId: string | undefined,
 ): string {
-  const dataId = data?.id !== undefined && data.id !== null ? String(data.id) : "";
+  // Fall back through common per-resource identifiers: many non-transaction
+  // events (transfers, subscriptions, customers) carry no `data.id` but do
+  // carry a unique code. Without this the key collapses to `type:status` and
+  // distinct webhooks collide and get wrongly deduped.
+  const idCandidate =
+    data?.id ??
+    data?.reference ??
+    data?.transfer_code ??
+    data?.subscription_code ??
+    data?.customer_code;
+  const dataId =
+    idCandidate !== undefined && idCandidate !== null ? String(idCandidate) : "";
   const status = typeof data?.status === "string" ? data.status : "";
   if (provider === "flutterwave") {
     if (webhookId !== undefined) return webhookId;

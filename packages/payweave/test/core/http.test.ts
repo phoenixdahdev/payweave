@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { HttpClient, bearer, oauthClientCredentials, type FetchLike } from "../../src/core/http";
 import {
+  HttpClient,
+  bearer,
+  oauthClientCredentials,
+  type AuthStrategy,
+  type FetchLike,
+} from "../../src/core/http";
+import {
+  PayweaveAuthError,
   PayweaveNetworkError,
   PayweaveNotFoundError,
   PayweaveProviderError,
@@ -269,5 +276,48 @@ describe("oauthClientCredentials", () => {
     expect(res).toEqual({ ok: true });
     expect(tokenCalls).toBe(2);
     expect(apiCalls).toBe(2);
+  });
+});
+
+describe("HttpClient — auth failures participate in retry + error mapping", () => {
+  it("retries a GET when applyAuth fails transiently, then succeeds", async () => {
+    vi.useFakeTimers();
+    let authCalls = 0;
+    const auth: AuthStrategy = {
+      async applyAuth(init) {
+        authCalls += 1;
+        if (authCalls < 3) {
+          throw new PayweaveNetworkError("token endpoint unreachable", { provider: "paystack" });
+        }
+        init.headers.set("Authorization", "Bearer ok");
+      },
+    };
+    const f = queuedFetch([jsonResponse(200, { ok: true })]);
+    const p = makeClient(f, { auth }).request({ method: "GET", path: "/ping" });
+    await vi.advanceTimersByTimeAsync(8000);
+    await vi.advanceTimersByTimeAsync(8000);
+    await expect(p).resolves.toEqual({ ok: true });
+    expect(authCalls).toBe(3); // failed twice (retried), succeeded on the third
+    expect(f.calls.length).toBe(1); // fetch only fired once auth succeeded
+  });
+
+  it("does not wrap a PayweaveAuthError from applyAuth, and does not retry it", async () => {
+    let authCalls = 0;
+    let fetchCalls = 0;
+    const auth: AuthStrategy = {
+      async applyAuth() {
+        authCalls += 1;
+        throw new PayweaveAuthError("bad credentials", { provider: "paystack", httpStatus: 401 });
+      },
+    };
+    const f: FetchLike = async () => {
+      fetchCalls += 1;
+      return jsonResponse(200, {});
+    };
+    await expect(
+      makeClient(f, { auth }).request({ method: "GET", path: "/ping" }),
+    ).rejects.toBeInstanceOf(PayweaveAuthError); // not re-wrapped as PayweaveNetworkError
+    expect(authCalls).toBe(1); // isRetryable=false → not retried
+    expect(fetchCalls).toBe(0); // never reached the network
   });
 });

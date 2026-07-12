@@ -14,6 +14,7 @@
  * status normalization uses the right vocabulary if a v4 client reaches here.
  */
 import type { HttpClient } from "../core/http";
+import { PayweaveNotFoundError } from "../core/errors";
 import { money, toMajor, toMinor } from "../core/money";
 import { toUnifiedStatus, type MappingVersion } from "./mappings";
 import { generateReference } from "./reference";
@@ -118,6 +119,14 @@ export function createFlutterwaveUnified(
           query: { tx_ref: input.reference },
         });
         const txId = readNumber(envelopeData(verifyRaw), "id");
+        if (txId === undefined) {
+          // Guard: an unresolved reference would otherwise POST to
+          // /transactions/undefined/refund and yield a misleading 4xx.
+          throw new PayweaveNotFoundError(
+            `Could not resolve a Flutterwave transaction id for reference "${input.reference}".`,
+            { provider: "flutterwave", raw: verifyRaw },
+          );
+        }
 
         const body: Record<string, unknown> = {};
         if (input.amount !== undefined) {

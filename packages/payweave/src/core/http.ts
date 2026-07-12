@@ -7,6 +7,7 @@
 import type { ZodType } from "zod";
 import {
   mapHttpError,
+  PayweaveError,
   PayweaveAuthError,
   PayweaveNetworkError,
   type PayweaveProvider,
@@ -287,21 +288,24 @@ export class HttpClient {
         bodyInit = JSON.stringify(opts.body);
       }
       if (opts.idempotencyKey) headers.set("Idempotency-Key", opts.idempotencyKey);
-      await this.auth.applyAuth({ headers });
 
       const signal = AbortSignal.timeout(opts.timeoutMs ?? this.timeoutMs);
-      this.log({
-        type: "request",
-        provider: this.provider,
-        method,
-        url,
-        attempt,
-        headers: redact(headers),
-        body: redact(opts.body),
-      });
 
       let res: FetchResponse;
       try {
+        // Auth is applied INSIDE the try so a failing token fetch (v4 OAuth
+        // client-credentials) is subject to the retry policy and error mapping
+        // instead of escaping raw and bypassing retry entirely.
+        await this.auth.applyAuth({ headers });
+        this.log({
+          type: "request",
+          provider: this.provider,
+          method,
+          url,
+          attempt,
+          headers: redact(headers),
+          body: redact(opts.body),
+        });
         res = await this.doFetch(url, {
           method,
           headers,
@@ -309,22 +313,34 @@ export class HttpClient {
           signal,
         });
       } catch (err) {
-        const timedOut = isAbortError(err);
-        const netErr = new PayweaveNetworkError(
-          timedOut
-            ? `Request to ${this.provider} timed out after ${opts.timeoutMs ?? this.timeoutMs}ms.`
-            : `Network error contacting ${this.provider}.`,
-          { provider: this.provider, cause: err },
-        );
-        if (eligible && attempt < this.policy.maxRetries) {
+        // A PayweaveError from applyAuth (a PayweaveAuthError, or a
+        // PayweaveNetworkError from the token endpoint) is preserved as-is —
+        // never re-wrapped, so a real auth failure isn't masked as a network
+        // error. Only raw fetch/transport errors become PayweaveNetworkError.
+        const known = err instanceof PayweaveError;
+        const finalErr = known
+          ? err
+          : new PayweaveNetworkError(
+              isAbortError(err)
+                ? `Request to ${this.provider} timed out after ${opts.timeoutMs ?? this.timeoutMs}ms.`
+                : `Network error contacting ${this.provider}.`,
+              { provider: this.provider, cause: err },
+            );
+        if (eligible && finalErr.isRetryable && attempt < this.policy.maxRetries) {
           const delay = backoffDelay(attempt, this.policy);
-          this.log({ type: "retry", provider: this.provider, attempt, reason: "network", delay });
+          this.log({
+            type: "retry",
+            provider: this.provider,
+            attempt,
+            reason: known ? "auth" : "network",
+            delay,
+          });
           await sleep(delay);
           attempt += 1;
           continue;
         }
-        this.log({ type: "error", provider: this.provider, error: netErr.toJSON() });
-        throw netErr;
+        this.log({ type: "error", provider: this.provider, error: finalErr.toJSON() });
+        throw finalErr;
       }
 
       if (res.ok) {
