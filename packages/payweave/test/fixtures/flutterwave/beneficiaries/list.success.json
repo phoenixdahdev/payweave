@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "message": "Beneficiaries fetched",
+  "data": [
+    {
+      "id": 5307,
+      "account_number": "0690000040",
+      "account_name": "Jane Doe",
+      "bank_code": "044"
+    },
+    {
+      "id": 5308,
+      "account_number": "0690000041",
+      "account_name": "John Roe",
+      "bank_code": "058"
+    }
+  ],
+  "meta": {
+    "page_info": {
+      "total": 2,
+      "current_page": 1,
+      "total_pages": 1
+    }
+  }
+}

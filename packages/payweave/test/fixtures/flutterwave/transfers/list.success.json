@@ -1,0 +1,29 @@
+{
+  "status": "success",
+  "message": "Transfers fetched",
+  "data": [
+    {
+      "id": 27494,
+      "account_number": "0690000040",
+      "bank_code": "044",
+      "amount": 5000,
+      "status": "SUCCESSFUL",
+      "currency": "NGN"
+    },
+    {
+      "id": 27495,
+      "account_number": "0690000041",
+      "bank_code": "058",
+      "amount": 2500,
+      "status": "SUCCESSFUL",
+      "currency": "NGN"
+    }
+  ],
+  "meta": {
+    "page_info": {
+      "total": 2,
+      "current_page": 1,
+      "total_pages": 1
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "message": "Transfer beneficiary created successfully",
+  "data": {
+    "id": 5307,
+    "account_number": "0690000040",
+    "account_name": "Jane Doe",
+    "bank_name": "ACCESS BANK NIGERIA",
+    "bank_code": "044",
+    "full_name": "Jane Doe",
+    "created_at": "2024-01-01T00:00:00.000Z"
+  }
+}

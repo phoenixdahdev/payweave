@@ -1,0 +1,7 @@
+{
+  "status": "success",
+  "message": "Hosted Link",
+  "data": {
+    "link": "https://checkout.flutterwave.com/v3/hosted/pay/pwv_test_link_001"
+  }
+}

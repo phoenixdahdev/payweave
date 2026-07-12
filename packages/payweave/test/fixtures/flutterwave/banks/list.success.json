@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "message": "Banks fetched successfully",
+  "data": [
+    {
+      "id": 132,
+      "code": "044",
+      "name": "ACCESS BANK NIGERIA"
+    },
+    {
+      "id": 133,
+      "code": "058",
+      "name": "GTBANK PLC"
+    }
+  ]
+}

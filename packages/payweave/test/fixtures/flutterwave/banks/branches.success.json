@@ -1,0 +1,14 @@
+{
+  "status": "success",
+  "message": "Bank branches fetched successfully",
+  "data": [
+    {
+      "id": 1,
+      "branch_code": "044150149",
+      "branch_name": "ACCESS BANK - HEAD OFFICE",
+      "swift_code": "ABNGNGLA",
+      "bic": null,
+      "bank_id": 132
+    }
+  ]
+}

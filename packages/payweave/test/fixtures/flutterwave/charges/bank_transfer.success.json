@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "message": "Charge initiated",
+  "data": {
+    "id": 288200110,
+    "tx_ref": "pwv_tx_002",
+    "flw_ref": "FLW-MOCK-bt",
+    "amount": 5000,
+    "currency": "NGN",
+    "status": "pending",
+    "payment_type": "bank_transfer"
+  }
+}

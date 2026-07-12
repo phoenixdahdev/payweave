@@ -244,7 +244,7 @@ export class FlutterwaveV3SDK extends BaseSDK {
 
   constructor(resolved: ResolvedConfig) {
     super(resolved);
-    this.flutterwave = new FlutterwaveClient(this.http, "v3");
+    this.flutterwave = new FlutterwaveClient(this.http, "v3", resolved.encryptionKey);
   }
 }
 

@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "message": "Charge initiated",
+  "data": {
+    "id": 288200111,
+    "tx_ref": "pwv_tx_003",
+    "flw_ref": "FLW-MOCK-ussd",
+    "amount": 1000,
+    "currency": "NGN",
+    "status": "pending",
+    "payment_type": "ussd"
+  }
+}

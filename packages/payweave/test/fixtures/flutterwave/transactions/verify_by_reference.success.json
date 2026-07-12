@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "message": "Transaction fetched successfully",
+  "data": {
+    "id": 288200108,
+    "tx_ref": "pwv_tx_001",
+    "flw_ref": "FLW-MOCK-abc123",
+    "amount": 5000,
+    "currency": "NGN",
+    "charged_amount": 5000,
+    "app_fee": 70,
+    "merchant_fee": 0,
+    "processor_response": "Approved",
+    "auth_model": "PIN",
+    "status": "successful",
+    "payment_type": "card",
+    "created_at": "2024-01-01T00:00:00.000Z",
+    "account_id": 12345,
+    "customer": {
+      "id": 999,
+      "email": "buyer@example.com",
+      "name": "Jane Doe"
+    }
+  }
+}

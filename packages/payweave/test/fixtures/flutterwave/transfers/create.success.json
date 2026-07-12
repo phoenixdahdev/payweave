@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "message": "Transfer Queued Successfully",
+  "data": {
+    "id": 27494,
+    "account_number": "0690000040",
+    "bank_code": "044",
+    "full_name": "Jane Doe",
+    "currency": "NGN",
+    "amount": 5000,
+    "fee": 45,
+    "status": "NEW",
+    "reference": "pwv_transfer_001",
+    "narration": "Payout",
+    "bank_name": "ACCESS BANK NIGERIA"
+  }
+}

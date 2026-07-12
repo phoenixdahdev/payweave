@@ -1,0 +1,10 @@
+{
+  "status": "success",
+  "message": "Refund fetched",
+  "data": {
+    "id": 15221,
+    "tx_id": 288200108,
+    "amount_refunded": 1000,
+    "status": "completed"
+  }
+}

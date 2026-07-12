@@ -1,0 +1,11 @@
+{
+  "status": "success",
+  "message": "Transfer fee fetched",
+  "data": [
+    {
+      "currency": "NGN",
+      "fee_type": "value",
+      "fee": 45
+    }
+  ]
+}

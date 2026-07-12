@@ -1,0 +1,11 @@
+{
+  "status": "success",
+  "message": "Transaction fee fetched",
+  "data": {
+    "charge_amount": 5000,
+    "fee": 70,
+    "merchant_fee": 0,
+    "flutterwave_fee": 70,
+    "currency": "NGN"
+  }
+}

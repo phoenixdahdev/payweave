@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "message": "Refunds fetched",
+  "data": [
+    {
+      "id": 15221,
+      "tx_id": 288200108,
+      "amount_refunded": 1000,
+      "status": "completed"
+    },
+    {
+      "id": 15222,
+      "tx_id": 288200109,
+      "amount_refunded": 500,
+      "status": "completed"
+    }
+  ],
+  "meta": {
+    "page_info": {
+      "total": 2,
+      "current_page": 1,
+      "total_pages": 1
+    }
+  }
+}

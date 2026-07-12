@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "message": "Refund initiated successfully",
+  "data": {
+    "id": 15221,
+    "account_id": 12345,
+    "tx_id": 288200108,
+    "flw_ref": "FLW-MOCK-abc123",
+    "amount_refunded": 1000,
+    "status": "completed",
+    "created_at": "2024-01-01T00:00:00.000Z"
+  }
+}

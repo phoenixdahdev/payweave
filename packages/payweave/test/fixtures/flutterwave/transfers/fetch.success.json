@@ -1,0 +1,12 @@
+{
+  "status": "success",
+  "message": "Transfer fetched",
+  "data": {
+    "id": 27494,
+    "account_number": "0690000040",
+    "bank_code": "044",
+    "amount": 5000,
+    "status": "SUCCESSFUL",
+    "currency": "NGN"
+  }
+}
