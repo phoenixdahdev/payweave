@@ -11,11 +11,11 @@
   },
   "iconLibrary": "hugeicons",
   "aliases": {
-    "components": "@workspace/ui/components",
-    "utils": "@workspace/ui/lib/utils",
-    "hooks": "@workspace/ui/hooks",
-    "lib": "@workspace/ui/lib",
-    "ui": "@workspace/ui/components"
+    "components": "@payweave/ui/components",
+    "utils": "@payweave/ui/lib/utils",
+    "hooks": "@payweave/ui/hooks",
+    "lib": "@payweave/ui/lib",
+    "ui": "@payweave/ui/components"
   },
   "rtl": false,
   "menuColor": "default-translucent",
