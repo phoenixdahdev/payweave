@@ -1,2 +1,21 @@
-// testing/ — signWebhook, fixtures loader, MSW helpers (PW-008+). Placeholder.
-export {};
+// testing/ — signWebhook, fixtures loader, MSW helpers (PW-008).
+// Public subpath: `payweave/testing`.
+
+export {
+  signWebhook,
+  type SignWebhookProvider,
+  type SignedWebhook,
+} from "./sign-webhook";
+
+export {
+  loadFixture,
+  loadFixtureAs,
+  type LoadFixtureOptions,
+} from "./fixtures";
+
+export {
+  createMswServer,
+  createHandlers,
+  type MockRoute,
+  type MockMethod,
+} from "./msw";

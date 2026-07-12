@@ -70,11 +70,20 @@
   "dependencies": {
     "zod": "^4.4.3"
   },
+  "peerDependencies": {
+    "msw": "^2"
+  },
+  "peerDependenciesMeta": {
+    "msw": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.52.0",
     "@payweave/eslint-config": "workspace:*",
     "@payweave/typescript-config": "workspace:*",
     "@vitest/coverage-v8": "^4.0.0",
+    "eslint": "^10.7.0",
     "expect-type": "^1.2.0",
     "msw": "^2.7.0",
     "tsup": "^8.5.0",

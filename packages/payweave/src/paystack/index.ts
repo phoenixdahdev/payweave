@@ -1,2 +1,4 @@
-// paystack/ — Surface A resources + schemas (PW-101+). Placeholder.
-export {};
+// paystack/ — Surface A client shell + resources (Wave 3 fills resources).
+// Public subpath: `payweave/paystack`.
+
+export { PaystackClient } from "./client";

@@ -1,2 +1,4 @@
-// flutterwave/ — version dispatch (v3 default + v4) (PW-201+). Placeholder.
-export {};
+// flutterwave/ — Surface A client shell + v3/v4 resources (Wave 3 fills these).
+// Public subpath: `payweave/flutterwave`.
+
+export { FlutterwaveClient } from "./client";

@@ -1,0 +1,9 @@
+{
+  "status": true,
+  "message": "Authorization URL created",
+  "data": {
+    "authorization_url": "https://checkout.paystack.com/abc123def",
+    "access_code": "abc123def",
+    "reference": "pwv_test_reference_001"
+  }
+}
