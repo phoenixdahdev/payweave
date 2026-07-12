@@ -23,8 +23,35 @@ import { verifyFlutterwaveV4 } from "./webhooks/flutterwave-v4";
 import { constructEvent as constructWebhookEvent, type WebhookEvent } from "./webhooks/index";
 import { PaystackClient } from "./paystack/client";
 import { FlutterwaveClient } from "./flutterwave/client";
+import {
+  createPaystackUnified,
+  createFlutterwaveUnified,
+  type UnifiedNamespace,
+} from "./unified/index";
 
 export { SDK_VERSION as VERSION } from "./core/version";
+
+// Re-export the unified-layer (Surface B) op types so consumers can type their
+// unified integration code (PRD §6.2).
+export type {
+  UnifiedNamespace,
+  CheckoutCreateInput,
+  CheckoutCreateResult,
+  VerifyInput,
+  VerifyResult,
+  RefundCreateInput,
+  RefundCreateResult,
+  TransferRecipient,
+  TransferCreateInput,
+  TransferCreateResult,
+  BanksListInput,
+  UnifiedBank,
+  ResolveAccountInput,
+  ResolvedAccountResult,
+  UnifiedAmount,
+  UnifiedCustomer,
+  UnifiedCustomerInput,
+} from "./unified/index";
 
 // Re-export the config types + core errors consumers need to type their code.
 export type {
@@ -140,36 +167,16 @@ function createWebhooks(resolved: ResolvedConfig): WebhooksNamespace {
   };
 }
 
-// ── Unified namespace (typed stubs) ──────────────────────────────────────────
-/** The `sdk.unified` surface (Surface B). Stubs throw until a later wave. */
-export interface UnifiedNamespace {
-  checkout: { create(input: unknown): Promise<never> };
-  verify(input: unknown): Promise<never>;
-  refunds: { create(input: unknown): Promise<never> };
-  transfers: { create(input: unknown): Promise<never> };
-  banks: {
-    list(input: unknown): Promise<never>;
-    resolveAccount(input: unknown): Promise<never>;
-  };
-}
-
-function notImplemented(feature: string, provider: PayweaveProvider): never {
-  throw new PayweaveError(`unified.${feature} is not yet implemented (lands in a later wave).`, {
-    provider,
-  });
-}
-
-function createUnified(provider: PayweaveProvider): UnifiedNamespace {
-  return {
-    checkout: { create: () => notImplemented("checkout.create", provider) },
-    verify: () => notImplemented("verify", provider),
-    refunds: { create: () => notImplemented("refunds.create", provider) },
-    transfers: { create: () => notImplemented("transfers.create", provider) },
-    banks: {
-      list: () => notImplemented("banks.list", provider),
-      resolveAccount: () => notImplemented("banks.resolveAccount", provider),
-    },
-  };
+// ── Unified namespace (Surface B) ────────────────────────────────────────────
+/**
+ * Build the `sdk.unified` surface for a resolved config, picking the provider
+ * implementation and handing it the shared {@link HttpClient} (so unified ops
+ * reuse auth/retries/error-mapping without touching the Surface A classes).
+ * Paystack passes amounts through as kobo; Flutterwave converts minor↔major.
+ */
+function createUnified(resolved: ResolvedConfig, http: HttpClient): UnifiedNamespace {
+  if (resolved.provider === "paystack") return createPaystackUnified(http);
+  return createFlutterwaveUnified(http, resolved.version);
 }
 
 // ── HTTP wiring ──────────────────────────────────────────────────────────────
@@ -230,7 +237,7 @@ abstract class BaseSDK {
     this.environment = resolved.environment;
     this.http = buildHttpClient(resolved);
     this.webhooks = createWebhooks(resolved);
-    this.unified = createUnified(resolved.provider);
+    this.unified = createUnified(resolved, this.http);
   }
 }
 

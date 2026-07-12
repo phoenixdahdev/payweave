@@ -34,10 +34,19 @@ describe("createPaystack", () => {
     ).toBe(false);
   });
 
-  it("throws not-implemented for unified + constructEvent stubs", () => {
+  it("fails closed on an unverifiable constructEvent", () => {
     expect(() => sdk.webhooks.constructEvent({ rawBody: "{}", headers: {} })).toThrow(PayweaveError);
-    expect(() => sdk.unified.checkout.create({})).toThrow(PayweaveError);
-    expect(() => sdk.unified.verify({})).toThrow(PayweaveError);
+  });
+
+  it("exposes the unified (Surface B) namespace as callable ops", () => {
+    // PW-304: the unified stubs are now real. Shape check only here — routing +
+    // normalization are covered by test/unified/*. (No network call is made.)
+    expect(typeof sdk.unified.checkout.create).toBe("function");
+    expect(typeof sdk.unified.verify).toBe("function");
+    expect(typeof sdk.unified.refunds.create).toBe("function");
+    expect(typeof sdk.unified.transfers.create).toBe("function");
+    expect(typeof sdk.unified.banks.list).toBe("function");
+    expect(typeof sdk.unified.banks.resolveAccount).toBe("function");
   });
 });
 

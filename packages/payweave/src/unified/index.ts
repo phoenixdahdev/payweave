@@ -16,3 +16,28 @@ export {
   type MappingProvider,
   type MappingVersion,
 } from "./mappings";
+
+// Surface B (unified layer, PRD §6.2) — per-provider op factories + the shared
+// operation types. The facade's `createUnified` picks the impl by provider.
+export { createPaystackUnified } from "./paystack";
+export { createFlutterwaveUnified } from "./flutterwave";
+export { generateReference } from "./reference";
+export type {
+  UnifiedNamespace,
+  UnifiedAmount,
+  UnifiedCustomerInput,
+  UnifiedCustomer,
+  CheckoutCreateInput,
+  CheckoutCreateResult,
+  VerifyInput,
+  VerifyResult,
+  RefundCreateInput,
+  RefundCreateResult,
+  TransferRecipient,
+  TransferCreateInput,
+  TransferCreateResult,
+  BanksListInput,
+  UnifiedBank,
+  ResolveAccountInput,
+  ResolvedAccountResult,
+} from "./types";
