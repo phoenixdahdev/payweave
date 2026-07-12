@@ -1,0 +1,17 @@
+{
+  "extends": "@payweave/typescript-config/base.json",
+  "compilerOptions": {
+    "strict": true,
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "verbatimModuleSyntax": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": ["src", "test", "e2e", "examples", "*.config.ts", "scripts"],
+  "exclude": ["node_modules", "dist"]
+}
