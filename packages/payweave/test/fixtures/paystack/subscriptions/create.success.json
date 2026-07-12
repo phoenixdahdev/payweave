@@ -1,0 +1,11 @@
+{
+  "status": true,
+  "message": "Subscription successfully created",
+  "data": {
+    "id": 8001,
+    "subscription_code": "SUB_example",
+    "email_token": "email_token_example",
+    "status": "active",
+    "amount": 500000
+  }
+}

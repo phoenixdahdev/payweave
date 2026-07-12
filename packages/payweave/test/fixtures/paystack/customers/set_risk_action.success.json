@@ -1,0 +1,9 @@
+{
+  "status": true,
+  "message": "Customer updated",
+  "data": {
+    "id": 111,
+    "customer_code": "CUS_example",
+    "risk_action": "allow"
+  }
+}

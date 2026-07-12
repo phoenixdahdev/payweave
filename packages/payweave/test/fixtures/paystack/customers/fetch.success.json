@@ -1,0 +1,9 @@
+{
+  "status": true,
+  "message": "Customer retrieved",
+  "data": {
+    "id": 111,
+    "email": "buyer@example.com",
+    "customer_code": "CUS_example"
+  }
+}

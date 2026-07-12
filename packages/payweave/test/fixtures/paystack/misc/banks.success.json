@@ -1,0 +1,29 @@
+{
+  "status": true,
+  "message": "Banks retrieved",
+  "data": [
+    {
+      "id": 1,
+      "name": "Example Bank",
+      "slug": "example-bank",
+      "code": "011",
+      "currency": "NGN",
+      "type": "nuban",
+      "active": true
+    },
+    {
+      "id": 2,
+      "name": "Sample Bank",
+      "slug": "sample-bank",
+      "code": "058",
+      "currency": "NGN",
+      "type": "nuban",
+      "active": true
+    }
+  ],
+  "meta": {
+    "next": null,
+    "previous": null,
+    "perPage": 50
+  }
+}

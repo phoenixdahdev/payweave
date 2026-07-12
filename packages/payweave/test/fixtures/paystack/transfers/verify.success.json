@@ -1,0 +1,11 @@
+{
+  "status": true,
+  "message": "Transfer retrieved",
+  "data": {
+    "id": 6001,
+    "transfer_code": "TRF_example",
+    "status": "success",
+    "reference": "pwv_transfer_ref_001",
+    "amount": 500000
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "status": true,
+  "message": "Plan created",
+  "data": {
+    "id": 7001,
+    "name": "Monthly",
+    "plan_code": "PLN_example",
+    "amount": 500000,
+    "interval": "monthly",
+    "currency": "NGN"
+  }
+}

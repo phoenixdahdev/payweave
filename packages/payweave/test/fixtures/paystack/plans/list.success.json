@@ -1,0 +1,26 @@
+{
+  "status": true,
+  "message": "Plans retrieved",
+  "data": [
+    {
+      "id": 7001,
+      "plan_code": "PLN_example1",
+      "name": "Monthly",
+      "amount": 500000,
+      "interval": "monthly"
+    },
+    {
+      "id": 7002,
+      "plan_code": "PLN_example2",
+      "name": "Yearly",
+      "amount": 5000000,
+      "interval": "annually"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

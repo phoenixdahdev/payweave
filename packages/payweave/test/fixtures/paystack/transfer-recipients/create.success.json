@@ -1,0 +1,18 @@
+{
+  "status": true,
+  "message": "Transfer recipient created successfully",
+  "data": {
+    "id": 5001,
+    "type": "nuban",
+    "name": "Ada Lovelace",
+    "recipient_code": "RCP_example",
+    "currency": "NGN",
+    "active": true,
+    "details": {
+      "account_number": "0000000000",
+      "account_name": "ADA LOVELACE",
+      "bank_code": "011",
+      "bank_name": "Example Bank"
+    }
+  }
+}

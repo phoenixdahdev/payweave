@@ -1,0 +1,28 @@
+{
+  "status": true,
+  "message": "Transactions retrieved",
+  "data": [
+    {
+      "id": 1,
+      "status": "success",
+      "reference": "pwv_ref_1",
+      "amount": 500000,
+      "currency": "NGN",
+      "channel": "card"
+    },
+    {
+      "id": 2,
+      "status": "success",
+      "reference": "pwv_ref_2",
+      "amount": 750000,
+      "currency": "NGN",
+      "channel": "bank"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

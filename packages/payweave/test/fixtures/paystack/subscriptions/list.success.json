@@ -1,0 +1,22 @@
+{
+  "status": true,
+  "message": "Subscriptions retrieved",
+  "data": [
+    {
+      "id": 8001,
+      "subscription_code": "SUB_example1",
+      "status": "active"
+    },
+    {
+      "id": 8002,
+      "subscription_code": "SUB_example2",
+      "status": "active"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

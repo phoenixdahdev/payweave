@@ -1,0 +1,22 @@
+{
+  "status": true,
+  "message": "Recipients retrieved",
+  "data": [
+    {
+      "id": 5001,
+      "recipient_code": "RCP_example1",
+      "type": "nuban"
+    },
+    {
+      "id": 5002,
+      "recipient_code": "RCP_example2",
+      "type": "nuban"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "status": true,
+  "message": "Customer updated",
+  "data": {
+    "id": 111,
+    "email": "buyer@example.com",
+    "first_name": "Grace",
+    "customer_code": "CUS_example"
+  }
+}

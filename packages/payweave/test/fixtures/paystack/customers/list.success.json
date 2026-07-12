@@ -1,0 +1,22 @@
+{
+  "status": true,
+  "message": "Customers retrieved",
+  "data": [
+    {
+      "id": 111,
+      "email": "buyer@example.com",
+      "customer_code": "CUS_example1"
+    },
+    {
+      "id": 112,
+      "email": "buyer2@example.com",
+      "customer_code": "CUS_example2"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

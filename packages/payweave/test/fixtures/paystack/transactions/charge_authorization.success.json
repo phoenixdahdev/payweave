@@ -1,0 +1,16 @@
+{
+  "status": true,
+  "message": "Charge attempted",
+  "data": {
+    "id": 987654321,
+    "status": "success",
+    "reference": "pwv_charge_ref_001",
+    "amount": 500000,
+    "currency": "NGN",
+    "channel": "card",
+    "authorization": {
+      "authorization_code": "AUTH_example",
+      "reusable": true
+    }
+  }
+}

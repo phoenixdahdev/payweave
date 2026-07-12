@@ -1,0 +1,15 @@
+{
+  "status": true,
+  "message": "Transfer has been queued",
+  "data": {
+    "id": 6001,
+    "amount": 500000,
+    "currency": "NGN",
+    "source": "balance",
+    "reason": "Payout",
+    "recipient": 5001,
+    "status": "pending",
+    "transfer_code": "TRF_example",
+    "reference": "pwv_transfer_ref_001"
+  }
+}

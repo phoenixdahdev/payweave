@@ -1,0 +1,24 @@
+{
+  "status": true,
+  "message": "Refunds retrieved",
+  "data": [
+    {
+      "id": 4001,
+      "amount": 100000,
+      "currency": "NGN",
+      "status": "processed"
+    },
+    {
+      "id": 4002,
+      "amount": 50000,
+      "currency": "NGN",
+      "status": "pending"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

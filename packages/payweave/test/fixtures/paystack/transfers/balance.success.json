@@ -1,0 +1,10 @@
+{
+  "status": true,
+  "message": "Balances retrieved",
+  "data": [
+    {
+      "currency": "NGN",
+      "balance": 12500000
+    }
+  ]
+}

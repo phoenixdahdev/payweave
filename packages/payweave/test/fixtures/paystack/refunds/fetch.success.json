@@ -1,0 +1,10 @@
+{
+  "status": true,
+  "message": "Refund retrieved",
+  "data": {
+    "id": 4001,
+    "amount": 100000,
+    "currency": "NGN",
+    "status": "processed"
+  }
+}

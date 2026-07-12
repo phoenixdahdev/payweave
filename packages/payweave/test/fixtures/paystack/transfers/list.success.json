@@ -1,0 +1,24 @@
+{
+  "status": true,
+  "message": "Transfers retrieved",
+  "data": [
+    {
+      "id": 6001,
+      "transfer_code": "TRF_example1",
+      "amount": 500000,
+      "status": "success"
+    },
+    {
+      "id": 6002,
+      "transfer_code": "TRF_example2",
+      "amount": 250000,
+      "status": "pending"
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

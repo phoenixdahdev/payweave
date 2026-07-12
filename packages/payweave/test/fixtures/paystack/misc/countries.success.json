@@ -1,0 +1,18 @@
+{
+  "status": true,
+  "message": "Countries retrieved",
+  "data": [
+    {
+      "id": 1,
+      "name": "Nigeria",
+      "iso_code": "NG",
+      "default_currency_code": "NGN"
+    },
+    {
+      "id": 2,
+      "name": "Ghana",
+      "iso_code": "GH",
+      "default_currency_code": "GHS"
+    }
+  ]
+}

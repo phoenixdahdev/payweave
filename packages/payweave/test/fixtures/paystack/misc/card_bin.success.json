@@ -1,0 +1,13 @@
+{
+  "status": true,
+  "message": "Card BIN resolved",
+  "data": {
+    "bin": "539983",
+    "brand": "mastercard",
+    "sub_brand": "",
+    "country_code": "NG",
+    "country_name": "Nigeria",
+    "card_type": "DEBIT",
+    "bank": "Example Bank"
+  }
+}

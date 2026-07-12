@@ -1,0 +1,15 @@
+{
+  "status": true,
+  "message": "Refund has been queued for processing",
+  "data": {
+    "id": 4001,
+    "transaction": 123456789,
+    "integration": 100001,
+    "amount": 100000,
+    "currency": "NGN",
+    "status": "pending",
+    "customer_note": "Refund for order",
+    "merchant_note": "Approved",
+    "created_at": "2024-01-02T00:00:00.000Z"
+  }
+}
