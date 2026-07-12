@@ -15,11 +15,12 @@ import {
   type FlutterwaveConfig,
 } from "./core/config";
 import { HttpClient, bearer, oauthClientCredentials, type AuthStrategy } from "./core/http";
-import type { HeaderLookup, UnifiedEvent } from "./core/provider";
+import type { HeaderLookup } from "./core/provider";
 import { SDK_VERSION } from "./core/version";
 import { verifyPaystack } from "./webhooks/paystack";
 import { verifyFlutterwaveV3 } from "./webhooks/flutterwave";
 import { verifyFlutterwaveV4 } from "./webhooks/flutterwave-v4";
+import { constructEvent as constructWebhookEvent, type WebhookEvent } from "./webhooks/index";
 import { PaystackClient } from "./paystack/client";
 import { FlutterwaveClient } from "./flutterwave/client";
 
@@ -48,6 +49,7 @@ export {
 export type { Money } from "./core/money";
 export { PaystackClient } from "./paystack/client";
 export { FlutterwaveClient } from "./flutterwave/client";
+export type { WebhookEvent } from "./webhooks/index";
 
 // ── Webhooks namespace ───────────────────────────────────────────────────────
 /** Raw-body + headers input shared by every webhook operation (TDD §10). */
@@ -58,14 +60,14 @@ export interface WebhookInput {
   headers: HeaderLookup;
 }
 
-/** The `sdk.webhooks` surface. `constructEvent` lands in a later wave. */
+/** The `sdk.webhooks` surface. */
 export interface WebhooksNamespace {
   /** Verify a webhook signature (timing-safe, fails closed). */
   verify(input: WebhookInput): boolean;
   /** Verify or throw {@link PayweaveWebhookVerificationError}. */
   verifyOrThrow(input: WebhookInput): void;
-  /** Verify + parse + normalize. NOT YET IMPLEMENTED (later wave) — throws. */
-  constructEvent(input: WebhookInput): UnifiedEvent;
+  /** Verify + parse + normalize into a typed {@link WebhookEvent}. */
+  constructEvent(input: WebhookInput): WebhookEvent;
 }
 
 function getHeader(headers: HeaderLookup, name: string): string | undefined {
@@ -122,11 +124,18 @@ function createWebhooks(resolved: ResolvedConfig): WebhooksNamespace {
         });
       }
     },
-    constructEvent(): UnifiedEvent {
-      throw new PayweaveError(
-        "webhooks.constructEvent is not yet implemented (lands in a later wave).",
-        { provider },
-      );
+    constructEvent(input: WebhookInput): WebhookEvent {
+      // Delegate to the webhooks/ normalizer, reusing THIS namespace's verify
+      // dispatch (provider + version already bound) — verification stays in the
+      // timing-safe primitives and is never re-implemented here.
+      return constructWebhookEvent({
+        rawBody: input.rawBody,
+        headers: input.headers,
+        provider,
+        version: resolved.version,
+        verify,
+        logger: resolved.logger,
+      });
     },
   };
 }
