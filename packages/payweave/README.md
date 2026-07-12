@@ -6,8 +6,9 @@ Unified TypeScript SDK for **Paystack** and **Flutterwave** (v3 default, v4 opt-
 typed endpoint coverage, first-class webhooks, test + live environments. ESM-only,
 Node ≥ 20.19, `zod` as the only runtime dependency.
 
-> **Status:** `0.0.0` scaffold. The public API (`PaymentSDK`, `createPaystack`,
-> `createFlutterwave`) is under construction — see `docs/backlog.md`.
+> **Status:** pre-release. Paystack P0, Flutterwave v3 P0, webhooks, and the
+> unified layer are implemented and tested; Flutterwave v4 and the framework
+> adapters are in progress — see `docs/backlog.md`.
 
 ## Install
 
@@ -19,11 +20,57 @@ npm install payweave
 
 ## Quickstart
 
-```ts
-import { VERSION } from "payweave";
+### 1. Initialize — provider is narrowed at compile time
 
-console.log(VERSION); // "0.0.0"
+```ts
+import { createPaystack, createFlutterwave } from "payweave";
+
+const paystack = createPaystack({ secretKey: process.env.PAYSTACK_SECRET_KEY! });
+const flutterwave = createFlutterwave({ secretKey: process.env.FLW_SECRET_KEY! }); // v3 by default
+
+paystack.environment; // "test" | "live" — inferred from the key prefix
+// paystack.flutterwave; // ❌ compile-time error: property does not exist
 ```
+
+### 2. Provider-native (Surface A) — every endpoint, the provider's own fields
+
+```ts
+const { authorization_url, reference } = await paystack.paystack.transactions.initialize({
+  email: "ada@example.com",
+  amount: 500_000, // kobo — Paystack's native minor units
+  currency: "NGN",
+});
+```
+
+### 3. Unified (Surface B) — identical across providers, always minor units
+
+```ts
+const sdk = createPaystack({ secretKey: process.env.PAYSTACK_SECRET_KEY! });
+
+const checkout = await sdk.unified.checkout.create({
+  amount: { value: 500_000, currency: "NGN" }, // ALWAYS minor units; adapters convert
+  customer: { email: "ada@example.com" },
+  reference: "order_8123", // → Paystack `reference` / Flutterwave `tx_ref`
+  redirectUrl: "https://app.example.com/pay/callback",
+});
+// { checkoutUrl, reference, providerRef, raw }
+
+const result = await sdk.unified.verify({ reference: "order_8123" });
+// { status: "success" | "failed" | "pending" | ..., amount: { value, currency }, customer, raw }
+```
+
+### 4. Webhooks — verified, typed, normalized (raw bytes only)
+
+```ts
+// Express: capture the RAW body — never re-serialize JSON before verifying.
+app.post("/webhooks", express.raw({ type: "*/*" }), (req, res) => {
+  const event = sdk.webhooks.constructEvent({ rawBody: req.body, headers: req.headers });
+  res.sendStatus(200); // ack fast, then process async
+  // event.unifiedType: "payment.succeeded" | ...; event.dedupeKey for idempotency
+});
+```
+
+> Never give value from a webhook alone — re-`verify({ reference })` and check amount + status.
 
 ## Subpath exports
 
