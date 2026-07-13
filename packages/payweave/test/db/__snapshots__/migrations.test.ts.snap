@@ -1,0 +1,253 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`0001_init DDL > mysql > matches the committed snapshot (any diff = a new migration, not an edit) 1`] = `
+"CREATE TABLE IF NOT EXISTS pw_migrations (
+  name VARCHAR(255) NOT NULL,
+  applied_at DATETIME(3) NOT NULL,
+  checksum VARCHAR(255) NOT NULL,
+  PRIMARY KEY (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+
+CREATE TABLE pw_customers (
+  id VARCHAR(255) NOT NULL,
+  external_id VARCHAR(255) NOT NULL,
+  provider_ids JSON NOT NULL,
+  email VARCHAR(255) NULL,
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT pw_customers_external_id_uq UNIQUE (external_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+
+CREATE TABLE pw_plans (
+  id VARCHAR(255) NOT NULL,
+  plan_id VARCHAR(255) NOT NULL,
+  version INT NOT NULL,
+  \`group\` VARCHAR(255) NOT NULL,
+  is_default TINYINT(1) NOT NULL,
+  name VARCHAR(255) NULL,
+  price_minor BIGINT NULL,
+  price_currency VARCHAR(255) NULL,
+  price_interval VARCHAR(255) NULL,
+  features JSON NOT NULL,
+  provider_refs JSON NOT NULL,
+  pushed_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT pw_plans_plan_id_version_uq UNIQUE (plan_id, version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+
+CREATE TABLE pw_subscriptions (
+  id VARCHAR(255) NOT NULL,
+  customer_id VARCHAR(255) NOT NULL,
+  plan_id VARCHAR(255) NOT NULL,
+  plan_version INT NOT NULL,
+  \`group\` VARCHAR(255) NOT NULL,
+  status VARCHAR(255) NOT NULL,
+  provider VARCHAR(255) NULL,
+  provider_subscription_ref VARCHAR(255) NULL,
+  current_period_start DATETIME(3) NOT NULL,
+  current_period_end DATETIME(3) NOT NULL,
+  cancel_at_period_end TINYINT(1) NOT NULL,
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  active_slot CHAR(1) GENERATED ALWAYS AS (
+    CASE WHEN status IN ('active', 'past_due', 'trialing') THEN 'x' ELSE NULL END
+  ) STORED,
+  PRIMARY KEY (id),
+  CONSTRAINT pw_subscriptions_customer_id_fk FOREIGN KEY (customer_id) REFERENCES pw_customers (id),
+  CONSTRAINT pw_subscriptions_active_uq UNIQUE (customer_id, \`group\`, active_slot)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+
+CREATE TABLE pw_feature_balances (
+  id VARCHAR(255) NOT NULL,
+  customer_id VARCHAR(255) NOT NULL,
+  feature_id VARCHAR(255) NOT NULL,
+  \`group\` VARCHAR(255) NOT NULL,
+  used BIGINT NOT NULL,
+  \`limit\` BIGINT NOT NULL,
+  reset_interval VARCHAR(255) NOT NULL,
+  anchor DATETIME(3) NOT NULL,
+  period_start DATETIME(3) NOT NULL,
+  period_end DATETIME(3) NOT NULL,
+  plan_id VARCHAR(255) NOT NULL,
+  plan_version INT NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT pw_feature_balances_customer_id_fk FOREIGN KEY (customer_id) REFERENCES pw_customers (id),
+  CONSTRAINT pw_feature_balances_customer_feature_group_uq UNIQUE (customer_id, feature_id, \`group\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+
+CREATE TABLE pw_webhook_events (
+  dedupe_key VARCHAR(255) NOT NULL,
+  provider VARCHAR(255) NOT NULL,
+  type VARCHAR(255) NOT NULL,
+  received_at DATETIME(3) NOT NULL,
+  claimed_at DATETIME(3) NULL,
+  applied_at DATETIME(3) NULL,
+  PRIMARY KEY (dedupe_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"
+`;
+
+exports[`0001_init DDL > postgres > matches the committed snapshot (any diff = a new migration, not an edit) 1`] = `
+"CREATE TABLE IF NOT EXISTS pw_migrations (
+  name TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL,
+  checksum TEXT NOT NULL
+)
+
+CREATE TABLE pw_customers (
+  id TEXT PRIMARY KEY,
+  external_id TEXT NOT NULL,
+  provider_ids JSONB NOT NULL,
+  email TEXT,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  CONSTRAINT pw_customers_external_id_uq UNIQUE (external_id)
+)
+
+CREATE TABLE pw_plans (
+  id TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  "group" TEXT NOT NULL,
+  is_default BOOLEAN NOT NULL,
+  name TEXT,
+  price_minor BIGINT,
+  price_currency TEXT,
+  price_interval TEXT,
+  features JSONB NOT NULL,
+  provider_refs JSONB NOT NULL,
+  pushed_at TIMESTAMPTZ NOT NULL,
+  CONSTRAINT pw_plans_plan_id_version_uq UNIQUE (plan_id, version)
+)
+
+CREATE TABLE pw_subscriptions (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  plan_version INTEGER NOT NULL,
+  "group" TEXT NOT NULL,
+  status TEXT NOT NULL,
+  provider TEXT,
+  provider_subscription_ref TEXT,
+  current_period_start TIMESTAMPTZ NOT NULL,
+  current_period_end TIMESTAMPTZ NOT NULL,
+  cancel_at_period_end BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  CONSTRAINT pw_subscriptions_customer_id_fk FOREIGN KEY (customer_id) REFERENCES pw_customers (id)
+)
+
+CREATE UNIQUE INDEX pw_subscriptions_active_uq
+  ON pw_subscriptions (customer_id, "group")
+  WHERE status IN ('active', 'past_due', 'trialing')
+
+CREATE TABLE pw_feature_balances (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  feature_id TEXT NOT NULL,
+  "group" TEXT NOT NULL,
+  used BIGINT NOT NULL,
+  "limit" BIGINT NOT NULL,
+  reset_interval TEXT NOT NULL,
+  anchor TIMESTAMPTZ NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end TIMESTAMPTZ NOT NULL,
+  plan_id TEXT NOT NULL,
+  plan_version INTEGER NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  CONSTRAINT pw_feature_balances_customer_id_fk FOREIGN KEY (customer_id) REFERENCES pw_customers (id),
+  CONSTRAINT pw_feature_balances_customer_feature_group_uq UNIQUE (customer_id, feature_id, "group")
+)
+
+CREATE TABLE pw_webhook_events (
+  dedupe_key TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  type TEXT NOT NULL,
+  received_at TIMESTAMPTZ NOT NULL,
+  claimed_at TIMESTAMPTZ,
+  applied_at TIMESTAMPTZ
+)"
+`;
+
+exports[`0001_init DDL > sqlite > matches the committed snapshot (any diff = a new migration, not an edit) 1`] = `
+"CREATE TABLE IF NOT EXISTS pw_migrations (
+  name TEXT PRIMARY KEY,
+  applied_at INTEGER NOT NULL,
+  checksum TEXT NOT NULL
+)
+
+CREATE TABLE pw_customers (
+  id TEXT PRIMARY KEY,
+  external_id TEXT NOT NULL,
+  provider_ids TEXT NOT NULL,
+  email TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  CONSTRAINT pw_customers_external_id_uq UNIQUE (external_id)
+)
+
+CREATE TABLE pw_plans (
+  id TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  "group" TEXT NOT NULL,
+  is_default INTEGER NOT NULL CHECK (is_default IN (0, 1)),
+  name TEXT,
+  price_minor INTEGER,
+  price_currency TEXT,
+  price_interval TEXT,
+  features TEXT NOT NULL,
+  provider_refs TEXT NOT NULL,
+  pushed_at INTEGER NOT NULL,
+  CONSTRAINT pw_plans_plan_id_version_uq UNIQUE (plan_id, version)
+)
+
+CREATE TABLE pw_subscriptions (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  plan_version INTEGER NOT NULL,
+  "group" TEXT NOT NULL,
+  status TEXT NOT NULL,
+  provider TEXT,
+  provider_subscription_ref TEXT,
+  current_period_start INTEGER NOT NULL,
+  current_period_end INTEGER NOT NULL,
+  cancel_at_period_end INTEGER NOT NULL CHECK (cancel_at_period_end IN (0, 1)),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  CONSTRAINT pw_subscriptions_customer_id_fk FOREIGN KEY (customer_id) REFERENCES pw_customers (id)
+)
+
+CREATE UNIQUE INDEX pw_subscriptions_active_uq
+  ON pw_subscriptions (customer_id, "group")
+  WHERE status IN ('active', 'past_due', 'trialing')
+
+CREATE TABLE pw_feature_balances (
+  id TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  feature_id TEXT NOT NULL,
+  "group" TEXT NOT NULL,
+  used INTEGER NOT NULL,
+  "limit" INTEGER NOT NULL,
+  reset_interval TEXT NOT NULL,
+  anchor INTEGER NOT NULL,
+  period_start INTEGER NOT NULL,
+  period_end INTEGER NOT NULL,
+  plan_id TEXT NOT NULL,
+  plan_version INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  CONSTRAINT pw_feature_balances_customer_id_fk FOREIGN KEY (customer_id) REFERENCES pw_customers (id),
+  CONSTRAINT pw_feature_balances_customer_feature_group_uq UNIQUE (customer_id, feature_id, "group")
+)
+
+CREATE TABLE pw_webhook_events (
+  dedupe_key TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  type TEXT NOT NULL,
+  received_at INTEGER NOT NULL,
+  claimed_at INTEGER,
+  applied_at INTEGER
+)"
+`;
