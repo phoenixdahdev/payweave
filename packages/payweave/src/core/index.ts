@@ -38,6 +38,8 @@ export {
   FLW_V4_BASE_URL,
   FLW_V4_SANDBOX_URL,
   FLW_V4_TOKEN_URL,
+  STRIPE_BASE_URL,
+  STRIPE_API_VERSION,
   DEFAULT_TIMEOUT_MS,
   DEFAULT_MAX_RETRIES,
   sdkConfigSchema,
@@ -49,6 +51,23 @@ export {
   type FlutterwaveConfig,
   type FlutterwaveV3Config,
   type FlutterwaveV4Config,
+  // v1 provider-keyed root (PW-501) — `createPayweave` mounts on these in PW-502.
+  PAYWEAVE_PROVIDER_KEYS,
+  payweaveConfigSchema,
+  resolvePayweaveConfig,
+  stripeProviderConfigSchema,
+  paystackProviderConfigSchema,
+  flutterwaveProviderConfigSchema,
+  type PayweaveProviderKey,
+  type PayweaveConfig,
+  type StripeProviderConfig,
+  type PaystackProviderConfig,
+  type FlutterwaveProviderConfig,
+  type ResolvedProviderConfig,
+  type ResolvedPayweaveConfig,
+  // Cross-plan-validated, minor-units-resolved `products` (PW-802) — the real
+  // `Plan` type itself lives on the `payweave/products` subpath.
+  type ResolvedProduct,
 } from "./config";
 
 export {
@@ -70,14 +89,18 @@ export {
   type HttpClientOptions,
   type RequestOptions,
   type QueryValue,
+  type BodyEncoder,
+  type EncodedBody,
 } from "./http";
 
 export {
   defineProvider,
+  readHeader,
   type ProviderAdapter,
   type ProviderEvent,
   type UnifiedEvent,
   type UnifiedOps,
+  type BillingOps,
   type EnvSpec,
   type HeaderLookup,
 } from "./provider";

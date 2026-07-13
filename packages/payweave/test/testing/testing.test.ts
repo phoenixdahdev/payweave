@@ -5,6 +5,7 @@ import { createMswServer } from "../../src/testing/msw";
 import { verifyPaystack } from "../../src/webhooks/paystack";
 import { verifyFlutterwaveV3 } from "../../src/webhooks/flutterwave";
 import { verifyFlutterwaveV4 } from "../../src/webhooks/flutterwave-v4";
+import { verifyStripe } from "../../src/webhooks/stripe";
 
 const payload = { event: "charge.success", data: { id: 42 } };
 
@@ -32,6 +33,21 @@ describe("signWebhook round-trips against the verify primitives", () => {
     const s = signWebhook("paystack", "raw-string-body", "secret");
     expect(s.body).toBe("raw-string-body");
     expect(verifyPaystack("raw-string-body", s.header, "secret")).toBe(true);
+  });
+
+  it("stripe", () => {
+    const s = signWebhook("stripe", payload, "whsec_x");
+    expect(verifyStripe(s.body, s.header, "whsec_x")).toBe(true);
+    expect(s.headerName).toBe("stripe-signature");
+    expect(s.headers[s.headerName]).toBe(s.header);
+  });
+
+  it("stripe honors a timestamp override for tolerance tests", () => {
+    const ts = 1_752_300_000;
+    const s = signWebhook("stripe", payload, "whsec_x", { timestamp: ts });
+    expect(s.header.startsWith(`t=${ts},v1=`)).toBe(true);
+    expect(verifyStripe(s.body, s.header, "whsec_x", { now: () => ts })).toBe(true);
+    expect(verifyStripe(s.body, s.header, "whsec_x", { now: () => ts + 301 })).toBe(false);
   });
 });
 

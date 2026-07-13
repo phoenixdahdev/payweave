@@ -81,6 +81,33 @@ export interface AuthStrategy {
   refresh?(): Promise<void>;
 }
 
+/**
+ * An encoded request body: the exact bytes to send plus the `Content-Type`
+ * that describes them.
+ */
+export interface EncodedBody {
+  contentType: string;
+  body: string;
+}
+
+/**
+ * Per-provider request-body serializer hook (docs/v1/providers.md §3.1,
+ * PW-601). The default is JSON ({@link jsonBodyEncoder}); Stripe injects a
+ * deterministic `application/x-www-form-urlencoded` encoder from
+ * `src/stripe/form-encoding`. The client invokes the encoder EXACTLY ONCE per
+ * `request()` call — every retry re-sends the same encoded bytes, so a
+ * non-deterministic encoder can never produce divergent attempts.
+ */
+export type BodyEncoder = (body: unknown) => EncodedBody;
+
+/**
+ * Default {@link BodyEncoder}: JSON. Byte-identical to the pre-hook behavior
+ * (`Content-Type: application/json` + `JSON.stringify`).
+ */
+function jsonBodyEncoder(body: unknown): EncodedBody {
+  return { contentType: "application/json", body: JSON.stringify(body) };
+}
+
 /** Static `Authorization: Bearer <secretKey>` (Paystack, Flutterwave v3). */
 export function bearer(secretKey: string): AuthStrategy {
   return {
@@ -194,6 +221,12 @@ export interface HttpClientOptions {
   fetch?: FetchLike | undefined;
   logger?: Logger | undefined;
   userAgent?: string | undefined;
+  /**
+   * Request-body serializer (PW-601). Omitted → JSON, byte-identical to the
+   * historical behavior. Stripe passes its form encoder here so no JSON body
+   * ever leaves the Stripe client (providers.md §3.1).
+   */
+  bodyEncoder?: BodyEncoder | undefined;
 }
 
 /** Query values — `undefined`/`null` entries are dropped from the URL. */
@@ -235,6 +268,7 @@ export class HttpClient {
   private readonly doFetch: FetchLike;
   private readonly logger: Logger | undefined;
   private readonly userAgent: string;
+  private readonly encodeBody: BodyEncoder;
 
   constructor(options: HttpClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
@@ -248,6 +282,7 @@ export class HttpClient {
     this.doFetch = options.fetch ?? (fetch as unknown as FetchLike);
     this.logger = options.logger;
     this.userAgent = options.userAgent ?? `payweave/${SDK_VERSION} (${options.provider})`;
+    this.encodeBody = options.bodyEncoder ?? jsonBodyEncoder;
   }
 
   private buildUrl(path: string, query?: Record<string, QueryValue>): string {
@@ -275,6 +310,10 @@ export class HttpClient {
     const method = opts.method.toUpperCase();
     const url = this.buildUrl(opts.path, opts.query);
     const eligible = isRetryableRequest(method, opts.idempotencyKey);
+    // Encode the body ONCE, outside the retry loop: every attempt re-sends the
+    // exact same bytes, and a bodyEncoder is never re-invoked per attempt
+    // (PW-601 — retries must be byte-identical even for a non-pure encoder).
+    const encoded = opts.body !== undefined ? this.encodeBody(opts.body) : undefined;
     let attempt = 0;
     let did401Refresh = false;
 
@@ -282,11 +321,7 @@ export class HttpClient {
       const headers = new Headers();
       headers.set("Accept", "application/json");
       headers.set("User-Agent", this.userAgent);
-      let bodyInit: string | undefined;
-      if (opts.body !== undefined) {
-        headers.set("Content-Type", "application/json");
-        bodyInit = JSON.stringify(opts.body);
-      }
+      if (encoded !== undefined) headers.set("Content-Type", encoded.contentType);
       if (opts.idempotencyKey) headers.set("Idempotency-Key", opts.idempotencyKey);
 
       const signal = AbortSignal.timeout(opts.timeoutMs ?? this.timeoutMs);
@@ -309,7 +344,7 @@ export class HttpClient {
         res = await this.doFetch(url, {
           method,
           headers,
-          ...(bodyInit !== undefined ? { body: bodyInit } : {}),
+          ...(encoded !== undefined ? { body: encoded.body } : {}),
           signal,
         });
       } catch (err) {
@@ -374,8 +409,12 @@ export class HttpClient {
       // Non-2xx.
       const errorBody = await this.readJson(res);
       const retryAfterMs = parseRetryAfter(res.headers.get("retry-after"));
+      // `request-id` is Stripe's spelling (https://docs.stripe.com/api/errors).
       const requestId =
-        res.headers.get("x-request-id") ?? res.headers.get("x-requestid") ?? undefined;
+        res.headers.get("x-request-id") ??
+        res.headers.get("x-requestid") ??
+        res.headers.get("request-id") ??
+        undefined;
 
       // One forced-refresh retry on 401 for OAuth strategies (does not consume
       // a retry attempt — the token was simply stale).

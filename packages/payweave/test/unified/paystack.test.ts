@@ -6,10 +6,35 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { loadFixture } from "../../src/testing/fixtures";
 import { PayweaveNotFoundError } from "../../src/core/errors";
-import { makePaystackUnified, type UnifiedHarness } from "./_harness";
+import { makePaystackUnified, makeLegacyPaystackUnified, type UnifiedHarness } from "./_harness";
 
 let h: UnifiedHarness;
 afterEach(() => h?.close());
+
+describe("paystack unified via the legacy createPaystack facade (pre-PW-504 control)", () => {
+  it("routes checkout.create identically to the createPayweave-built ops", async () => {
+    h = await makeLegacyPaystackUnified([
+      {
+        method: "post",
+        url: "https://api.paystack.co/transaction/initialize",
+        json: loadFixture("paystack", "transactions", "initialize.success"),
+      },
+    ]);
+
+    const res = await h.unified.checkout.create({
+      amount: { value: 500000, currency: "NGN" },
+      customer: { email: "ada@example.com" },
+      reference: "order_legacy_1",
+    });
+
+    const req = await h.lastRequest();
+    expect(req.method).toBe("POST");
+    expect(req.path).toBe("/transaction/initialize");
+    expect((req.body as Record<string, unknown>).amount).toBe(500000);
+    expect(res.checkoutUrl).toBe("https://checkout.paystack.com/abc123def");
+    expect(res.reference).toBe("order_legacy_1");
+  });
+});
 
 describe("paystack unified.checkout.create", () => {
   it("passes amount through as kobo, echoes the reference, returns checkoutUrl", async () => {

@@ -7,9 +7,13 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.0",
     "@payweave/eslint-config": "workspace:*",
     "@payweave/typescript-config": "workspace:*",
     "prettier": "^3.9.5",
@@ -20,5 +24,10 @@
   "packageManager": "pnpm@10.33.4",
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/node": "26.1.1"
+    }
   }
 }

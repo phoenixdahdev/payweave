@@ -42,6 +42,21 @@ describe("redact", () => {
     expect(out.header).not.toContain("sk_live_");
   });
 
+  it("scrubs mongodb:// / mongodb+srv:// connection strings carrying credentials (PW-709)", () => {
+    const out = redact({
+      note: "connect via mongodb://dbuser:s3cr3t-P%40ss@cluster0-shard-00-00.abc.mongodb.net:27017/app",
+      srv: "mongodb+srv://dbuser:s3cr3t@cluster0.abc.mongodb.net/app?retryWrites=true",
+      // No userinfo → no secret → left untouched.
+      plain: "mongodb://localhost:27017/app",
+    }) as Record<string, string>;
+    expect(out.note).not.toContain("s3cr3t-P%40ss");
+    expect(out.note).not.toContain("dbuser");
+    expect(out.note).toContain(REDACTED);
+    expect(out.srv).not.toContain("s3cr3t");
+    expect(out.srv).toContain(REDACTED);
+    expect(out.plain).toBe("mongodb://localhost:27017/app");
+  });
+
   it("redacts a Headers instance by header name", () => {
     const h = new Headers({ authorization: "Bearer sk_live_x", accept: "application/json" });
     const out = redact(h) as Record<string, unknown>;
@@ -65,6 +80,28 @@ describe("redact", () => {
     const out = redact(cyclic) as Record<string, unknown>;
     expect(out.a).toBe(1);
     expect(out.self).toBe("[Circular]");
+  });
+
+  it("masks a postgres:// connection string wherever it appears (database.md §7/§8, PW-704)", () => {
+    const url = "postgres://app_user:s3cr3t-p4ss@db.example.com:5432/payweave?sslmode=require";
+    // Bare string value (e.g. surfaced inside an Error message).
+    const outStr = redact(`connecting failed: ${url}`) as string;
+    expect(outStr).not.toContain("s3cr3t-p4ss");
+    expect(outStr).not.toContain(url);
+    expect(outStr).toContain(REDACTED);
+
+    // Nested config object under an innocuous key name.
+    const outObj = redact({ database: { options: { connectionString: url } } }) as {
+      database: { options: { connectionString: string } };
+    };
+    expect(outObj.database.options.connectionString).toBe(REDACTED);
+
+    // `postgresql://` scheme variant, and a `DATABASE_URL`-named field.
+    const outEnv = redact({ DATABASE_URL: url.replace("postgres://", "postgresql://") }) as Record<
+      string,
+      unknown
+    >;
+    expect(outEnv.DATABASE_URL).toBe(REDACTED);
   });
 
   it("snapshot: no secret material survives serialization", () => {

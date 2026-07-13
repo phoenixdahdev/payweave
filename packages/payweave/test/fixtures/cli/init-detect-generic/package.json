@@ -1,0 +1,7 @@
+{
+  "name": "init-detect-generic-fixture",
+  "private": true,
+  "dependencies": {
+    "some-other-lib": "1.0.0"
+  }
+}

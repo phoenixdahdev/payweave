@@ -6,8 +6,12 @@
  */
 import { redact } from "./redact";
 
-/** Providers the SDK targets. `"unknown"` covers pre-classification failures. */
-export type PayweaveProvider = "paystack" | "flutterwave";
+/**
+ * Providers the SDK targets. `"unknown"` covers pre-classification failures.
+ * Stripe joined the set in the v1 pivot (docs/v1/providers.md, PW-501) — its
+ * config/env-inference lands first; the full client surface follows in EPIC 6.
+ */
+export type PayweaveProvider = "paystack" | "flutterwave" | "stripe";
 
 /**
  * Common shape carried by every Payweave error. Optional fields explicitly
@@ -156,6 +160,13 @@ function extractBody(body: unknown): ExtractedBody {
     return { providerMessage: undefined, providerCode: undefined, requestId: undefined };
   }
   const rec = body as Record<string, unknown>;
+  // Stripe nests its envelope one level down: `{ error: { type, code, message,
+  // param, ... } }` (https://docs.stripe.com/api/errors — verified 2026-07-12).
+  // Descend so the inner message/code surface exactly like a flat envelope
+  // (`code` first, falling back to `type`, via the shared logic below).
+  if (rec.error !== null && typeof rec.error === "object" && !Array.isArray(rec.error)) {
+    return extractBody(rec.error);
+  }
   const message = typeof rec.message === "string" ? rec.message : undefined;
   const codeRaw = rec.code ?? rec.errorCode ?? rec.error_code ?? rec.type;
   const code =
@@ -182,6 +193,7 @@ export interface MapHttpErrorExtra {
  *
  * - 401 → {@link PayweaveAuthError}
  * - 400 / 422 → {@link PayweaveValidationError}
+ * - 402 → {@link PayweaveProviderError}, NOT retryable (Stripe `card_error`)
  * - 404 → {@link PayweaveNotFoundError}
  * - 429 → {@link PayweaveRateLimitError} (with `retryAfterMs`)
  * - 5xx → {@link PayweaveProviderError} (retryable)
@@ -215,6 +227,16 @@ export function mapHttpError(
       `${provider} rejected the request (${status})${summary}`,
       base,
     );
+  }
+  if (status === 402) {
+    // Stripe: a failed charge (`card_error` — declines etc.). The provider
+    // reported a processing failure, so this is a PayweaveProviderError with
+    // `providerCode` (e.g. `card_declined`), but NOT retryable — re-sending a
+    // declined charge must be an explicit caller decision (AGENTS.md §2.4).
+    return new PayweaveProviderError(`${provider} payment failed (402)${summary}`, {
+      ...base,
+      isRetryable: false,
+    });
   }
   if (status === 404) {
     return new PayweaveNotFoundError(`${provider} resource not found (404)${summary}`, base);

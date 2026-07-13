@@ -1,0 +1,5 @@
+---
+"payweave": minor
+---
+
+`payweave push` (PW-1004): applies pending database migrations (SQL adapters run Payweave's embedded migrations; MongoDB idempotently ensures collections/indexes; Prisma/Drizzle print instructions instead of attempting DDL — none of this is confirmation-gated), then prints a read-only diff of your plan definitions (create/update/unchanged, per plan, scoped to configured billing-capable providers) before asking for confirmation. `-y`/`--yes` skips the prompt for CI/deploy pipelines (`payweave push -y && next build`); without it, a non-interactive session (no TTY) refuses to hang and tells you to pass `-y`, and a declined prompt aborts before any provider call or `pw_plans` write. Only the sync/version-write phase (`payweave.sync()`, PW-803's `BillingSync`) is gated — a second push over unchanged content reports everything `unchanged` with zero provider writes. Every printed line is secret-safe (routed through the SDK's `redact()`). This replaces the PW-1001 placeholder that unconditionally exited 1 naming this ticket.

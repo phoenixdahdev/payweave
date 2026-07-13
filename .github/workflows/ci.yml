@@ -7,15 +7,34 @@ on:
     branches: [main]
 
 jobs:
-  sdk:
-    name: payweave (lint · typecheck · build · test)
+  # PW-609 (AGENTS.md §2 rule 5 / §2.5): hard-fail on any secret-SHAPED value
+  # in a committed file — a live/test Stripe key, a Stripe webhook secret, a
+  # Flutterwave secret key, or a raw Authorization header value. Runs first,
+  # needs no dependency install (the script is zero-dep Node), and gates
+  # every other job below by extension via `needs:`.
+  secret-scan:
+    name: Secret-regex gate (AGENTS.md §2.5)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-      - uses: actions/setup-node@v6
+      - name: Scan committed files for secret-shaped values
+        run: node packages/payweave/scripts/check-no-secrets.mjs
+
+  sdk:
+    name: payweave (lint · typecheck · build · test)
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
@@ -26,7 +45,37 @@ jobs:
       - name: Lint, typecheck, build, test
         run: pnpm turbo lint typecheck build test --filter=payweave
 
-      - name: Check exports/imports alignment
+      - name: Check exports/imports alignment + CLI dep isolation
         run: |
           node packages/payweave/scripts/check-exports.mjs
           node packages/payweave/scripts/check-imports.mjs
+          node packages/payweave/scripts/check-cli-deps.mjs
+
+  # PW-1001 (cli.md §9): the packed tarball must install into a clean fixture
+  # and `npx payweave --help` / `--version` must work on Node 20/22/24.
+  cli-tarball:
+    name: CLI tarball smoke (node ${{ matrix.node }})
+    needs: secret-scan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build payweave
+        run: pnpm turbo build --filter=payweave
+
+      - name: Pack tarball, install into clean fixture, run --help/--version
+        run: node packages/payweave/scripts/test-cli-tarball.mjs

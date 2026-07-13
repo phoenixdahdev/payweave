@@ -5,6 +5,7 @@ import {
   bearer,
   oauthClientCredentials,
   type AuthStrategy,
+  type BodyEncoder,
   type FetchLike,
 } from "../../src/core/http";
 import {
@@ -12,6 +13,7 @@ import {
   PayweaveNetworkError,
   PayweaveNotFoundError,
   PayweaveProviderError,
+  PayweaveValidationError,
 } from "../../src/core/errors";
 import type { SdkLogEvent } from "../../src/core/logger";
 import { jsonResponse, queuedFetch } from "../helpers";
@@ -319,5 +321,90 @@ describe("HttpClient — auth failures participate in retry + error mapping", ()
     ).rejects.toBeInstanceOf(PayweaveAuthError); // not re-wrapped as PayweaveNetworkError
     expect(authCalls).toBe(1); // isRetryable=false → not retried
     expect(fetchCalls).toBe(0); // never reached the network
+  });
+});
+
+describe("HttpClient — bodyEncoder hook (PW-601)", () => {
+  it("uses the hook's contentType and encoded bytes for the request body", async () => {
+    const seen: unknown[] = [];
+    const encoder: BodyEncoder = (body) => {
+      seen.push(body);
+      return { contentType: "application/x-www-form-urlencoded", body: "amount=500" };
+    };
+    const f = queuedFetch([jsonResponse(200, { ok: true })]);
+    await makeClient(f, { bodyEncoder: encoder }).request({
+      method: "POST",
+      path: "/charge",
+      body: { amount: 500 },
+      idempotencyKey: "idem-enc",
+    });
+    const init = f.calls[0]!.init as { headers: Headers; body: string };
+    expect(init.headers.get("content-type")).toBe("application/x-www-form-urlencoded");
+    expect(init.body).toBe("amount=500");
+    // The hook received the exact request body object.
+    expect(seen).toEqual([{ amount: 500 }]);
+  });
+
+  it("defaults to JSON byte-identical to JSON.stringify when no hook is given", async () => {
+    const f = queuedFetch([jsonResponse(200, {})]);
+    const body = { a: 1, nested: { b: [true, "x"] } };
+    await makeClient(f).request({ method: "POST", path: "/x", body });
+    const init = f.calls[0]!.init as { headers: Headers; body: string };
+    expect(init.headers.get("content-type")).toBe("application/json");
+    expect(init.body).toBe(JSON.stringify(body));
+  });
+
+  it("never invokes the encoder for a bodyless request and sets no Content-Type", async () => {
+    let calls = 0;
+    const encoder: BodyEncoder = () => {
+      calls += 1;
+      return { contentType: "x", body: "y" };
+    };
+    const f = queuedFetch([jsonResponse(200, {})]);
+    await makeClient(f, { bodyEncoder: encoder }).request({ method: "GET", path: "/x" });
+    expect(calls).toBe(0);
+    const init = f.calls[0]!.init as { headers: Headers; body?: string };
+    expect(init.headers.get("content-type")).toBeNull();
+    expect(init.body).toBeUndefined();
+  });
+
+  it("encodes ONCE and re-sends the identical bytes on retry (idempotent POST)", async () => {
+    vi.useFakeTimers();
+    let encoderCalls = 0;
+    // Deliberately non-deterministic: a per-call counter would diverge if the
+    // client re-encoded per attempt.
+    const encoder: BodyEncoder = () => {
+      encoderCalls += 1;
+      return {
+        contentType: "application/x-www-form-urlencoded",
+        body: `amount=500&encoding_pass=${encoderCalls}`,
+      };
+    };
+    const f = queuedFetch([jsonResponse(503, { message: "x" }), jsonResponse(200, { ok: 1 })]);
+    const p = makeClient(f, { bodyEncoder: encoder }).request({
+      method: "POST",
+      path: "/charge",
+      body: { amount: 500 },
+      idempotencyKey: "idem-retry",
+    });
+    await vi.advanceTimersByTimeAsync(8000);
+    await expect(p).resolves.toEqual({ ok: 1 });
+    expect(f.calls.length).toBe(2);
+    expect(encoderCalls).toBe(1);
+    const first = f.calls[0]!.init as { body: string };
+    const second = f.calls[1]!.init as { body: string };
+    expect(second.body).toBe(first.body);
+    expect(first.body).toBe("amount=500&encoding_pass=1");
+  });
+
+  it("propagates a throwing encoder before anything reaches the network", async () => {
+    const encoder: BodyEncoder = () => {
+      throw new PayweaveValidationError("unencodable body", { provider: "paystack" });
+    };
+    const f = queuedFetch([jsonResponse(200, {})]);
+    await expect(
+      makeClient(f, { bodyEncoder: encoder }).request({ method: "POST", path: "/x", body: {} }),
+    ).rejects.toBeInstanceOf(PayweaveValidationError);
+    expect(f.calls.length).toBe(0);
   });
 });

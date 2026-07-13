@@ -3,7 +3,17 @@
  * resource is built on and exposes each resource as a `public readonly` field.
  * The provider-narrowing facade wires `sdk.paystack` from these fields.
  */
-import type { HttpClient } from "../core/http";
+import { HttpClient, bearer } from "../core/http";
+import { defineProvider, readHeader, type ProviderAdapter } from "../core/provider";
+import {
+  PAYSTACK_BASE_URL,
+  paystackProviderConfigSchema,
+  inferEnvironment as inferEnvironmentFromKey,
+  type ResolvedProviderConfig,
+} from "../core/config";
+import { PayweaveConfigError } from "../core/errors";
+import { verifyPaystack } from "../webhooks/paystack";
+import { toUnifiedEventType } from "../unified/mappings";
 import { Transactions } from "./resources/transactions";
 import { Refunds } from "./resources/refunds";
 import { Customers } from "./resources/customers";
@@ -46,3 +56,72 @@ export class PaystackClient {
     this.subscriptions = new Subscriptions(this.http);
   }
 }
+
+// ── Provider adapter contract v2 (PW-608, providers.md §4) ──────────────────
+// `paystackAdapter` is additive metadata: it does not (yet) replace the direct
+// wiring in `src/index.ts` (`createPayweave` still builds `PaystackClient`
+// straight from its resolved config, unchanged) — it PROVES the paystack
+// surface satisfies the v2 `ProviderAdapter` contract via `configKey` +
+// `configSchema`, so a config-key-registry style composition (unified-config.md
+// §7) can be built on top later without any core edits.
+
+function paystackHttp(cfg: ResolvedProviderConfig): HttpClient {
+  if (!cfg.secretKey) {
+    throw new PayweaveConfigError("Missing secret key for paystack.", { provider: "paystack" });
+  }
+  return new HttpClient({
+    baseUrl: cfg.baseUrl,
+    auth: bearer(cfg.secretKey),
+    provider: "paystack",
+    timeoutMs: cfg.timeoutMs,
+    maxRetries: cfg.maxRetries,
+    fetch: cfg.fetch,
+    logger: cfg.logger,
+  });
+}
+
+/**
+ * The Paystack v2 adapter descriptor. `unified`/`billing` are intentionally
+ * left unset here: the real unified ops (`unified/paystack.ts`'s
+ * `createPaystackUnified`) are HttpClient-BOUND factories wired directly by
+ * `createPayweave`, and this static descriptor has no HttpClient instance to
+ * bind them to; the billing slot is an unimplemented PW-803/804 placeholder.
+ */
+export const paystackAdapter: ProviderAdapter = defineProvider({
+  id: "paystack",
+  configKey: "paystack",
+  configSchema: paystackProviderConfigSchema,
+  environments: {
+    // One host for both — Paystack's environment is key-derived, not host-derived.
+    test: { baseUrl: PAYSTACK_BASE_URL },
+    live: { baseUrl: PAYSTACK_BASE_URL },
+  },
+  inferEnvironment: (secretKey) => {
+    try {
+      return inferEnvironmentFromKey("paystack", secretKey);
+    } catch {
+      return null;
+    }
+  },
+  createHttp: paystackHttp,
+  webhooks: {
+    signatureHeader: "x-paystack-signature",
+    verify: ({ rawBody, headers, secret }) =>
+      verifyPaystack(rawBody, readHeader(headers, "x-paystack-signature"), secret),
+    parse: (rawBody) => {
+      const root = JSON.parse(rawBody) as Record<string, unknown>;
+      return {
+        type: typeof root.event === "string" ? root.event : "unknown",
+        data: root.data,
+        raw: root,
+      };
+    },
+    toUnified: (e) => ({
+      provider: "paystack",
+      type: e.type,
+      unifiedType: toUnifiedEventType("paystack", undefined, e.type, e.data),
+      data: e.data,
+      raw: e.raw,
+    }),
+  },
+});

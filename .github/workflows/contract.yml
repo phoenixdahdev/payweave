@@ -1,0 +1,63 @@
+name: Contract
+
+# Contract (e2e) tests against REAL provider test-mode APIs
+# (docs/technical-design.md §13/§14, docs/v1/providers.md §6, PW-609).
+#
+# Deliberately NOT a `push`/`pull_request` gate: a provider outage (or a
+# rate-limited test account) must never block a merge (epic-06-stripe.md
+# PW-609 brief). This runs on a schedule and can be fired manually.
+#
+# Every job below is guarded on its provider's test-secret repo secret being
+# present (`if: ${{ secrets.STRIPE_TEST_SECRET != '' }}`) so this workflow is
+# a genuine no-op — skipped, not failed — anywhere that secret isn't
+# configured (a fork PR's context, or this ticket's own local/CI verification
+# run, which has no repo secrets to inherit).
+on:
+  schedule:
+    # 03:17 UTC daily — off-the-hour to avoid GitHub's top-of-hour scheduling
+    # crunch; timing itself is not load-bearing.
+    - cron: "17 3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  # Stripe quickstart (checkout → verify → refund → webhook, providers.md
+  # §6). PW-806 extends this file with the billing loop; PAYSTACK_TEST_SECRET
+  # / FLW_TEST_SECRET (docs/technical-design.md §14's full env list) join as
+  # their own guarded jobs once a paystack/flutterwave `e2e/*.e2e.ts` leg
+  # exists — none does yet (`e2e/stripe-quickstart.e2e.ts` is the first), so
+  # this file only wires the Stripe job for now; the pattern below is the
+  # precedent for whoever adds the next leg (epic-08-plans-features.md
+  # records the same "gated on the secret, fork-PR-safe skip" design).
+  stripe-quickstart:
+    name: Stripe contract quickstart
+    runs-on: ubuntu-latest
+    if: ${{ secrets.STRIPE_TEST_SECRET != '' }}
+    env:
+      STRIPE_TEST_SECRET: ${{ secrets.STRIPE_TEST_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build payweave (SDK + CLI)
+        run: pnpm turbo build --filter=payweave
+
+      # cli.md §8/§9 + src/cli/status.ts's PW-1003 NOTE: `status --throw`
+      # runs BEFORE the e2e suites, against a real (source-backed) client
+      # config using the same STRIPE_TEST_SECRET — an early, cheap signal
+      # that the configured key/connectivity is healthy before the heavier
+      # quickstart runs.
+      - name: payweave status --throw (pre-flight)
+        working-directory: packages/payweave
+        run: node dist/cli/index.js status --throw --config e2e/fixtures/status-project/payweave.ts
+
+      - name: Stripe contract quickstart (test:e2e)
+        run: pnpm --filter payweave test:e2e

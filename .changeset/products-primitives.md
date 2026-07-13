@@ -1,0 +1,12 @@
+---
+"payweave": minor
+---
+
+`feature()` + `plan()` primitives on the `payweave/products` subpath (PW-801, plans-and-features.md §1–§6, §9–§10).
+
+- `feature({ id, type: "boolean" | "metered" })` validates the id (`^[a-z0-9][a-z0-9_-]{0,63}$`) and returns a callable: a boolean feature is called with no arguments (`proModels()`), a metered feature requires `{ limit, reset }` (`messages({ limit: 100, reset: "month" })`). Calling either produces a `FeatureInclusion` for a plan's `includes` array. A metered call with an invalid argument throws `PayweaveValidationError` immediately; a boolean feature called with an argument is recorded on the inclusion instead and rejected later by `plan()` (so every "you gave `plan()` something wrong" error surfaces from one place).
+- `plan({ id, name?, group?, default?, price?, includes? })` validates the id (same regex), the `default: true` ⇒ `group` requirement, the price shape (still MAJOR units — see below), and its own `includes`: a raw feature passed uncalled gets an exact "did you mean `messages({ limit, reset })`?" hint, duplicate feature ids within one plan throw, and a deferred boolean-called-with-argument violation throws naming the feature.
+- `resolvePlanPricing(plan, defaultCurrency)` is the one place a plan's `price.amount` (major units at DEFINITION time — the money deviation, AGENTS.md golden rule 7) is converted to integer minor units, via `toMinor` — the plan's own `price.currency` wins over the passed fallback. Amounts with more fractional precision than the currency's exponent allows (e.g. `19.999 USD`, `5.5 UGX`) and amounts over the §6 bound (`999,999.99`, or the equivalent bound for the currency's exponent) both throw `PayweaveValidationError` naming the offending plan id.
+- Every §9 validation rule is covered by its own unit test asserting the exact error class and message; `feature`/`plan`'s `const`-generic signatures preserve literal plan/feature ids without `as const`, ready for PW-802 to extract `PlanIds<C>`/`FeatureIds<C>`.
+- Cross-plan rules that need the whole `products` array (duplicate plan ids, more than one default per group, conflicting feature types across plans, currency resolution against `defaultCurrency`) are deliberately NOT implemented here — that's `createPayweave`'s config-parse job (PW-802).
+- `plans-and-features.md §9` also asks for `feature`/`plan` to be re-exported from the package root (`"."`); that one-line wire-up is deferred to whoever next owns `src/index.ts` (PW-802) to avoid touching a file already in flight under PW-501/502/504.

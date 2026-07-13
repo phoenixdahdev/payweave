@@ -5,7 +5,20 @@
  * a later wave. The provider-narrowing facade wires `sdk.flutterwave` from these
  * public fields.
  */
-import type { HttpClient } from "../core/http";
+import { HttpClient, bearer, oauthClientCredentials } from "../core/http";
+import { defineProvider, readHeader, type ProviderAdapter } from "../core/provider";
+import {
+  FLW_V3_BASE_URL,
+  FLW_V4_BASE_URL,
+  FLW_V4_SANDBOX_URL,
+  flutterwaveProviderConfigSchema,
+  inferEnvironment as inferEnvironmentFromKey,
+  type ResolvedProviderConfig,
+} from "../core/config";
+import { PayweaveConfigError } from "../core/errors";
+import { verifyFlutterwaveV3 } from "../webhooks/flutterwave";
+import { verifyFlutterwaveV4 } from "../webhooks/flutterwave-v4";
+import { toUnifiedEventType } from "../unified/mappings";
 import { Payments } from "./v3/resources/payments";
 import { Transactions } from "./v3/resources/transactions";
 import { Banks } from "./v3/resources/banks";
@@ -65,3 +78,130 @@ export class FlutterwaveClient {
     }
   }
 }
+
+// ── Provider adapter contract v2 (PW-608, providers.md §4) ──────────────────
+// One adapter DEFINITION parameterized by `version` (AGENTS.md §11: v3/v4 stay
+// isolated inside one adapter, never sharing schemas/webhook schemes) — additive
+// metadata alongside the direct wiring in `src/index.ts` (unchanged). `unified`/
+// `billing` are intentionally left unset for the same reason as the Paystack
+// adapter: the real unified ops (`unified/flutterwave.ts`'s
+// `createFlutterwaveUnified`) are HttpClient-bound factories with nowhere to
+// live on a static descriptor; billing is an unimplemented PW-803/804 placeholder.
+
+function flutterwaveHttp(cfg: ResolvedProviderConfig): HttpClient {
+  if (cfg.version === "v4") {
+    if (!cfg.clientId || !cfg.clientSecret || !cfg.tokenUrl) {
+      throw new PayweaveConfigError(
+        "Flutterwave v4 requires clientId, clientSecret, and a token URL.",
+        { provider: "flutterwave" },
+      );
+    }
+    return new HttpClient({
+      baseUrl: cfg.baseUrl,
+      auth: oauthClientCredentials({
+        clientId: cfg.clientId,
+        clientSecret: cfg.clientSecret,
+        tokenUrl: cfg.tokenUrl,
+        ...(cfg.fetch ? { fetch: cfg.fetch } : {}),
+        ...(cfg.logger ? { logger: cfg.logger } : {}),
+      }),
+      provider: "flutterwave",
+      version: "v4",
+      timeoutMs: cfg.timeoutMs,
+      maxRetries: cfg.maxRetries,
+      fetch: cfg.fetch,
+      logger: cfg.logger,
+    });
+  }
+  if (!cfg.secretKey) {
+    throw new PayweaveConfigError("Missing secret key for flutterwave.", { provider: "flutterwave" });
+  }
+  return new HttpClient({
+    baseUrl: cfg.baseUrl,
+    auth: bearer(cfg.secretKey),
+    provider: "flutterwave",
+    version: "v3",
+    timeoutMs: cfg.timeoutMs,
+    maxRetries: cfg.maxRetries,
+    fetch: cfg.fetch,
+    logger: cfg.logger,
+  });
+}
+
+type AdapterWebhooks = ProviderAdapter["webhooks"];
+
+function flutterwaveWebhooks(version: "v3" | "v4"): AdapterWebhooks {
+  if (version === "v4") {
+    return {
+      signatureHeader: "flutterwave-signature",
+      verify: ({ rawBody, headers, secret }) =>
+        verifyFlutterwaveV4(rawBody, readHeader(headers, "flutterwave-signature"), secret),
+      parse: (rawBody) => {
+        const root = JSON.parse(rawBody) as Record<string, unknown>;
+        return {
+          type: typeof root.type === "string" ? root.type : "unknown",
+          data: root.data,
+          raw: root,
+          ...(typeof root.id === "string" ? { id: root.id } : {}),
+        };
+      },
+      toUnified: (e) => ({
+        provider: "flutterwave",
+        type: e.type,
+        unifiedType: toUnifiedEventType("flutterwave", "v4", e.type, e.data),
+        data: e.data,
+        raw: e.raw,
+      }),
+    };
+  }
+  return {
+    signatureHeader: "verif-hash",
+    verify: ({ headers, secret }) => verifyFlutterwaveV3(readHeader(headers, "verif-hash"), secret),
+    parse: (rawBody) => {
+      const root = JSON.parse(rawBody) as Record<string, unknown>;
+      return {
+        type: typeof root.event === "string" ? root.event : "unknown",
+        data: root.data,
+        raw: root,
+      };
+    },
+    toUnified: (e) => ({
+      provider: "flutterwave",
+      type: e.type,
+      unifiedType: toUnifiedEventType("flutterwave", "v3", e.type, e.data),
+      data: e.data,
+      raw: e.raw,
+    }),
+  };
+}
+
+/**
+ * Build the Flutterwave v2 adapter descriptor for a given API generation.
+ * `version` defaults to `"v3"` (the dashboard default, `core/config.ts` rule 6).
+ */
+export function createFlutterwaveAdapter(version: "v3" | "v4" = "v3"): ProviderAdapter {
+  return defineProvider({
+    id: "flutterwave",
+    configKey: "flutterwave",
+    configSchema: flutterwaveProviderConfigSchema,
+    environments:
+      version === "v4"
+        ? { test: { baseUrl: FLW_V4_SANDBOX_URL }, live: { baseUrl: FLW_V4_BASE_URL } }
+        : // v3: one host for both — environment is key-derived, not host-derived.
+          { test: { baseUrl: FLW_V3_BASE_URL }, live: { baseUrl: FLW_V3_BASE_URL } },
+    inferEnvironment: (secretKey) => {
+      // v4's environment is explicit (never key-inferred) — "no opinion".
+      if (version === "v4") return null;
+      try {
+        return inferEnvironmentFromKey("flutterwave", secretKey);
+      } catch {
+        return null;
+      }
+    },
+    createHttp: flutterwaveHttp,
+    webhooks: flutterwaveWebhooks(version),
+  });
+}
+
+/** The dashboard-default (v3) Flutterwave adapter descriptor. */
+export const flutterwaveAdapter: ProviderAdapter = createFlutterwaveAdapter("v3");

@@ -11,6 +11,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "payweave": "./dist/cli/index.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -52,10 +55,42 @@
       "types": "./dist/fastify/index.d.ts",
       "import": "./dist/fastify/index.js"
     },
+    "./products": {
+      "types": "./dist/products/index.d.ts",
+      "import": "./dist/products/index.js"
+    },
+    "./db": {
+      "types": "./dist/db/index.d.ts",
+      "import": "./dist/db/index.js"
+    },
+    "./db/prisma": {
+      "types": "./dist/db/prisma/index.d.ts",
+      "import": "./dist/db/prisma/index.js"
+    },
+    "./db/drizzle": {
+      "types": "./dist/db/drizzle/index.d.ts",
+      "import": "./dist/db/drizzle/index.js"
+    },
+    "./db/postgres": {
+      "types": "./dist/db/postgres/index.d.ts",
+      "import": "./dist/db/postgres/index.js"
+    },
+    "./db/mysql": {
+      "types": "./dist/db/mysql/index.d.ts",
+      "import": "./dist/db/mysql/index.js"
+    },
+    "./db/sqlite": {
+      "types": "./dist/db/sqlite/index.d.ts",
+      "import": "./dist/db/sqlite/index.js"
+    },
+    "./db/mongodb": {
+      "types": "./dist/db/mongodb/index.d.ts",
+      "import": "./dist/db/mongodb/index.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsup --config tsup.cli.config.ts",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
@@ -65,27 +100,63 @@
     "format": "prettier --write .",
     "check-exports": "node scripts/check-exports.mjs",
     "check-imports": "node scripts/check-imports.mjs",
+    "check-bundle-isolation": "node scripts/check-bundle-isolation.mjs",
+    "check-cli-deps": "node scripts/check-cli-deps.mjs",
+    "test:cli-tarball": "node scripts/test-cli-tarball.mjs",
+    "check:attw": "attw --pack --profile esm-only",
     "release": "changeset publish"
   },
   "dependencies": {
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "msw": "^2"
+    "@libsql/client": "^0.17.4",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-orm": ">=0.44.0 <1.0.0",
+    "mongodb": ">=6.0.0 <8.0.0",
+    "msw": "^2",
+    "pg": "^8.11.0"
   },
   "peerDependenciesMeta": {
+    "@libsql/client": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
+    },
     "msw": {
+      "optional": true
+    },
+    "pg": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@clack/prompts": "^1.7.0",
+    "@libsql/client": "^0.17.4",
     "@microsoft/api-extractor": "^7.52.0",
     "@payweave/eslint-config": "workspace:*",
     "@payweave/typescript-config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/pg": "^8.15.6",
     "@vitest/coverage-v8": "^4.0.0",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-kit": "0.31.10",
+    "drizzle-orm": "0.45.2",
     "eslint": "^10.7.0",
     "expect-type": "^1.2.0",
+    "jiti": "^2.7.0",
+    "mongodb": "^7.5.0",
+    "mri": "^1.2.0",
     "msw": "^2.7.0",
+    "pg": "^8.22.0",
     "tsup": "^8.5.0",
     "typescript": "^6.0.3",
     "vitest": "^4.0.0"

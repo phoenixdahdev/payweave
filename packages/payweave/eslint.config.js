@@ -12,7 +12,25 @@ import { config as baseConfig } from "@payweave/eslint-config/base";
 export default [
   ...baseConfig,
   {
-    ignores: ["dist/**", "coverage/**", ".turbo/**", ".tsup/**"],
+    // tsup*.config.bundled_*: ephemeral bundle-require temp files created while
+    // a parallel `build` task loads tsup.config.ts / tsup.cli.config.ts — they
+    // vanish mid-lint and crash ESLint with ENOENT if not ignored.
+    // .tmp/: throwaway dirs used by scripts/check-cli-deps.mjs and
+    // scripts/test-cli-tarball.mjs (PW-1001).
+    // test/fixtures/cli/**: standalone mini "user projects" (PW-1002) loaded
+    // at runtime by jiti, never linted as this package's own source — one is
+    // deliberately invalid syntax (the jiti parse-error fixture), which would
+    // otherwise crash ESLint's parser rather than produce a normal lint error.
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      ".turbo/**",
+      ".tsup/**",
+      ".tmp/**",
+      "**/tsup.config.bundled_*",
+      "**/tsup.cli.config.bundled_*",
+      "test/fixtures/cli/**",
+    ],
   },
   {
     // Node build/CI scripts — give them Node globals.
@@ -47,6 +65,22 @@ export default [
     files: ["src/**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
+      // AGENTS.md §6 — the SDK never calls console.*; use the injected logger.
+      "no-console": "error",
+    },
+  },
+  {
+    // cli.md §7 — the CLI is a terminal program; console output is its job.
+    // This exemption is scoped to src/cli/ ONLY.
+    files: ["src/cli/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly",
+      },
     },
   },
 ];

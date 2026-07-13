@@ -103,4 +103,53 @@ describe("mapHttpError", () => {
     expect(err.providerMessage).toBeUndefined();
     expect(err).toBeInstanceOf(PayweaveProviderError);
   });
+
+  // Stripe error envelope (PW-602): `{ error: { type, code, message, param } }`
+  // per https://docs.stripe.com/api/errors.
+  describe("stripe error envelope", () => {
+    const stripeBody = {
+      error: {
+        type: "invalid_request_error",
+        code: "resource_missing",
+        message: "No such payment_intent: 'pi_x'",
+        param: "intent",
+      },
+    };
+
+    it("descends into { error: ... } and extracts message + code", () => {
+      const err = mapHttpError("stripe", 404, stripeBody);
+      expect(err).toBeInstanceOf(PayweaveNotFoundError);
+      expect(err.providerMessage).toBe("No such payment_intent: 'pi_x'");
+      expect(err.providerCode).toBe("resource_missing");
+      expect(err.message).toContain("No such payment_intent");
+      expect(err.raw).toBe(stripeBody);
+    });
+
+    it("falls back to `type` as providerCode when the envelope has no code", () => {
+      const err = mapHttpError("stripe", 401, {
+        error: { type: "invalid_request_error", message: "Invalid API Key provided" },
+      });
+      expect(err).toBeInstanceOf(PayweaveAuthError);
+      expect(err.providerCode).toBe("invalid_request_error");
+      expect(err.providerMessage).toBe("Invalid API Key provided");
+    });
+
+    it("maps 402 (card_error) to a NON-retryable PayweaveProviderError", () => {
+      const err = mapHttpError("stripe", 402, {
+        error: { type: "card_error", code: "card_declined", message: "Your card was declined." },
+      });
+      expect(err).toBeInstanceOf(PayweaveProviderError);
+      expect(err.isRetryable).toBe(false);
+      expect(err.providerCode).toBe("card_declined");
+      expect(err.message).toContain("payment failed (402)");
+      expect(err.message).toContain("Your card was declined.");
+    });
+
+    it("tolerates a malformed envelope where error is not an object", () => {
+      const err = mapHttpError("stripe", 400, { error: "bad request" });
+      expect(err).toBeInstanceOf(PayweaveValidationError);
+      expect(err.providerMessage).toBeUndefined();
+      expect(err.providerCode).toBeUndefined();
+    });
+  });
 });

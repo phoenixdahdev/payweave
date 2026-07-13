@@ -1,0 +1,5 @@
+{
+  "name": "no-config-fixture",
+  "private": true,
+  "description": "PW-1002 fixture: a project with no payweave.ts, payweave.config.ts, or src/payweave.ts anywhere — resolveConfigPath/loadConfig must throw the 'no config found' failure mode naming every searched path."
+}

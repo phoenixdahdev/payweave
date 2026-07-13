@@ -2,6 +2,9 @@
 // Asserts the tsup entry map and package.json#exports stay in lockstep (TDD §5.2
 // invariant). Every tsup entry key must have a matching exports subpath and vice
 // versa. Exits non-zero on drift so CI fails loudly.
+// PW-1001 carve-out: the CLI is bin-only (cli.md §7) — `cli/index` lives in
+// tsup.cli.config.ts, is exposed via package.json#bin, and must appear in
+// NEITHER the library entry map NOR the exports map; asserted below.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -45,6 +48,44 @@ const missingInExports = [...expectedExports].filter((k) => !actualExports.has(k
 const missingInEntries = [...actualExports].filter((k) => !expectedExports.has(k));
 
 let ok = true;
+
+// ── bin-only CLI invariants (cli.md §7; PW-1001) ─────────────────────────────
+// `cli/index` is exempt from the entry==exports invariant: it is built by a
+// SEPARATE tsup pass (tsup.cli.config.ts) and exposed ONLY through
+// package.json#bin — never as an exports subpath, never as a library entry.
+const binFailures = [];
+
+if (pkg.bin?.payweave !== "./dist/cli/index.js") {
+  binFailures.push(
+    `package.json#bin.payweave must be "./dist/cli/index.js" (cli.md §7), got: ` +
+      JSON.stringify(pkg.bin ?? null),
+  );
+}
+if (actualExports.has("./cli")) {
+  binFailures.push(
+    'package.json#exports must NOT expose "./cli" — the CLI is bin-only (cli.md §7: ' +
+      "unreachable from library imports; the bin field is the only doorway).",
+  );
+}
+if (entryKeys.includes("cli/index")) {
+  binFailures.push(
+    'tsup.config.ts (library pass) must not contain a "cli/index" entry — the CLI builds in ' +
+      "tsup.cli.config.ts so it shares no chunks with library entries (cli.md §7).",
+  );
+}
+const cliTsupSrc = readFileSync(resolve(pkgRoot, "tsup.cli.config.ts"), "utf8");
+if (!/["']cli\/index["']\s*:\s*["']src\/cli\/index\.ts["']/.test(cliTsupSrc)) {
+  binFailures.push(
+    'tsup.cli.config.ts must build entry "cli/index": "src/cli/index.ts" — otherwise the bin ' +
+      "target dist/cli/index.js is never produced.",
+  );
+}
+
+if (binFailures.length) {
+  ok = false;
+  console.error("check-exports: bin-only CLI invariants violated (cli.md §7):");
+  for (const f of binFailures) console.error(`  - ${f}`);
+}
 if (missingInExports.length) {
   ok = false;
   console.error("check-exports: tsup entries with no matching package.json#exports:");
@@ -61,4 +102,7 @@ if (!ok) {
   process.exit(1);
 }
 
-console.log(`check-exports: OK — ${expectedExports.size} entries aligned with exports.`);
+console.log(
+  `check-exports: OK — ${expectedExports.size} entries aligned with exports; ` +
+    "cli/index is bin-only (bin field set, no ./cli subpath).",
+);

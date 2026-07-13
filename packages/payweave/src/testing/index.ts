@@ -4,6 +4,7 @@
 export {
   signWebhook,
   type SignWebhookProvider,
+  type SignWebhookOptions,
   type SignedWebhook,
 } from "./sign-webhook";
 

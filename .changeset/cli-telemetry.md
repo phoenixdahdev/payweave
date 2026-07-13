@@ -1,0 +1,5 @@
+---
+"payweave": minor
+---
+
+CLI telemetry (PW-1007): the `payweave` CLI now reports anonymous, opt-out usage counts — which subcommand ran, its success/failure, duration, and two coarse platform facts (CLI version, Node major version); never keys, config content, file paths, argument values, or any identifier (no install id — `cli.md` §6 is explicit that this means counts only). Disable entirely with either `PAYWEAVE_TELEMETRY_DISABLED=1` or `DO_NOT_TRACK=1`; both a real user's own CI and this package's own test suite are treated as disabled by default too, so nothing changes for automated environments. A one-time notice naming both variables prints on first use and is persisted to a small user-scoped state file (never inside your project). Every payload is routed through the SDK's `redact()` before being sent, as defense in depth. Reporting is fully fire-and-forget: a short-timeout, `unref()`d best-effort send that can never delay a command's exit, change its exit code, or surface a network/filesystem error — telemetry only observes.

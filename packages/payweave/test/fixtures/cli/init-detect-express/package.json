@@ -1,0 +1,7 @@
+{
+  "name": "init-detect-express-fixture",
+  "private": true,
+  "dependencies": {
+    "express": "4.19.0"
+  }
+}

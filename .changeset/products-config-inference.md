@@ -1,0 +1,12 @@
+---
+"payweave": minor
+---
+
+Products config + `PlanIds`/`FeatureIds` type inference (PW-802, plans-and-features.md §7–§10, unified-config.md §2/§4).
+
+- `products` on `createPayweave` is now typed and validated as `readonly Plan[]` (`plan()` output, PW-801) instead of the loose placeholder — passing a raw plain object in its place is a compile-time AND runtime rejection (`PayweaveConfigError`, "expected a `plan()` definition").
+- Cross-plan validation at config parse (needs the whole array, `plans-and-features.md §9`), each throwing `PayweaveConfigError` with an exact message: duplicate plan ids across the array; more than one `default: true` plan per group (naming both plan ids); the same feature id used with conflicting `type`s across plans; a paid plan resolving neither its own `price.currency` nor a configured `defaultCurrency`. The money-deviation decimal guard and the §6 amount bound (from `resolvePlanPricing`) still throw `PayweaveValidationError` naming the plan id, propagated unchanged — the resolved config carries only integer minor units, never a float.
+- `PlanIds<C>` / `FeatureIds<C>` / `FeatureIdsOf<C, "metered" | "boolean">` extracted from `C["products"]` and threaded into new `subscribe`/`check`/`report` methods on `PayweaveClient` — `planId`/`featureId` typos don't compile, and calling `subscribe`/`check`/`report` with no `products` configured is a compile-time error (`PlanIds`/`FeatureIds` resolve to `never`). Inference survives `products` being defined in, and imported from, a separate module (no `as const` needed, no widening to `string`).
+- `subscribe`/`check`/`report` exist on every client now; their runtime bodies are stubs that reject with `PayweaveConfigError` until `PW-804` (`subscribe`) and `PW-902` (`check`/`report`) land the real implementations.
+- `feature`/`plan` (and their supporting types) are now re-exported from the package root (`"."`), not just `payweave/products` — the deferred wire-up `plans-and-features.md §9` asked for.
+- Known, documented gap: `FeatureIdsOf<C, "metered">` cannot yet narrow out boolean feature ids at compile time, because `Plan.includes`'s type (PW-801) doesn't correlate a specific feature id with its own type. The runtime `PayweaveValidationError` guard (landing with PW-902) is the unconditional enforcement in the meantime — see the doc comment on `FeatureIdsOf` in `src/index.ts` for the full analysis and the follow-up needed in `src/products/plan.ts`.

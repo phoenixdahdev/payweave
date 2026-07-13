@@ -1,0 +1,7 @@
+{
+  "name": "init-detect-fastify-fixture",
+  "private": true,
+  "dependencies": {
+    "fastify": "5.0.0"
+  }
+}

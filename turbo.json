@@ -1,6 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  // Env vars read directly by test/e2e code (PW-609 contract quickstart). Declared
+  // here so `turbo/no-undeclared-env-vars` passes; the live contract run only
+  // happens in CI (contract.yml) when the secret is present.
+  "globalEnv": ["STRIPE_TEST_SECRET"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -17,11 +21,24 @@
       "dependsOn": ["^typecheck"]
     },
     "test": {
-      "dependsOn": ["^build"],
+      // PW-1002: `test` now also depends on this package's OWN `build` (not
+      // just `^build`, upstream packages). config-loader.test.ts fixtures do
+      // a real `import { createPayweave } from "payweave"` resolved against
+      // the built `dist/index.js` (proving the loader resolves the actual
+      // installed package, not a source path a real user's project could
+      // never import) — without this edge, `build` and `test` are sibling
+      // tasks with no ordering guarantee and turbo may run them concurrently,
+      // racing dist/ into existence.
+      "dependsOn": ["^build", "build"],
       "outputs": ["coverage/**"]
     },
     "test:types": {
-      "dependsOn": ["^build"]
+      // Same reason as `test` above: the CLI config-loader + status type tests
+      // import `payweave` resolved against the built `dist/` via the exports
+      // map. Without an own-`build` edge, turbo may run `build` and `test:types`
+      // concurrently, and the type tests hit ERR_PACKAGE_PATH_NOT_EXPORTED
+      // before dist/ exists (the recurring "config-loader flake").
+      "dependsOn": ["^build", "build"]
     },
     "dev": {
       "cache": false,

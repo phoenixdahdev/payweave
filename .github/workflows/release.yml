@@ -1,0 +1,74 @@
+name: Release
+
+# ⚠️ DISABLED FOR NOW — automatic publishing to npm is intentionally OFF.
+#
+# This workflow is committed so the release path is ready, but it will NOT
+# publish anything yet. Two independent safeguards keep it off:
+#   1. It only runs on manual `workflow_dispatch` — the automatic
+#      `push: branches: [main]` trigger below is commented out.
+#   2. The job is gated on the repo variable `PUBLISH_ENABLED == 'true'`, so
+#      even a manual run is a no-op until that variable is set.
+#
+# TO ENABLE (when ready to publish `payweave` to npm):
+#   1. Configure npm Trusted Publishing (OIDC) for the `payweave` package
+#      (preferred, tokenless), OR add an `NPM_TOKEN` repo secret and uncomment
+#      the `NODE_AUTH_TOKEN` env line below.
+#   2. Create the repository variable `PUBLISH_ENABLED` = `true`.
+#   3. Uncomment the `push: branches: [main]` trigger.
+# The Changesets action then opens a "Version Packages" PR from accumulated
+# changesets; merging it publishes `payweave` (the only publishable package)
+# with npm provenance.
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+
+permissions:
+  contents: write # Changesets opens/updates the version PR and tags releases
+  pull-requests: write
+  id-token: write # npm provenance via OIDC trusted publishing
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Changesets — version & publish (payweave)
+    # Guard: no-op until publishing is explicitly enabled (see header).
+    if: ${{ vars.PUBLISH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify before release
+        run: pnpm turbo lint typecheck build test --filter=payweave
+
+      - name: Create Release PR or publish
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version
+          publish: pnpm run release
+          commit: "chore(release): version packages"
+          title: "chore(release): version packages"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Provenance is emitted via OIDC (id-token: write above); no token needed
+          # for npm Trusted Publishing. If using a classic token instead, set the
+          # NPM_TOKEN secret and uncomment the next line:
+          # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"

@@ -27,6 +27,15 @@ const SENSITIVE_KEY_PATTERNS: readonly RegExp[] = [
   /^exp[_-]?(month|year)$/i,
   /^pin$/i,
   /password/i,
+  // database.md §7/§8 (PW-704): a bare `connectionString`/`connection_string`
+  // key holding a postgres:// URL isn't caught by any pattern above (no
+  // "secret"/"key"/"token" substring) — the VALUE pattern below also scrubs
+  // it wherever it appears, but masking the whole field by NAME too means a
+  // driver that logs `{ connectionString }` verbatim (no embedded credential
+  // syntax matched by the value pattern, e.g. a bare host with no user:pass)
+  // still never survives. PW-710 extends this with `DATABASE_URL`/`MONGODB_URI`
+  // for the other adapters' env-var conventions.
+  /^(?:database_url|connection_?string)$/i,
 ];
 
 /**
@@ -37,6 +46,24 @@ const SENSITIVE_VALUE_PATTERNS: readonly RegExp[] = [
   /sk_(test|live)_[A-Za-z0-9]+/gi, // Paystack secret keys
   /FLWSECK(_TEST)?-[A-Za-z0-9-]+/gi, // Flutterwave v3 secret keys
   /Bearer\s+[A-Za-z0-9._-]+/gi, // Authorization: Bearer <token>
+  // Postgres connection strings (database.md §7/§8, PW-704): `postgresAdapter`
+  // accepts a `postgres://`/`postgresql://` URL that typically embeds
+  // `user:password@host` credentials — mask the ENTIRE matched URL (not just
+  // the credential segment), per the module's fail-safe posture, wherever it
+  // appears (error messages, nested config objects, logger events). Matches
+  // up to the first whitespace/quote so an embedded URL inside a longer
+  // sentence or a quoted JSON value is bounded correctly. (PW-710 adds
+  // `mysql://` for the last SQL adapter.)
+  /postgres(?:ql)?:\/\/[^\s"'`]+/gi,
+  // MongoDB connection strings (database.md §7/§8, PW-709): `mongodb://` and
+  // `mongodb+srv://` URIs carry credentials in the `user[:pass]@host` userinfo
+  // segment — the `@` delimiter is unambiguous (MongoDB's own connection
+  // string spec never uses `@` for anything else), so ANY `mongodb(+srv)://`
+  // URL containing one is credential-bearing and the WHOLE match is masked
+  // (fail-safe posture — never just the password segment) up to the next
+  // whitespace/quote/angle-bracket boundary. A bare `mongodb://host:port/db`
+  // with no userinfo carries no secret and is deliberately left alone.
+  /mongodb(?:\+srv)?:\/\/[^\s"'<>]*@[^\s"'<>]+/gi,
 ];
 
 function isSensitiveKey(key: string): boolean {

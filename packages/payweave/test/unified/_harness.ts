@@ -1,19 +1,19 @@
 /**
- * Shared test harness for the unified layer (Surface B). Builds a real
- * {@link UnifiedNamespace} backed by a real {@link HttpClient} pointed at the
- * provider's live base URL, and mocks the network edge with MSW (never stubs
- * HttpClient/fetch). Mirrors the Paystack/Flutterwave resource harnesses;
- * captures outgoing requests so tests can assert method/path/query/body.
+ * Shared test harness for the unified layer (Surface B). Builds the unified
+ * ops THROUGH `createPayweave` (PW-502 — the whole suite passing unchanged is
+ * the proof that the new client routes identically to the direct per-provider
+ * factories), and mocks the network edge with MSW (never stubs
+ * HttpClient/fetch). Captures outgoing requests so tests can assert
+ * method/path/query/body. `makeLegacyPaystackUnified` keeps one explicit
+ * old-factory path covered until PW-504 delegates it.
  *
- * ORDER MATTERS: `server.listen()` must run BEFORE the {@link HttpClient} is
- * constructed, because the client captures the global `fetch` reference at
- * construction time — MSW patches that global on `listen()`. Building the client
- * first would capture the un-patched fetch and escape interception.
+ * ORDER MATTERS: `server.listen()` must run BEFORE the client is constructed,
+ * because HttpClient captures the global `fetch` reference at construction
+ * time — MSW patches that global on `listen()`. Building the client first
+ * would capture the un-patched fetch and escape interception.
  */
 import type { SetupServer } from "msw/node";
-import { HttpClient, bearer } from "../../src/core/http";
-import { PAYSTACK_BASE_URL, FLW_V3_BASE_URL } from "../../src/core/config";
-import { createPaystackUnified, createFlutterwaveUnified } from "../../src/unified/index";
+import { createPayweave, createPaystack } from "../../src/index";
 import type { UnifiedNamespace } from "../../src/unified/index";
 import { createMswServer, type MockRoute } from "../../src/testing/msw";
 
@@ -90,28 +90,32 @@ function harness(server: SetupServer, raw: Request[], unified: UnifiedNamespace)
   };
 }
 
-/** Spin up a Paystack unified namespace + MSW server for the given routes. */
+/** Spin up Paystack unified ops (via `createPayweave`) + MSW for the given routes. */
 export async function makePaystackUnified(routes: MockRoute[]): Promise<UnifiedHarness> {
   const { server, raw } = await startServer(routes);
   // Construct the client AFTER listen() so it captures MSW's patched fetch.
-  const http = new HttpClient({
-    baseUrl: PAYSTACK_BASE_URL,
-    auth: bearer("sk_test_harness"),
-    provider: "paystack",
-    maxRetries: 0,
-  });
-  return harness(server, raw, createPaystackUnified(http));
+  // The client ROOT satisfies UnifiedNamespace (§3 — ops moved to the root).
+  const client = createPayweave({ paystack: { secretKey: "sk_test_harness", maxRetries: 0 } });
+  return harness(server, raw, client);
 }
 
-/** Spin up a Flutterwave v3 unified namespace + MSW server for the given routes. */
+/** Spin up Flutterwave v3 unified ops (via `createPayweave`) + MSW for the given routes. */
 export async function makeFlutterwaveUnified(routes: MockRoute[]): Promise<UnifiedHarness> {
   const { server, raw } = await startServer(routes);
-  const http = new HttpClient({
-    baseUrl: FLW_V3_BASE_URL,
-    auth: bearer("FLWSECK_TEST-harness"),
-    provider: "flutterwave",
-    version: "v3",
-    maxRetries: 0,
+  const client = createPayweave({
+    flutterwave: { secretKey: "FLWSECK_TEST-harness", maxRetries: 0 },
   });
-  return harness(server, raw, createFlutterwaveUnified(http, "v3"));
+  return harness(server, raw, client);
+}
+
+/**
+ * Old-factory control: the same Paystack unified surface built through the
+ * legacy `createPaystack` facade (`sdk.unified.*`). Kept so at least one
+ * unified test exercises the pre-PW-502 construction path until PW-504 turns
+ * the old factories into delegating aliases.
+ */
+export async function makeLegacyPaystackUnified(routes: MockRoute[]): Promise<UnifiedHarness> {
+  const { server, raw } = await startServer(routes);
+  const sdk = createPaystack({ secretKey: "sk_test_harness", maxRetries: 0 });
+  return harness(server, raw, sdk.unified);
 }

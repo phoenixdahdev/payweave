@@ -13,5 +13,11 @@
     "noEmit": true
   },
   "include": ["src", "test", "e2e", "examples", "*.config.ts", "scripts"],
-  "exclude": ["node_modules", "dist"]
+  // test/fixtures/cli/** (PW-1002) are standalone mini "user projects" loaded
+  // at RUNTIME by jiti (src/cli/config-loader.ts), never compiled by this
+  // package's own tsc program — some are deliberately invalid TypeScript
+  // (the jiti parse-error fixture). They have no tsconfig of their own, same
+  // as a real user's config file is never type-checked by the payweave
+  // package that loads it.
+  "exclude": ["node_modules", "dist", "test/fixtures/cli/**"]
 }
