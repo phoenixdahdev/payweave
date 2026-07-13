@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildTelemetryPayload (cli.md §6 — anonymous fields only) > never carries argument values, file paths, or config content — only the fixed field set (snapshot) 1`] = `
+{
+  "cliVersion": Any<String>,
+  "command": "status",
+  "durationMs": 123,
+  "errorClass": "PayweaveAuthError",
+  "event": "cli_command",
+  "nodeMajor": Any<Number>,
+  "success": false,
+}
+`;
