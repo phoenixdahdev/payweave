@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "A subscription must have at least one item. You cannot delete the last item on a subscription; cancel the subscription instead.",
+    "param": "id",
+    "type": "invalid_request_error"
+  }
+}

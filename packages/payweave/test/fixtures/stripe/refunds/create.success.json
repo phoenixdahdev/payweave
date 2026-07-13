@@ -1,0 +1,24 @@
+{
+  "id": "re_pwv_fixture_0000000000000001",
+  "object": "refund",
+  "amount": 500,
+  "balance_transaction": "txn_pwv_fixture_0000000000000001",
+  "charge": "ch_pwv_fixture_0000000000000001",
+  "created": 1751900000,
+  "currency": "usd",
+  "destination_details": {
+    "card": {
+      "reference": "pwv_fixture_reference_001",
+      "reference_status": "pending",
+      "reference_type": "acquirer_reference_number",
+      "type": "refund"
+    },
+    "type": "card"
+  },
+  "metadata": {
+    "order_id": "8123"
+  },
+  "payment_intent": "pi_pwv_fixture_0000000000000001",
+  "reason": "requested_by_customer",
+  "status": "succeeded"
+}

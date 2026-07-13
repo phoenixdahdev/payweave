@@ -1,0 +1,17 @@
+{
+  "id": "we_pwv_fixture_0000000000000001",
+  "object": "webhook_endpoint",
+  "api_version": null,
+  "application": null,
+  "created": 1751900000,
+  "description": "payweave listen (fixture)",
+  "enabled_events": [
+    "checkout.session.completed",
+    "payment_intent.succeeded"
+  ],
+  "livemode": false,
+  "metadata": {},
+  "secret": "whsec_FAKE_FIXTURE_PLACEHOLDER_NOT_A_REAL_SECRET_0000",
+  "status": "enabled",
+  "url": "https://example.com/payweave/webhooks"
+}

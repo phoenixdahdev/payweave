@@ -1,0 +1,23 @@
+{
+  "id": "prod_pwv_fixture_0000000000000001",
+  "object": "product",
+  "active": false,
+  "created": 1751900000,
+  "default_price": "price_pwv_fixture_0000000000000001",
+  "description": "Payweave Pro plan",
+  "images": [],
+  "marketing_features": [],
+  "livemode": false,
+  "metadata": {
+    "pwv_reference": "pwv_plan_pro",
+    "pwv_archived": "true"
+  },
+  "name": "Pro Plan",
+  "package_dimensions": null,
+  "shippable": null,
+  "statement_descriptor": null,
+  "tax_code": null,
+  "unit_label": null,
+  "updated": 1751920000,
+  "url": null
+}

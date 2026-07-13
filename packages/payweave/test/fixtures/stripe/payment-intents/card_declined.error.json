@@ -1,0 +1,10 @@
+{
+  "error": {
+    "charge": "ch_pwv_fixture_0000000000000009",
+    "code": "card_declined",
+    "decline_code": "generic_decline",
+    "doc_url": "https://docs.stripe.com/error-codes/card-declined",
+    "message": "Your card was declined.",
+    "type": "card_error"
+  }
+}

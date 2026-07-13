@@ -1,0 +1,19 @@
+{
+  "object": "search_result",
+  "url": "/v1/products/search",
+  "has_more": false,
+  "next_page": null,
+  "data": [
+    {
+      "id": "prod_pwv_fixture_0000000000000002",
+      "object": "product",
+      "active": true,
+      "created": 1751890000,
+      "default_price": null,
+      "livemode": false,
+      "metadata": { "pwv_reference": "pwv_plan_starter" },
+      "name": "Starter Plan",
+      "updated": 1751890000
+    }
+  ]
+}

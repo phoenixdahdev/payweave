@@ -1,0 +1,25 @@
+{
+  "id": "pi_pwv_quickstart_0000000000000001",
+  "object": "payment_intent",
+  "amount": 1000,
+  "amount_capturable": 0,
+  "amount_received": 1000,
+  "canceled_at": null,
+  "cancellation_reason": null,
+  "capture_method": "automatic",
+  "client_secret": "pi_pwv_quickstart_0000000000000001_secret_pwvplaceholder",
+  "confirmation_method": "automatic",
+  "created": 1751900000,
+  "currency": "usd",
+  "customer": null,
+  "description": null,
+  "latest_charge": "ch_pwv_quickstart_0000000000000001",
+  "livemode": false,
+  "metadata": {
+    "pwv_quickstart": "pw-609"
+  },
+  "next_action": null,
+  "payment_method": "pm_pwv_quickstart_0000000000000001",
+  "receipt_email": null,
+  "status": "succeeded"
+}

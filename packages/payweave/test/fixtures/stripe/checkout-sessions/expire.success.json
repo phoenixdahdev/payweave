@@ -1,0 +1,21 @@
+{
+  "id": "cs_test_pwv_fixture_0000000000000002",
+  "object": "checkout.session",
+  "amount_subtotal": 4000,
+  "amount_total": 4000,
+  "cancel_url": "https://example.com/cancel",
+  "client_reference_id": null,
+  "created": 1751900000,
+  "currency": "usd",
+  "customer": null,
+  "customer_email": null,
+  "expires_at": 1751986400,
+  "livemode": false,
+  "metadata": {},
+  "mode": "payment",
+  "payment_intent": null,
+  "payment_status": "unpaid",
+  "status": "expired",
+  "success_url": "https://example.com/success",
+  "url": null
+}

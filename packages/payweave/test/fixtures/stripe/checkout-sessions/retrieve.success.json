@@ -1,0 +1,23 @@
+{
+  "id": "cs_test_pwv_fixture_0000000000000001",
+  "object": "checkout.session",
+  "amount_subtotal": 4000,
+  "amount_total": 4000,
+  "cancel_url": "https://example.com/cancel",
+  "client_reference_id": "pwv_ref_001",
+  "created": 1751900000,
+  "currency": "usd",
+  "customer": "cus_pwv_fixture_001",
+  "customer_email": "buyer@example.com",
+  "expires_at": 1751986400,
+  "livemode": false,
+  "metadata": {
+    "pwv_reference": "pwv_ref_001"
+  },
+  "mode": "payment",
+  "payment_intent": "pi_pwv_fixture_0000000000000001",
+  "payment_status": "paid",
+  "status": "complete",
+  "success_url": "https://example.com/success",
+  "url": null
+}

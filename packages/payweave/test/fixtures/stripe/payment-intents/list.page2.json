@@ -1,0 +1,16 @@
+{
+  "object": "list",
+  "url": "/v1/payment_intents",
+  "has_more": false,
+  "data": [
+    {
+      "id": "pi_pwv_fixture_0000000000000003",
+      "object": "payment_intent",
+      "amount": 9900,
+      "currency": "usd",
+      "livemode": false,
+      "metadata": {},
+      "status": "canceled"
+    }
+  ]
+}

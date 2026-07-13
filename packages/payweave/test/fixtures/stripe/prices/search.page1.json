@@ -1,0 +1,23 @@
+{
+  "object": "search_result",
+  "url": "/v1/prices/search",
+  "has_more": true,
+  "next_page": "pwv_fixture_page_token_0002",
+  "data": [
+    {
+      "id": "price_pwv_fixture_0000000000000001",
+      "object": "price",
+      "active": true,
+      "billing_scheme": "per_unit",
+      "created": 1751900000,
+      "currency": "usd",
+      "livemode": false,
+      "lookup_key": "pro-monthly",
+      "metadata": { "pwv_reference": "pwv_plan_pro" },
+      "product": "prod_pwv_fixture_0000000000000001",
+      "type": "recurring",
+      "unit_amount": 1500,
+      "unit_amount_decimal": "1500"
+    }
+  ]
+}

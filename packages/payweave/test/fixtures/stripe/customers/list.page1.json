@@ -1,0 +1,29 @@
+{
+  "object": "list",
+  "url": "/v1/customers",
+  "has_more": true,
+  "data": [
+    {
+      "id": "cus_pwv_fixture_0000000000000001",
+      "object": "customer",
+      "balance": 0,
+      "created": 1751900000,
+      "email": "jenny.rosen@example.com",
+      "livemode": false,
+      "metadata": { "pwv_reference": "pwv_ref_0001" },
+      "name": "Jenny Rosen",
+      "tax_exempt": "none"
+    },
+    {
+      "id": "cus_pwv_fixture_0000000000000002",
+      "object": "customer",
+      "balance": 0,
+      "created": 1751890000,
+      "email": "sam.okoro@example.com",
+      "livemode": false,
+      "metadata": {},
+      "name": "Sam Okoro",
+      "tax_exempt": "none"
+    }
+  ]
+}

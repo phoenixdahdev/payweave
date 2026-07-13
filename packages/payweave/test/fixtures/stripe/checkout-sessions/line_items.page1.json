@@ -1,0 +1,26 @@
+{
+  "object": "list",
+  "url": "/v1/checkout/sessions/cs_test_pwv_fixture_0000000000000001/line_items",
+  "has_more": true,
+  "data": [
+    {
+      "id": "li_pwv_fixture_0000000000000001",
+      "object": "item",
+      "amount_discount": 0,
+      "amount_subtotal": 4000,
+      "amount_tax": 0,
+      "amount_total": 4000,
+      "currency": "usd",
+      "description": "T-shirt",
+      "price": {
+        "id": "price_pwv_fixture_001",
+        "object": "price",
+        "currency": "usd",
+        "product": "prod_pwv_fixture_001",
+        "type": "one_time",
+        "unit_amount": 2000
+      },
+      "quantity": 2
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "object": "list",
+  "url": "/v1/webhook_endpoints",
+  "has_more": true,
+  "data": [
+    {
+      "id": "we_pwv_fixture_0000000000000001",
+      "object": "webhook_endpoint",
+      "api_version": null,
+      "application": null,
+      "created": 1751900000,
+      "description": "payweave listen (fixture)",
+      "enabled_events": ["checkout.session.completed"],
+      "livemode": false,
+      "metadata": {},
+      "status": "enabled",
+      "url": "https://example.com/payweave/webhooks"
+    },
+    {
+      "id": "we_pwv_fixture_0000000000000002",
+      "object": "webhook_endpoint",
+      "api_version": null,
+      "application": null,
+      "created": 1751900100,
+      "description": null,
+      "enabled_events": ["*"],
+      "livemode": false,
+      "metadata": {},
+      "status": "enabled",
+      "url": "https://example.com/payweave/webhooks-all"
+    }
+  ]
+}

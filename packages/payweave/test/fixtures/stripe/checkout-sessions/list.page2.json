@@ -1,0 +1,19 @@
+{
+  "object": "list",
+  "url": "/v1/checkout/sessions",
+  "has_more": false,
+  "data": [
+    {
+      "id": "cs_test_pwv_fixture_0000000000000003",
+      "object": "checkout.session",
+      "amount_total": 9900,
+      "currency": "usd",
+      "livemode": false,
+      "metadata": {},
+      "mode": "payment",
+      "payment_status": "unpaid",
+      "status": "expired",
+      "url": null
+    }
+  ]
+}

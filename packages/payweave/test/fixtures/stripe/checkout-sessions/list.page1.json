@@ -1,0 +1,31 @@
+{
+  "object": "list",
+  "url": "/v1/checkout/sessions",
+  "has_more": true,
+  "data": [
+    {
+      "id": "cs_test_pwv_fixture_0000000000000001",
+      "object": "checkout.session",
+      "amount_total": 4000,
+      "currency": "usd",
+      "livemode": false,
+      "metadata": {},
+      "mode": "payment",
+      "payment_status": "paid",
+      "status": "complete",
+      "url": null
+    },
+    {
+      "id": "cs_test_pwv_fixture_0000000000000002",
+      "object": "checkout.session",
+      "amount_total": 1500,
+      "currency": "usd",
+      "livemode": false,
+      "metadata": {},
+      "mode": "payment",
+      "payment_status": "unpaid",
+      "status": "open",
+      "url": "https://checkout.stripe.com/c/pay/cs_test_pwv_fixture_0000000000000002"
+    }
+  ]
+}

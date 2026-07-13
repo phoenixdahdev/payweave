@@ -1,0 +1,28 @@
+{
+  "id": "si_pwv_fixture_0000000000000003",
+  "object": "subscription_item",
+  "billing_thresholds": null,
+  "created": 1752400000,
+  "current_period_end": 1754978400,
+  "current_period_start": 1752400000,
+  "discounts": [],
+  "metadata": {
+    "seat": "8"
+  },
+  "price": {
+    "id": "price_pwv_fixture_002",
+    "object": "price",
+    "active": true,
+    "currency": "usd",
+    "livemode": false,
+    "product": "prod_pwv_fixture_002",
+    "recurring": {
+      "interval": "month",
+      "interval_count": 1
+    },
+    "unit_amount": 500
+  },
+  "quantity": 2,
+  "subscription": "sub_pwv_fixture_0000000000000001",
+  "tax_rates": []
+}

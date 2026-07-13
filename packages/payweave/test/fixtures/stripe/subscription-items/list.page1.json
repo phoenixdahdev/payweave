@@ -1,0 +1,41 @@
+{
+  "object": "list",
+  "url": "/v1/subscription_items",
+  "has_more": true,
+  "data": [
+    {
+      "id": "si_pwv_fixture_0000000000000001",
+      "object": "subscription_item",
+      "created": 1752300000,
+      "current_period_end": 1754978400,
+      "current_period_start": 1752300000,
+      "metadata": {},
+      "price": {
+        "id": "price_pwv_fixture_001",
+        "object": "price",
+        "currency": "usd",
+        "unit_amount": 1500
+      },
+      "quantity": 1,
+      "subscription": "sub_pwv_fixture_0000000000000001",
+      "tax_rates": []
+    },
+    {
+      "id": "si_pwv_fixture_0000000000000003",
+      "object": "subscription_item",
+      "created": 1752400000,
+      "current_period_end": 1754978400,
+      "current_period_start": 1752400000,
+      "metadata": {},
+      "price": {
+        "id": "price_pwv_fixture_002",
+        "object": "price",
+        "currency": "usd",
+        "unit_amount": 500
+      },
+      "quantity": 2,
+      "subscription": "sub_pwv_fixture_0000000000000001",
+      "tax_rates": []
+    }
+  ]
+}

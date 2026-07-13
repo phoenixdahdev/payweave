@@ -1,0 +1,31 @@
+{
+  "object": "list",
+  "url": "/v1/subscriptions",
+  "has_more": true,
+  "data": [
+    {
+      "id": "sub_pwv_fixture_0000000000000001",
+      "object": "subscription",
+      "cancel_at_period_end": false,
+      "collection_method": "charge_automatically",
+      "created": 1752300000,
+      "currency": "usd",
+      "customer": "cus_pwv_fixture_001",
+      "livemode": false,
+      "metadata": {},
+      "status": "active"
+    },
+    {
+      "id": "sub_pwv_fixture_0000000000000002",
+      "object": "subscription",
+      "cancel_at_period_end": false,
+      "collection_method": "charge_automatically",
+      "created": 1751000000,
+      "currency": "usd",
+      "customer": "cus_pwv_fixture_001",
+      "livemode": false,
+      "metadata": {},
+      "status": "past_due"
+    }
+  ]
+}

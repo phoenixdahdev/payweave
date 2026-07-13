@@ -1,0 +1,19 @@
+{
+  "object": "search_result",
+  "url": "/v1/customers/search",
+  "has_more": false,
+  "next_page": null,
+  "data": [
+    {
+      "id": "cus_pwv_fixture_0000000000000003",
+      "object": "customer",
+      "balance": 0,
+      "created": 1751880000,
+      "email": "ada.eze@example.com",
+      "livemode": false,
+      "metadata": { "pwv_reference": "pwv_ref_0003" },
+      "name": "Ada Eze",
+      "tax_exempt": "none"
+    }
+  ]
+}

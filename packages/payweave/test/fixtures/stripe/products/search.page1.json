@@ -1,0 +1,19 @@
+{
+  "object": "search_result",
+  "url": "/v1/products/search",
+  "has_more": true,
+  "next_page": "pwv_fixture_page_token_0002",
+  "data": [
+    {
+      "id": "prod_pwv_fixture_0000000000000001",
+      "object": "product",
+      "active": true,
+      "created": 1751900000,
+      "default_price": "price_pwv_fixture_0000000000000001",
+      "livemode": false,
+      "metadata": { "pwv_reference": "pwv_plan_pro" },
+      "name": "Pro Plan",
+      "updated": 1751900000
+    }
+  ]
+}

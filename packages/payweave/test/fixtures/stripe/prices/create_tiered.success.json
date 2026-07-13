@@ -1,0 +1,26 @@
+{
+  "id": "price_pwv_fixture_0000000000000004",
+  "object": "price",
+  "active": true,
+  "billing_scheme": "tiered",
+  "created": 1751900000,
+  "currency": "usd",
+  "custom_unit_amount": null,
+  "livemode": false,
+  "lookup_key": null,
+  "metadata": {},
+  "nickname": "Usage tiers",
+  "product": "prod_pwv_fixture_0000000000000001",
+  "recurring": {
+    "interval": "month",
+    "interval_count": 1,
+    "trial_period_days": null,
+    "usage_type": "licensed"
+  },
+  "tax_behavior": "unspecified",
+  "tiers_mode": "graduated",
+  "transform_quantity": null,
+  "type": "recurring",
+  "unit_amount": null,
+  "unit_amount_decimal": null
+}

@@ -1,0 +1,30 @@
+{
+  "id": "cus_pwv_fixture_0000000000000001",
+  "object": "customer",
+  "address": null,
+  "balance": -500,
+  "created": 1751900000,
+  "currency": "usd",
+  "default_source": null,
+  "delinquent": false,
+  "description": "Payweave test customer",
+  "email": "jenny.rosen@example.com",
+  "invoice_prefix": "PWVFIX01",
+  "invoice_settings": {
+    "custom_fields": null,
+    "default_payment_method": null,
+    "footer": null,
+    "rendering_options": null
+  },
+  "livemode": false,
+  "metadata": {
+    "pwv_reference": "pwv_ref_0001"
+  },
+  "name": "Jenny Rosen",
+  "next_invoice_sequence": 2,
+  "phone": null,
+  "preferred_locales": ["en-NG"],
+  "shipping": null,
+  "tax_exempt": "none",
+  "test_clock": null
+}

@@ -1,0 +1,26 @@
+{
+  "object": "list",
+  "url": "/v1/checkout/sessions/cs_test_pwv_fixture_0000000000000001/line_items",
+  "has_more": false,
+  "data": [
+    {
+      "id": "li_pwv_fixture_0000000000000002",
+      "object": "item",
+      "amount_discount": 0,
+      "amount_subtotal": 500,
+      "amount_tax": 0,
+      "amount_total": 500,
+      "currency": "usd",
+      "description": "Sticker pack",
+      "price": {
+        "id": "price_pwv_fixture_002",
+        "object": "price",
+        "currency": "usd",
+        "product": "prod_pwv_fixture_002",
+        "type": "one_time",
+        "unit_amount": 500
+      },
+      "quantity": 1
+    }
+  ]
+}

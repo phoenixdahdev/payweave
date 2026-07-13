@@ -1,0 +1,24 @@
+{
+  "object": "list",
+  "url": "/v1/subscription_items",
+  "has_more": false,
+  "data": [
+    {
+      "id": "si_pwv_fixture_0000000000000004",
+      "object": "subscription_item",
+      "created": 1752500000,
+      "current_period_end": 1754978400,
+      "current_period_start": 1752500000,
+      "metadata": {},
+      "price": {
+        "id": "price_pwv_fixture_003",
+        "object": "price",
+        "currency": "usd",
+        "unit_amount": 900
+      },
+      "quantity": 1,
+      "subscription": "sub_pwv_fixture_0000000000000001",
+      "tax_rates": []
+    }
+  ]
+}

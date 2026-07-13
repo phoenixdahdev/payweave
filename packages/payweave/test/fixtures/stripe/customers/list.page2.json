@@ -1,0 +1,18 @@
+{
+  "object": "list",
+  "url": "/v1/customers",
+  "has_more": false,
+  "data": [
+    {
+      "id": "cus_pwv_fixture_0000000000000003",
+      "object": "customer",
+      "balance": 0,
+      "created": 1751880000,
+      "email": "ada.eze@example.com",
+      "livemode": false,
+      "metadata": {},
+      "name": "Ada Eze",
+      "tax_exempt": "none"
+    }
+  ]
+}

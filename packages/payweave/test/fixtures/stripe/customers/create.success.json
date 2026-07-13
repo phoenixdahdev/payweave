@@ -1,0 +1,38 @@
+{
+  "id": "cus_pwv_fixture_0000000000000001",
+  "object": "customer",
+  "address": {
+    "city": "Lagos",
+    "country": "NG",
+    "line1": "1 Marina Road",
+    "line2": null,
+    "postal_code": "101241",
+    "state": "LA"
+  },
+  "balance": 0,
+  "created": 1751900000,
+  "currency": null,
+  "default_source": null,
+  "delinquent": false,
+  "description": null,
+  "email": "jenny.rosen@example.com",
+  "invoice_prefix": "PWVFIX01",
+  "invoice_settings": {
+    "custom_fields": null,
+    "default_payment_method": null,
+    "footer": null,
+    "rendering_options": null
+  },
+  "livemode": false,
+  "metadata": {
+    "pwv_reference": "pwv_ref_0001",
+    "order_id": "8123"
+  },
+  "name": "Jenny Rosen",
+  "next_invoice_sequence": 1,
+  "phone": null,
+  "preferred_locales": [],
+  "shipping": null,
+  "tax_exempt": "none",
+  "test_clock": null
+}

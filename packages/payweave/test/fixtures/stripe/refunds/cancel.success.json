@@ -1,0 +1,13 @@
+{
+  "id": "re_pwv_fixture_0000000000000002",
+  "object": "refund",
+  "amount": 1200,
+  "balance_transaction": null,
+  "charge": "ch_pwv_fixture_0000000000000002",
+  "created": 1751900100,
+  "currency": "usd",
+  "metadata": {},
+  "payment_intent": "pi_pwv_fixture_0000000000000002",
+  "reason": null,
+  "status": "canceled"
+}

@@ -1,0 +1,18 @@
+{
+  "object": "list",
+  "url": "/v1/products",
+  "has_more": false,
+  "data": [
+    {
+      "id": "prod_pwv_fixture_0000000000000003",
+      "object": "product",
+      "active": false,
+      "created": 1751880000,
+      "default_price": null,
+      "livemode": false,
+      "metadata": {},
+      "name": "Legacy Plan",
+      "updated": 1751880000
+    }
+  ]
+}

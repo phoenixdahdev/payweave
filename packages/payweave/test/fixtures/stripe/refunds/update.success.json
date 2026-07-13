@@ -1,0 +1,15 @@
+{
+  "id": "re_pwv_fixture_0000000000000001",
+  "object": "refund",
+  "amount": 500,
+  "balance_transaction": "txn_pwv_fixture_0000000000000001",
+  "charge": "ch_pwv_fixture_0000000000000001",
+  "created": 1751900000,
+  "currency": "usd",
+  "metadata": {
+    "order_id": "6735"
+  },
+  "payment_intent": "pi_pwv_fixture_0000000000000001",
+  "reason": "requested_by_customer",
+  "status": "succeeded"
+}

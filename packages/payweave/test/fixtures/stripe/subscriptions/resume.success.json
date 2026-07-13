@@ -1,0 +1,63 @@
+{
+  "id": "sub_pwv_fixture_0000000000000002",
+  "object": "subscription",
+  "billing_cycle_anchor": 1752400000,
+  "cancel_at": null,
+  "cancel_at_period_end": false,
+  "canceled_at": null,
+  "cancellation_details": {
+    "comment": null,
+    "feedback": null,
+    "reason": null
+  },
+  "collection_method": "charge_automatically",
+  "created": 1751000000,
+  "currency": "usd",
+  "customer": "cus_pwv_fixture_001",
+  "days_until_due": null,
+  "default_payment_method": "pm_pwv_fixture_001",
+  "description": null,
+  "ended_at": null,
+  "items": {
+    "object": "list",
+    "data": [
+      {
+        "id": "si_pwv_fixture_0000000000000002",
+        "object": "subscription_item",
+        "billing_thresholds": null,
+        "created": 1751000000,
+        "current_period_end": 1755078400,
+        "current_period_start": 1752400000,
+        "discounts": [],
+        "metadata": {},
+        "price": {
+          "id": "price_pwv_fixture_001",
+          "object": "price",
+          "active": true,
+          "currency": "usd",
+          "livemode": false,
+          "product": "prod_pwv_fixture_001",
+          "recurring": {
+            "interval": "month",
+            "interval_count": 1
+          },
+          "unit_amount": 1500
+        },
+        "quantity": 1,
+        "subscription": "sub_pwv_fixture_0000000000000002",
+        "tax_rates": []
+      }
+    ],
+    "has_more": false,
+    "total_count": 1,
+    "url": "/v1/subscription_items?subscription=sub_pwv_fixture_0000000000000002"
+  },
+  "latest_invoice": "in_pwv_fixture_0000000000000003",
+  "livemode": false,
+  "metadata": {},
+  "pause_collection": null,
+  "start_date": 1751000000,
+  "status": "active",
+  "trial_end": null,
+  "trial_start": null
+}

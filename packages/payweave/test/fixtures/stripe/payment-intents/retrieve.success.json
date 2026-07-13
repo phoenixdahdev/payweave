@@ -1,0 +1,25 @@
+{
+  "id": "pi_pwv_fixture_0000000000000001",
+  "object": "payment_intent",
+  "amount": 2000,
+  "amount_capturable": 0,
+  "amount_received": 2000,
+  "canceled_at": null,
+  "cancellation_reason": null,
+  "capture_method": "automatic_async",
+  "client_secret": "pi_pwv_fixture_0000000000000001_secret_pwvplaceholder",
+  "confirmation_method": "automatic",
+  "created": 1751900000,
+  "currency": "usd",
+  "customer": "cus_pwv_fixture_001",
+  "description": "Order 8123",
+  "latest_charge": "ch_pwv_fixture_0000000000000001",
+  "livemode": false,
+  "metadata": {
+    "order_id": "8123"
+  },
+  "next_action": null,
+  "payment_method": "pm_pwv_fixture_001",
+  "receipt_email": "buyer@example.com",
+  "status": "succeeded"
+}

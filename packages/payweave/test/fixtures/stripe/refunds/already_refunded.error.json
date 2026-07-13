@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "charge_already_refunded",
+    "doc_url": "https://docs.stripe.com/error-codes/charge-already-refunded",
+    "message": "Charge ch_pwv_fixture_0000000000000001 has already been refunded.",
+    "type": "invalid_request_error"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "id": "pi_pwv_fixture_0000000000000003",
+  "object": "payment_intent",
+  "amount": 2000,
+  "amount_capturable": 0,
+  "amount_received": 1500,
+  "canceled_at": null,
+  "cancellation_reason": null,
+  "capture_method": "manual",
+  "client_secret": "pi_pwv_fixture_0000000000000003_secret_pwvplaceholder",
+  "confirmation_method": "automatic",
+  "created": 1751900000,
+  "currency": "usd",
+  "customer": null,
+  "description": null,
+  "latest_charge": "ch_pwv_fixture_0000000000000003",
+  "livemode": false,
+  "metadata": {},
+  "next_action": null,
+  "payment_method": "pm_pwv_fixture_001",
+  "receipt_email": null,
+  "status": "succeeded"
+}

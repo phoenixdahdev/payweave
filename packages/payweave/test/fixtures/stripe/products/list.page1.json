@@ -1,0 +1,29 @@
+{
+  "object": "list",
+  "url": "/v1/products",
+  "has_more": true,
+  "data": [
+    {
+      "id": "prod_pwv_fixture_0000000000000001",
+      "object": "product",
+      "active": true,
+      "created": 1751900000,
+      "default_price": "price_pwv_fixture_0000000000000001",
+      "livemode": false,
+      "metadata": { "pwv_reference": "pwv_plan_pro" },
+      "name": "Pro Plan",
+      "updated": 1751900000
+    },
+    {
+      "id": "prod_pwv_fixture_0000000000000002",
+      "object": "product",
+      "active": true,
+      "created": 1751890000,
+      "default_price": null,
+      "livemode": false,
+      "metadata": { "pwv_reference": "pwv_plan_starter" },
+      "name": "Starter Plan",
+      "updated": 1751890000
+    }
+  ]
+}

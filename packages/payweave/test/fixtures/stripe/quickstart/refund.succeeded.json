@@ -1,0 +1,22 @@
+{
+  "id": "re_pwv_quickstart_0000000000000001",
+  "object": "refund",
+  "amount": 1000,
+  "balance_transaction": "txn_pwv_quickstart_0000000000000001",
+  "charge": "ch_pwv_quickstart_0000000000000001",
+  "created": 1751900100,
+  "currency": "usd",
+  "destination_details": {
+    "card": {
+      "reference": "pwv_quickstart_reference_001",
+      "reference_status": "pending",
+      "reference_type": "acquirer_reference_number",
+      "type": "refund"
+    },
+    "type": "card"
+  },
+  "metadata": {},
+  "payment_intent": "pi_pwv_quickstart_0000000000000001",
+  "reason": "requested_by_customer",
+  "status": "succeeded"
+}

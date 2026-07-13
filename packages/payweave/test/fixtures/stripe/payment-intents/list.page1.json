@@ -1,0 +1,25 @@
+{
+  "object": "list",
+  "url": "/v1/payment_intents",
+  "has_more": true,
+  "data": [
+    {
+      "id": "pi_pwv_fixture_0000000000000001",
+      "object": "payment_intent",
+      "amount": 2000,
+      "currency": "usd",
+      "livemode": false,
+      "metadata": {},
+      "status": "succeeded"
+    },
+    {
+      "id": "pi_pwv_fixture_0000000000000002",
+      "object": "payment_intent",
+      "amount": 1500,
+      "currency": "usd",
+      "livemode": false,
+      "metadata": {},
+      "status": "requires_payment_method"
+    }
+  ]
+}

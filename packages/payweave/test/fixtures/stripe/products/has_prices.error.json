@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Products with prices can not be deleted. Please archive the product instead by setting active to false.",
+    "type": "invalid_request_error"
+  }
+}
