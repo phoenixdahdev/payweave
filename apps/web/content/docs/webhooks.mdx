@@ -1,0 +1,92 @@
+---
+title: Webhooks
+description: Verify and normalize provider webhooks correctly — raw bytes, the right signature scheme per provider, constant-time comparison, fail-closed.
+icon: Webhook
+---
+
+Webhooks are a **security-critical, first-class citizen** in Payweave. One API verifies and parses webhooks for either provider, using each provider's correct signature scheme, and returns a typed, normalized event.
+
+## Verify on the raw bytes
+
+Verification **must** run on the exact raw bytes received. Parsing then re-stringifying JSON is a known footgun — never do it.
+
+```ts
+import express from "express"
+
+const app = express()
+
+// Capture the RAW body for the webhook route only.
+app.post("/webhooks/payments", express.raw({ type: "*/*" }), (req, res) => {
+  let event
+  try {
+    event = sdk.webhooks.constructEvent({ rawBody: req.body, headers: req.headers })
+  } catch (err) {
+    return res.sendStatus(400) // bad signature → PayweaveWebhookVerificationError
+  }
+
+  res.sendStatus(200) // ack fast, then process asynchronously
+
+  switch (event.unifiedType) {
+    case "payment.succeeded":
+      // Never grant value from the webhook alone — re-verify first:
+      // await sdk.unified.verify({ reference }) and check amount + currency + status.
+      break
+  }
+})
+```
+
+Capture the raw body per framework: `express.raw()` in Express, `await req.text()` in the Next.js App Router, the `rawBody` hook in Fastify, or buffering the stream in bare `http`.
+
+## Signature schemes (handled for you)
+
+| | Header | Scheme |
+| --- | --- | --- |
+| Paystack | `x-paystack-signature` | HMAC-SHA512 of the raw body (hex), keyed with your **secret key** |
+| Flutterwave v3 | `verif-hash` | Plain equality against the dashboard **secret hash** |
+| Flutterwave v4 | `flutterwave-signature` | HMAC-SHA256 of the raw body (base64), keyed with the dashboard secret hash |
+
+Comparison is always constant-time (`crypto.timingSafeEqual`) and fails closed.
+
+The Flutterwave dashboard **secret hash** is *not* your API key. Pass it as `webhookSecret`:
+
+```ts
+const sdk = createFlutterwave({
+  secretKey: process.env.FLW_SECRET_KEY!,
+  webhookSecret: process.env.FLW_WEBHOOK_SECRET!, // dashboard secret hash
+})
+```
+
+Paystack defaults `webhookSecret` to your `secretKey`; Flutterwave throws `PayweaveConfigError` if you call `webhooks.*` without one — never a silent pass.
+
+## The normalized event
+
+```ts
+const event = sdk.webhooks.constructEvent({ rawBody, headers })
+// event: {
+//   provider: "paystack",
+//   type: "charge.success",           // provider-native name
+//   unifiedType: "payment.succeeded", // normalized
+//   data,                             // typed per event where known
+//   dedupeKey,                        // stable idempotency key
+//   raw,
+// }
+```
+
+Unified event names map across providers (extend, never break):
+
+| unifiedType | Paystack | Flutterwave |
+| --- | --- | --- |
+| `payment.succeeded` | `charge.success` | `charge.completed` (successful) |
+| `payment.failed` | inspect charge status | `charge.completed` (failed) |
+| `transfer.succeeded` | `transfer.success` | `transfer.completed` (successful) |
+| `refund.processed` | `refund.processed` | refund events per docs |
+| `unknown` | anything unmapped | anything unmapped |
+
+Unmapped events are still delivered as `unifiedType: "unknown"` with `type` preserved — an event is never dropped.
+
+## Consumer checklist
+
+1. Always return `200` fast; process asynchronously.
+2. Never grant value from the webhook alone — re-verify via `sdk.unified.verify({ reference })` and check amount + currency + status.
+3. Be idempotent: providers redeliver. Dedupe on `event.dedupeKey`.
+4. Exempt the webhook route from CSRF.

@@ -1,0 +1,63 @@
+---
+title: Errors & retries
+description: A typed error taxonomy that tells you whose fault a failure is, plus safe retry and timeout behavior that never re-sends a charge.
+icon: Alert
+---
+
+Every failure is a typed subclass of `PayweaveError`, so you can branch on cause instead of parsing strings.
+
+```ts
+import {
+  PayweaveValidationError, // 400/422 or local Zod validation (your fault)
+  PayweaveAuthError,       // 401/403 (bad key)
+  PayweaveNotFoundError,   // 404 (unknown reference/recipient)
+  PayweaveRateLimitError,  // 429 (exposes retryAfterMs)
+  PayweaveProviderError,   // 5xx / provider processing failure
+  PayweaveNetworkError,    // timeout/DNS/reset (isRetryable = true)
+} from "payweave"
+
+try {
+  await sdk.unified.verify({ reference: "unknown" })
+} catch (err) {
+  if (err instanceof PayweaveNotFoundError) {
+    // handle a genuinely missing transaction
+  }
+}
+```
+
+## Taxonomy
+
+All errors extend `PayweaveError` with `provider`, `httpStatus`, `providerCode`, `providerMessage`, `requestId`, and `raw`.
+
+| Class | When |
+| --- | --- |
+| `PayweaveConfigError` | bad/missing keys, provider mismatch, env conflict (thrown synchronously at construction) |
+| `PayweaveAuthError` | 401 / invalid key |
+| `PayweaveValidationError` | 400/422, or local Zod validation before sending |
+| `PayweaveNotFoundError` | 404 (unknown reference, recipient, etc.) |
+| `PayweaveRateLimitError` | 429; exposes `retryAfterMs` if the header is present |
+| `PayweaveProviderError` | 5xx or a provider-reported processing failure |
+| `PayweaveNetworkError` | timeout / DNS / connection reset; exposes `isRetryable = true` |
+| `PayweaveWebhookVerificationError` | signature mismatch / malformed webhook |
+
+## Safe to log
+
+`error.toJSON()` is always safe to log — secret keys, `Authorization` headers, PANs, CVVs and PINs are redacted. The SDK never throws raw `fetch` errors and never swallows the provider's message.
+
+## Retries & timeouts
+
+- Built on the global `fetch`; injectable via config for tests.
+- Timeouts via `AbortController` (default 30s, per-request override).
+- **GET requests** retry automatically with exponential backoff + jitter for network errors and `429`/`5xx`.
+- **A bare `POST` is never auto-retried** — a charge is never silently re-sent. POSTs retry only when you supply an idempotency key (where the provider documents support).
+- `Retry-After` is honored when present.
+
+```ts
+const sdk = createPaystack({
+  secretKey: process.env.PAYSTACK_SECRET_KEY!,
+  timeoutMs: 30_000,
+  maxRetries: 2, // idempotent GETs only, unless an idempotency key is present
+})
+```
+
+An optional `logger` hook receives structured `request` / `response` / `retry` / `error` events, with secrets redacted.
