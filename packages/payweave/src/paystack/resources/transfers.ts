@@ -2,7 +2,7 @@
  * Paystack Transfers + Balance resource.
  * Docs: https://paystack.com/docs/api/transfer/
  *
- * NOTE: POST /transfer is a money-moving call. Per TDD §6.2 the SDK never
+ * NOTE: POST /transfer is a money-moving call. The SDK never
  * auto-retries bare POSTs, so `initiate` is not retried on network errors.
  */
 import { z } from "zod";

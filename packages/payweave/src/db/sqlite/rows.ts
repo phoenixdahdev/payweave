@@ -1,7 +1,7 @@
 /**
  * Row (de)serialization between the sqlite dialect's on-disk encoding and the
- * `z.infer` row types in `src/db/schema.ts` (docs/v1/database.md §4 storage
- * mapping): timestamps are epoch-millisecond `INTEGER`s, JSON columns are
+ * `z.infer` row types in `src/db/schema.ts` (storage
+ * mapping: timestamps are epoch-millisecond `INTEGER`s, JSON columns are
  * `TEXT`, and booleans are `INTEGER` 0|1 (`src/db/migrations/ddl.ts` header).
  *
  * Every reader is defensive about column types (`noUncheckedIndexedAccess` —

@@ -27,7 +27,7 @@ export {
   type UnifiedOpCapability,
 } from "./mappings";
 
-// Surface B (unified layer, PRD §6.2) — per-provider op factories + the shared
+// Surface B (unified layer) — per-provider op factories + the shared
 // operation types. The facade's `createUnified` picks the impl by provider.
 export { createPaystackUnified } from "./paystack";
 export { createFlutterwaveUnified } from "./flutterwave";

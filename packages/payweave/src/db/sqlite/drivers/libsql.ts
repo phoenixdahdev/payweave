@@ -1,6 +1,6 @@
 /**
- * `@libsql/client` backend for the sqlite adapter (docs/v1/database.md §4,
- * PW-706). This module is the ONLY place that touches an `@libsql/client`
+ * `@libsql/client` backend for the sqlite adapter. This module is the ONLY
+ * place that touches an `@libsql/client`
  * `Client` instance; `../index.ts` dynamically imports the driver package and
  * passes the resulting instance in here, so core/`payweave` never pulls
  * `@libsql/client` into its module graph.

@@ -3,7 +3,7 @@
  * These signatures are IDENTICAL across providers; each provider implementation
  * (`unified/paystack.ts`, `unified/flutterwave.ts`) satisfies {@link UnifiedNamespace}.
  *
- * Unified-layer rules baked into these types (PRD §6.2, P0):
+ * Unified-layer rules baked into these types:
  * - Amounts are ALWAYS minor units — `{ value, currency }` where `value` is an
  *   integer count of the currency's minor unit. Adapters convert (Paystack
  *   passes kobo through; Flutterwave v3 converts to major units).
@@ -166,8 +166,7 @@ export interface ResolvedAccountResult {
 /**
  * The `sdk.unified` surface (Surface B) — six high-traffic ops with identical
  * signatures across providers. Built per-provider by `createUnified` in the
- * facade; each provider implementation converts amounts and normalizes status
- * per PRD §6.2.
+ * facade; each provider implementation converts amounts and normalizes status.
  */
 export interface UnifiedNamespace {
   checkout: { create(input: CheckoutCreateInput): Promise<CheckoutCreateResult> };

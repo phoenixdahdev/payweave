@@ -1,10 +1,10 @@
 /**
- * Flutterwave (v3) unified-layer implementation (Surface B, PRD §6.2). Routes
+ * Flutterwave (v3) unified-layer implementation (Surface B). Routes
  * the six unified ops to Flutterwave v3 REST endpoints via `http.request`
  * directly, keeping `unified/` decoupled from the Surface A resource classes.
  *
  * Amount contract: the unified layer speaks MINOR units but Flutterwave v3 uses
- * MAJOR units (provider-reference §1), so this adapter converts on the way out
+ * MAJOR units, so this adapter converts on the way out
  * (`toMajor`) and back on the way in (`toMinor`) using core Money — integer-safe,
  * never float math. Status is normalized via `toUnifiedStatus("flutterwave", …)`.
  *

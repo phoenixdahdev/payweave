@@ -1,6 +1,6 @@
 /**
  * Minimal structural shapes of the `mongodb` driver's `Db`/`Collection`
- * surface this adapter relies on (docs/v1/database.md §7 — no real driver
+ * surface this adapter relies on (no real driver
  * types in the public/internal surface, mirroring `src/db/sqlite/url.ts`'s
  * precedent; see `./index.ts`'s module header for why). Every method here is
  * a documented, stable part of the driver's public API across the

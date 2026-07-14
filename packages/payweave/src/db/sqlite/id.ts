@@ -1,6 +1,6 @@
 /**
- * `pwv_<ulid>` id generation for the SQLite adapter (docs/v1/database.md §2,
- * PW-706). `src/db/schema.ts`'s `pwIdSchema` requires `pwv_` followed by a
+ * `pwv_<ulid>` id generation for the SQLite adapter.
+ * `src/db/schema.ts`'s `pwIdSchema` requires `pwv_` followed by a
  * 26-character Crockford-Base32 ULID; no ULID generator exists anywhere in
  * `src/` (checked: `src/unified/reference.ts`'s `pwv_`-prefixed generator
  * strips dashes from a `randomUUID()` — 32 hex characters, not a 26-char

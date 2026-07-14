@@ -1,5 +1,5 @@
 /**
- * Unified-layer reference generator (PRD §6.2 / §4). When a consumer omits
+ * Unified-layer reference generator. When a consumer omits
  * `reference` on a unified op, the SDK generates one and returns it in the
  * result. The `pwv_` prefix is mandated by the naming rules and is
  * deliberately NOT `pk_` (that collides with Paystack's public-key prefix).
