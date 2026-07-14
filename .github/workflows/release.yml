@@ -11,6 +11,7 @@ permissions:
   contents: write
   pull-requests: write
   id-token: write
+  checks: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -20,10 +21,20 @@ jobs:
   release:
     name: Changesets — version & publish (payweave)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Wait for CI to pass
+        if: github.event_name == 'push'
+        uses: lewagon/wait-on-check-action@v1.8.1
+        with:
+          ref: ${{ github.sha }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 15
+          running-workflow-name: "Changesets — version & publish (payweave)"
 
       - uses: pnpm/action-setup@v6
 

@@ -151,6 +151,9 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
+      '@types/node':
+        specifier: 26.1.1
+        version: 26.1.1
       '@types/pg':
         specifier: ^8.15.6
         version: 8.20.0

@@ -6,10 +6,27 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  check-secrets:
+    name: Check for provider test secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has-stripe: ${{ steps.check.outputs.has-stripe }}
+    steps:
+      - id: check
+        env:
+          STRIPE_TEST_SECRET: ${{ secrets.STRIPE_TEST_SECRET }}
+        run: |
+          if [ -n "$STRIPE_TEST_SECRET" ]; then
+            echo "has-stripe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-stripe=false" >> "$GITHUB_OUTPUT"
+          fi
+
   stripe-quickstart:
     name: Stripe contract quickstart
+    needs: check-secrets
+    if: needs.check-secrets.outputs.has-stripe == 'true'
     runs-on: ubuntu-latest
-    if: ${{ secrets.STRIPE_TEST_SECRET != '' }}
     env:
       STRIPE_TEST_SECRET: ${{ secrets.STRIPE_TEST_SECRET }}
     steps:

@@ -10,7 +10,8 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "isolatedModules": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": ["node"]
   },
   "include": ["src", "test", "e2e", "examples", "*.config.ts", "scripts"],
   // test/fixtures/cli/** (PW-1002) are standalone mini "user projects" loaded
