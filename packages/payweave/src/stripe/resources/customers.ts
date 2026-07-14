@@ -7,7 +7,7 @@
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
  * JSON resources — no envelope.
  *
- * PW-803 upserts customers here during `subscribe()` — `metadata` (with the
+ * `subscribe()` upserts customers here — `metadata` (with the
  * `pwv_` reference) and `email` are the fields its create-or-adopt loop keys
  * on.
  *

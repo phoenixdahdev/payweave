@@ -1,6 +1,6 @@
 /**
  * Flutterwave v3 Transactions resource (Surface A). Verify by numeric id vs by
- * `tx_ref` are SEPARATE endpoints (provider-reference §5.2). Amounts are MAJOR
+ * `tx_ref` are SEPARATE endpoints. Amounts are MAJOR
  * units, passed through unchanged.
  *
  * Docs: https://developer.flutterwave.com/v3.0.0/reference/verify-transaction

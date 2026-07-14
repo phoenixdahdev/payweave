@@ -51,7 +51,7 @@ export {
   type FlutterwaveConfig,
   type FlutterwaveV3Config,
   type FlutterwaveV4Config,
-  // v1 provider-keyed root — `createPayweave` mounts on these in PW-502.
+  // v1 provider-keyed root — `createPayweave` mounts on these.
   PAYWEAVE_PROVIDER_KEYS,
   payweaveConfigSchema,
   resolvePayweaveConfig,

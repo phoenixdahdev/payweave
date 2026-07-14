@@ -4,8 +4,8 @@
  * to v3.0.0):
  *   - Create payment (Standard): https://developer.flutterwave.com/v3.0.0/reference/standard
  *
- * Amounts are in MAJOR units (naira) — Surface A passes them through unchanged
- * (provider-reference §1); the unified layer owns minor↔major conversion later.
+ * Amounts are in MAJOR units (naira) — Surface A passes them through unchanged;
+ * the unified layer owns minor↔major conversion later.
  */
 import { z } from "zod";
 import { metaSchema } from "../shared";

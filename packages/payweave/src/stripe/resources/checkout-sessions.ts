@@ -173,7 +173,7 @@ export class CheckoutSessions {
   /**
    * Async iterator over ALL line items of a session, following `has_more`
    * with `starting_after = <last id>` — line items are themselves a paginated
-   * list (PW-602 work order).
+   * list.
    *
    * Docs: https://docs.stripe.com/api/checkout/sessions/line_items
    *

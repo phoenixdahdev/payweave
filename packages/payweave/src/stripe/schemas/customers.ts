@@ -11,7 +11,7 @@
  * `balance` is an integer in MINOR units — no conversion
  * anywhere. `tax_id_data[].type` is deliberately `z.string()` (the reference
  * lists 100+ country-specific enum values — provider-validated rather than
- * transcribed; conservative per AGENTS.md §8). Response schemas are LOOSE:
+ * transcribed; conservative). Response schemas are LOOSE:
  * unknown fields pass through, drift is logged, never thrown.
  *
  * Search pagination (verified 2026-07-12 against

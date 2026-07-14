@@ -1,6 +1,6 @@
 /**
  * Stripe HttpClient construction pieces: auth strategy + fully-wired
- * `HttpClientOptions`. PW-602's `StripeClient` consumes {@link stripeHttpOptions}
+ * `HttpClientOptions`. `StripeClient` consumes {@link stripeHttpOptions}
  * so every Stripe request carries the right headers and the form-encoded body
  * transport — no JSON body ever leaves the Stripe client.
  */

@@ -1,6 +1,6 @@
 /**
  * Deterministic `application/x-www-form-urlencoded` serializer for Stripe
- * request bodies (PW-601, providers.md §3.1). Stripe "accepts form-encoded
+ * request bodies. Stripe "accepts form-encoded
  * request bodies" (https://docs.stripe.com/api — verified 2026-07-12); it does
  * NOT accept JSON. Structure is expressed with Rack-style bracket notation:
  *

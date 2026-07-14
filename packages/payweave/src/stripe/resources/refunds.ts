@@ -45,7 +45,7 @@ export class Refunds {
 
   /**
    * Create a refund. Target either a `charge` or a `payment_intent` (the
-   * unified layer refunds against the payment intent — providers.md §3.3);
+   * unified layer refunds against the payment intent);
    * one of the two is required unless `origin: "customer_balance"`. `amount`
    * is integer MINOR units and defaults to the full remaining unrefunded
    * amount. Stripe errors if the target is already fully refunded (surfaced

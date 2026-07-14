@@ -1,5 +1,5 @@
 /**
- * MSW network-edge mocking helpers (PW-008, TDD §13). Resource tests mock at
+ * MSW network-edge mocking helpers. Resource tests mock at
  * the network layer (never stub `HttpClient`/`fetch`). `msw` is an OPTIONAL peer
  * dependency, so it is loaded via dynamic `import()` — importing `payweave/testing`
  * for `signWebhook`/`loadFixture` alone never requires msw to be installed.

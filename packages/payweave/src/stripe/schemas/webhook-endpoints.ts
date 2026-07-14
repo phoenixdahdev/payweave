@@ -25,7 +25,7 @@ import { listCursorFields, metadataSchema } from "../types";
  * `enabled_events` — the list of event types to enable (`["*"]` enables all
  * events except those that require explicit selection). Event names are an
  * open, version-dependent enum on Stripe's side — kept `string` here
- * (conservative, AGENTS.md §8). Non-empty: an endpoint must listen to
+ * (conservative). Non-empty: an endpoint must listen to
  * something, and the form encoder emits no pairs for an empty array.
  */
 const enabledEvents = z.array(z.string()).min(1);

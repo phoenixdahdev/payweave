@@ -145,7 +145,7 @@ export type SessionCreateReq = z.input<typeof sessionCreateReq>;
  * (https://docs.stripe.com/api/checkout/sessions/object). LOOSE: only stable
  * documented fields are named; everything else passes through. `url` IS null
  * in non-open states (e.g. completed/expired sessions) — tolerated, never
- * thrown (PW-602 contract note).
+ * thrown.
  */
 export const checkoutSession = z.looseObject({
   id: z.string(),

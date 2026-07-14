@@ -10,7 +10,7 @@
  *
  * `unit_amount` is integer MINOR units end to end — no
  * conversion anywhere. Proration parameter names are copied EXACTLY from the
- * docs and never abstracted (PW-604 contract note). Response schemas are
+ * docs and never abstracted. Response schemas are
  * LOOSE: unknown provider fields pass through, drift is logged, never thrown.
  *
  * This file also exports the request-param building blocks shared with the
@@ -187,7 +187,7 @@ export type SubscriptionItemListQuery = z.input<typeof subscriptionItemListQuery
  *
  * On the SDK's pinned API version (`2026-06-24.dahlia`),
  * `current_period_start`/`current_period_end` live HERE on the item — not on
- * the parent subscription object. EPIC 8's local billing state (PW-804/805)
+ * the parent subscription object. The local billing state
  * reads the period boundaries from `items.data[].current_period_*`.
  */
 export const subscriptionItem = z.looseObject({

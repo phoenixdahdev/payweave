@@ -1,5 +1,5 @@
 /**
- * `signWebhook` (PW-008, TDD §10) — produce valid header+body pairs matching
+ * `signWebhook` — produce valid header+body pairs matching
  * each provider's verify scheme, for consumer tests and our own. Consumers must
  * verify against the SAME `body` string returned here (verification runs on
  * exact bytes — never re-serialize).

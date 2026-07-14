@@ -8,11 +8,11 @@
  *   - Cancel:   https://docs.stripe.com/api/payment_intents/cancel
  *   - List:     https://docs.stripe.com/api/payment_intents/list
  *
- * `amount`/`amount_to_capture` are integer MINOR units end to end (providers.md
- * §3.1) — no conversion anywhere. Documented params whose child shapes we have
+ * `amount`/`amount_to_capture` are integer MINOR units end to end
+ * — no conversion anywhere. Documented params whose child shapes we have
  * not verified against the reference (`shipping`, `transfer_data`,
  * `payment_method_options`, `payment_method_data`) are deliberately NOT typed
- * in this P0 subset (conservative wins, AGENTS.md §8) — they can be added once
+ * in this P0 subset (conservative wins) — they can be added once
  * enumerated from the docs. Response schemas are LOOSE: unknown fields pass
  * through, drift is logged, never thrown.
  */

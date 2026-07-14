@@ -52,7 +52,7 @@ export class Charges {
 
   /**
    * Charge a card. The payload is 3DES-EDE3-ECB encrypted with the account
-   * Encryption Key and sent as `{ client }` (provider-reference §5.3). `amount`
+   * Encryption Key and sent as `{ client }`. `amount`
    * is MAJOR units, passed through unchanged. A successful charge that needs
    * OTP/PIN returns a `flw_ref` — pass it to {@link validate}.
    *

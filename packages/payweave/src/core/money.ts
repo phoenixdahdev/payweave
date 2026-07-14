@@ -1,5 +1,5 @@
 /**
- * Money — integer minor units, always (TDD §6.4, PRD §6.2). No floating-point
+ * Money — integer minor units, always. No floating-point
  * amounts ever cross a provider boundary. `value` is an integer count of the
  * currency's minor unit (kobo, cents, …); `currency` is an ISO-4217 code.
  */

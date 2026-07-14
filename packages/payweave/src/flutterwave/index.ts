@@ -13,7 +13,7 @@ export { Charges, type CardChargeOptions } from "./v3/resources/charges";
 export { Transfers } from "./v3/resources/transfers";
 export { Beneficiaries } from "./v3/resources/beneficiaries";
 
-// ── v3 encryption (isolated 3DES helper — TDD §11) ───────────────────────────
+// ── v3 encryption (isolated 3DES helper) ─────────────────────────────────────
 export { encryptCharge, decryptCharge } from "./v3/encrypt";
 
 // ── v3 request/response types ────────────────────────────────────────────────

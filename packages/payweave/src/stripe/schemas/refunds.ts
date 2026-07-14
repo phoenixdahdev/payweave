@@ -12,8 +12,8 @@
  * conversion anywhere. Documented response fields whose child shapes we have
  * not fully verified against the reference (`destination_details`'s ~40
  * payment-method-specific hashes, `next_action.display_details`) are
- * deliberately kept loose/untyped in this P0 subset (conservative wins,
- * AGENTS.md §8). Response schemas are LOOSE: unknown fields pass through,
+ * deliberately kept loose/untyped in this P0 subset (conservative wins).
+ * Response schemas are LOOSE: unknown fields pass through,
  * drift is logged, never thrown.
  */
 import { z } from "zod";
@@ -39,7 +39,7 @@ export const refundCreateReq = z
     charge: z.string().optional(),
     /**
      * The identifier of the PaymentIntent to refund (`pi_*`) — the path the
-     * unified layer uses (providers.md §3.3: refunds go against the payment
+     * unified layer uses (refunds go against the payment
      * intent).
      */
     payment_intent: z.string().optional(),

@@ -8,8 +8,7 @@
  * JSON resources — no envelope. All amounts are integer
  * minor units.
  *
- * Cancellation is exposed as Stripe documents it, never merged (PW-604
- * contract note):
+ * Cancellation is exposed as Stripe documents it, never merged:
  * - `cancel(id)` — IMMEDIATE: `DELETE /v1/subscriptions/{id}`.
  * - `update(id, { cancel_at_period_end: true })` — END-OF-PERIOD: the
  *   subscription stays `active` until the period closes.
@@ -140,7 +139,7 @@ export class Subscriptions {
    * unless `invoice_now`/`prorate` say otherwise. To cancel at the END of the
    * current period instead, use
    * `update(id, { cancel_at_period_end: true })` — the two shapes are
-   * distinct on Stripe and PW-805's state machine relies on that.
+   * distinct on Stripe and the local billing state machine relies on that.
    *
    * Docs: https://docs.stripe.com/api/subscriptions/cancel
    *

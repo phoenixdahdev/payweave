@@ -1,5 +1,5 @@
 /**
- * Flutterwave **v3** card-payload encryption (TDD §11, provider-reference §5.3).
+ * Flutterwave **v3** card-payload encryption.
  *
  * Card charges (`POST /charges?type=card`) require the JSON payload to be
  * encrypted with the account's **Encryption Key** using 3DES-EDE3 in ECB mode,
