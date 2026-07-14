@@ -1,0 +1,90 @@
+---
+title: Getting started
+description: Install Payweave, initialize a client, and create your first checkout in under 10 minutes.
+icon: Rocket
+---
+
+<Steps>
+
+<Step>
+
+## Install
+
+Add Payweave with your package manager of choice.
+
+<PackageInstall name="payweave" />
+
+Payweave is **ESM-only** and requires **Node ≥ 20.19** (native `require(esm)` interop). No CJS build is shipped.
+
+</Step>
+
+<Step>
+
+## Initialize — the provider is narrowed at compile time
+
+```ts
+import { createPaystack, createFlutterwave } from "payweave"
+
+const paystack = createPaystack({ secretKey: process.env.PAYSTACK_SECRET_KEY! })
+const flutterwave = createFlutterwave({ secretKey: process.env.FLW_SECRET_KEY! }) // v3 by default
+
+paystack.provider // "paystack"
+paystack.environment // "test" | "live" — inferred from the key prefix
+// paystack.flutterwave  ->  compile-time error: property does not exist
+```
+
+Test vs live is a **config change, not a code change** — it is inferred from the key prefix:
+
+| Provider | Test prefix | Live prefix |
+| --- | --- | --- |
+| Paystack | `sk_test_` | `sk_live_` |
+| Flutterwave v3 | `FLWSECK_TEST-` | `FLWSECK-` |
+
+A malformed or unrecognized key throws `PayweaveConfigError` at construction, naming the expected prefixes — a request is never sent with a key that can't be classified.
+
+</Step>
+
+<Step>
+
+## Your first checkout (unified layer)
+
+The unified layer always takes **integer minor units**; the adapter converts to each provider's native units for you.
+
+```ts
+const sdk = createPaystack({ secretKey: process.env.PAYSTACK_SECRET_KEY! })
+
+const checkout = await sdk.unified.checkout.create({
+  amount: { value: 500_000, currency: "NGN" }, // ₦5,000 in kobo
+  customer: { email: "ada@example.com" },
+  reference: "order_8123", // → Paystack `reference` / Flutterwave `tx_ref`
+  redirectUrl: "https://app.example.com/pay/callback",
+})
+
+// → { checkoutUrl, reference, providerRef, raw }
+console.log(checkout.checkoutUrl)
+```
+
+Redirect your customer to `checkoutUrl`. After they return, verify before granting value:
+
+```ts
+const result = await sdk.unified.verify({ reference: "order_8123" })
+// → { status: "success" | "failed" | "pending" | "abandoned" | "reversed",
+//     amount: { value, currency }, customer, paidAt, channel, raw }
+
+if (result.status === "success") {
+  // fulfil the order
+}
+```
+
+Swap `createPaystack` for `createFlutterwave` and the exact same unified code keeps working.
+
+</Step>
+
+</Steps>
+
+## Next steps
+
+- [Providers](/docs/providers) — the provider-native Surface A.
+- [Unified layer](/docs/unified-layer) — normalized, portable operations.
+- [Webhooks](/docs/webhooks) — verify and normalize events correctly.
+- [Errors & retries](/docs/errors-and-retries) — typed failures and retry behavior.

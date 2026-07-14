@@ -1,0 +1,59 @@
+---
+title: Unified layer
+description: Surface B — normalized, provider-agnostic operations with minor-unit Money, so your business logic never branches on provider.
+icon: Exchange
+---
+
+The **unified layer** (Surface B) gives a smaller set of high-traffic operations identical signatures across providers. Write your integration once; swap the provider factory and it keeps working.
+
+```ts
+const checkout = await sdk.unified.checkout.create({
+  amount: { value: 500_000, currency: "NGN" }, // ALWAYS minor units
+  customer: { email: "ada@example.com" },
+  reference: "order_8123",
+  redirectUrl: "https://app.example.com/pay/callback",
+})
+// → { checkoutUrl, reference, providerRef, raw }
+
+const result = await sdk.unified.verify({ reference: "order_8123" })
+// → { status, amount: { value, currency }, customer, paidAt, channel, raw }
+
+await sdk.unified.refunds.create({ reference })
+await sdk.unified.banks.list({ country: "NG" })
+await sdk.unified.banks.resolveAccount({ accountNumber: "0123456789", bankCode: "058" })
+```
+
+## Amounts are always minor units
+
+Every amount is `{ value: number, currency: string }` where `value` is in **integer minor units**. The adapters convert:
+
+- **Paystack** already uses kobo → passed through.
+- **Flutterwave v3** uses major units → divided/multiplied by the currency's subunit factor (100 for NGN/GHS/KES/ZAR/USD; unknown currencies default to 100 with a logged warning).
+
+```ts
+// amount: { value: 500000, currency: "NGN" }
+// Paystack outgoing body     → amount: 500000
+// Flutterwave outgoing body  → amount: 5000
+```
+
+## References
+
+Your `reference` maps to Paystack `reference` and Flutterwave `tx_ref`. Omit it and the SDK generates one (`pwv_<ulid>`), returned on the result.
+
+## Status normalization
+
+`verify()` returns a single normalized status, mapped from each provider's own strings:
+
+| Unified status | Meaning |
+| --- | --- |
+| `success` | payment completed |
+| `failed` | payment failed / declined |
+| `pending` | not yet resolved (also the fallback for unknown statuses) |
+| `abandoned` | customer never completed |
+| `reversed` | funds returned |
+
+Unknown statuses map to `pending` plus a logged warning — the SDK never throws on an unrecognized status.
+
+## The `raw` escape hatch
+
+Every unified response includes the untouched provider response on `raw`, so the abstraction never hides data from you.

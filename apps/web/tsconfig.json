@@ -3,7 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./*"],
-      "@payweave/ui/*": ["../../packages/ui/src/*"]
+      "@payweave/ui/*": ["../../packages/ui/src/*"],
+      "collections/*": ["./.source/*"]
     },
     "plugins": [
       {

@@ -1,0 +1,42 @@
+---
+title: Introduction
+description: Why Payweave exists and what it gives you — one unified, fully-typed TypeScript SDK for Paystack and Flutterwave.
+icon: Sparkles
+---
+
+**Payweave** is a unified, fully-typed TypeScript SDK for **Paystack** and **Flutterwave** — the two dominant payment providers across Nigeria and much of Africa. One install, one mental model, full endpoint coverage, and webhook verification done correctly out of the box.
+
+> One SDK, every provider — woven together.
+
+## The problem
+
+Paystack and Flutterwave are everywhere, yet neither ships an official, maintained server-side JavaScript/TypeScript SDK. Today, integrating them means:
+
+- hand-rolling `fetch`/`axios` calls against REST docs,
+- copy-pasting webhook verification snippets (and frequently getting signature validation wrong), and
+- duplicating all of that work the moment you add a second provider for redundancy or coverage.
+
+The cost is slow integrations, security bugs in webhook handling, and vendor lock-in through bespoke glue code.
+
+## Why Payweave
+
+- **One import, any provider.** Initialize with a `provider` and get a fully-typed client for every endpoint that provider supports.
+- **Compile-time provider narrowing.** A Flutterwave client has no `.paystack` property, and vice-versa — enforced by the type system.
+- **Two surfaces, no lock-in.** Provider-native calls when you want full control; a normalized unified layer when you want portability. Every response carries `raw`, so the abstraction never traps you.
+- **Webhooks as a first-class, security-critical citizen.** Correct signature scheme per provider, raw-body verification, constant-time comparison, fail-closed.
+- **Money that can't drift.** Always integer minor units in the unified layer; the adapters convert (kobo ⇄ naira) so you never fat-finger a decimal.
+- **Typed errors that tell you whose fault it is** — yours (validation/auth), the customer's (declined), or transient (network/5xx).
+- **Tiny footprint.** ESM-only, `zod` as the *only* runtime dependency, Node ≥ 20.19.
+
+## Status
+
+Pre-release. Paystack (P0), Flutterwave v3 (P0), webhooks, and the unified layer are implemented and tested. Flutterwave **v4** (OAuth auth + webhook verifier are in place; the resource surface is landing next) and the framework webhook adapters are in progress.
+
+## Two API surfaces
+
+Payweave deliberately exposes **both**:
+
+- **Surface A — provider-native.** Every endpoint from the provider's official docs, 1:1, with the provider's own field names. This is what makes it credible as "the official SDK."
+- **Surface B — unified.** A smaller set of high-traffic operations (`checkout`, `verify`, `refunds`, `transfers`, `banks`) with identical signatures across providers, for consumers who want portability.
+
+Head to [Getting started](/docs/getting-started) to install and make your first checkout.
