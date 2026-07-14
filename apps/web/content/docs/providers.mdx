@@ -1,0 +1,76 @@
+---
+title: Providers
+description: Surface A — the provider-native, fully-typed layer for Paystack and Flutterwave v3, with Flutterwave v4 in progress.
+icon: PlugSocket
+---
+
+**Surface A** exposes every endpoint in each provider's official docs, 1:1, with the provider's own field names and semantics. TypeScript narrows the available namespaces based on the `provider` you configured, so autocomplete only ever shows the right surface.
+
+```ts
+// Paystack — amounts in kobo (its native minor units)
+const tx = await paystack.paystack.transactions.initialize({
+  email: "ada@example.com",
+  amount: 500_000, // ₦5,000
+  currency: "NGN",
+})
+console.log(tx.authorization_url)
+
+// Flutterwave v3 — amounts in naira (its native major units)
+const link = await flutterwave.flutterwave.payments.create({
+  tx_ref: "order_8123",
+  amount: 5000, // ₦5,000
+  currency: "NGN",
+  redirect_url: "https://app.example.com/pay/callback",
+  customer: { email: "ada@example.com" },
+})
+```
+
+List endpoints expose an async iterator so you can page without bookkeeping:
+
+```ts
+for await (const t of paystack.paystack.transactions.iterate({ perPage: 100 })) {
+  // ...
+}
+```
+
+## Paystack (P0 — shipped)
+
+Typed 1:1 from the Paystack API reference. P0 modules:
+
+- `transactions` — initialize, verify, list, fetch, charge authorization, timeline, totals, export, partial debit
+- `refunds` — create, list, fetch
+- `customers` — create, list, fetch, update, validate, risk action
+- `transfers` + `transferRecipients` + `transfersControl`
+- `verification` / `misc` — resolve account, validate account, resolve card BIN, list banks/countries/states
+- `plans`, `subscriptions`
+
+Paystack-only features (e.g. Dedicated Virtual Accounts) appear only on a Paystack client.
+
+## Flutterwave v3 (P0 — shipped, default)
+
+The default surface when `version` is omitted. P0 modules:
+
+- `payments` — create a Standard payment link
+- `transactions` — verify by id or `tx_ref`, list, fees, resend webhook, timeline
+- `refunds` — create, list, fetch
+- `transfers` + `beneficiaries`
+- `banks` / `misc` — list banks by country, resolve account, balances
+- `charges` — card (with 3DES payload encryption via `encryptionKey`), bank transfer, USSD, mobile money, plus `validateCharge` (OTP/PIN)
+
+## Flutterwave v4 (in progress)
+
+v4 is a different API generation (OAuth client-credentials auth, new resource ids, restructured payloads), modeled as its own adapter surface — not a re-skin of v3. Opt in explicitly:
+
+```ts
+const sdk = createFlutterwave({
+  version: "v4",
+  clientId: process.env.FLW_V4_CLIENT_ID!,
+  clientSecret: process.env.FLW_V4_CLIENT_SECRET!,
+})
+```
+
+OAuth auth and the v4 webhook verifier are already in place; the resource surface (charges, customers, refunds, transfers) is landing next.
+
+## Escape hatch
+
+The provider-native surface never blocks you: every unified response also carries the untouched provider payload on `raw`, and you can always drop down to Surface A for a provider-specific endpoint.

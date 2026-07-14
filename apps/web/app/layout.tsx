@@ -1,17 +1,47 @@
-import { Geist, Geist_Mono, Public_Sans, IBM_Plex_Sans } from "next/font/google"
+import type { Metadata } from "next"
+import { Inter, Geist, JetBrains_Mono } from "next/font/google"
+import { RootProvider } from "fumadocs-ui/provider/next"
 
-import "@payweave/ui/globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@payweave/ui/lib/utils";
+import "./globals.css"
+import { cn } from "@payweave/ui/lib/utils"
 
-const ibmPlexSansHeading = IBM_Plex_Sans({subsets:['latin'],variable:'--font-heading'});
-
-const publicSans = Public_Sans({subsets:['latin'],variable:'--font-sans'})
-
-const fontMono = Geist_Mono({
+// Fonts mirror EvilCharts (https://github.com/legions-developer/evilcharts, MIT):
+// Inter is the default UI font, Geist backs `--font-sans`, JetBrains Mono is the
+// mono font. Variable names match EvilCharts' layout exactly.
+const fontInter = Inter({
   subsets: ["latin"],
-  variable: "--font-mono",
+  variable: "--font-inter",
+  display: "swap",
 })
+
+const fontGeist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+  display: "swap",
+})
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+})
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://payweave.dev"),
+  title: {
+    default: "Payweave — One SDK, every provider, woven together",
+    template: "%s · Payweave",
+  },
+  description:
+    "The unified, fully-typed TypeScript SDK for Paystack and Flutterwave. One install, one mental model, full endpoint coverage, and webhook verification done correctly out of the box.",
+  openGraph: {
+    title: "Payweave — One SDK, every provider, woven together",
+    description:
+      "The unified, fully-typed TypeScript SDK for Paystack and Flutterwave.",
+    url: "https://payweave.dev",
+    siteName: "Payweave",
+    type: "website",
+  },
+}
 
 export default function RootLayout({
   children,
@@ -21,11 +51,23 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", publicSans.variable, ibmPlexSansHeading.variable)}
+      className={cn(
+        fontInter.variable,
+        fontGeist.variable,
+        fontMono.variable
+      )}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="font-inter flex min-h-svh flex-col antialiased">
+        <RootProvider
+          theme={{
+            defaultTheme: "dark",
+            enableSystem: false,
+          }}
+        >
+          {children}
+        </RootProvider>
       </body>
     </html>
   )
