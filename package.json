@@ -9,7 +9,7 @@
     "format": "turbo format",
     "typecheck": "turbo typecheck",
     "changeset": "changeset",
-    "version": "changeset version",
+    "version": "changeset version && node packages/payweave/scripts/sync-version.mjs",
     "release": "changeset publish"
   },
   "devDependencies": {
