@@ -1,10 +1,8 @@
 /**
- * `pwv_<ulid>` id generation for the Drizzle adapter (docs/v1/database.md §2,
- * PW-708). Deliberately self-contained — NOT imported from
- * `src/db/sqlite/id.ts` (that directory is PW-706's, read-only for this
- * ticket) — each first-party adapter owns an independent copy so the
- * disjoint-directory parallel-safety the epic brief describes
- * (`epic-07-database.md` PW-704…709 preamble) holds for real, not just by
+ * `pwv_<ulid>` id generation for the Drizzle adapter. Deliberately
+ * self-contained — NOT imported from `src/db/sqlite/id.ts` —
+ * each first-party adapter owns an independent copy so each adapter's
+ * directory stays disjoint and safe to develop in parallel, not just by
  * convention. This is a minimal, dependency-free ULID implementation (spec:
  * https://github.com/ulid/spec) — no third-party `ulid` package, keeping the
  * SDK's zod-only `dependencies` rule intact. Monotonicity

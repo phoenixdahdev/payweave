@@ -91,8 +91,8 @@ export interface EncodedBody {
 }
 
 /**
- * Per-provider request-body serializer hook (docs/v1/providers.md §3.1,
- * PW-601). The default is JSON ({@link jsonBodyEncoder}); Stripe injects a
+ * Per-provider request-body serializer hook. The default is JSON
+ * ({@link jsonBodyEncoder}); Stripe injects a
  * deterministic `application/x-www-form-urlencoded` encoder from
  * `src/stripe/form-encoding`. The client invokes the encoder EXACTLY ONCE per
  * `request()` call — every retry re-sends the same encoded bytes, so a
@@ -241,7 +241,7 @@ export interface RequestOptions<TRes> {
   /** Presence makes a non-GET request retry-eligible. */
   idempotencyKey?: string;
   timeoutMs?: number;
-  /** Response schema — drift is logged, never thrown (TDD §6.1 step 6). */
+  /** Response schema — drift is logged, never thrown. */
   schema?: ZodType<TRes>;
 }
 
@@ -311,8 +311,8 @@ export class HttpClient {
     const url = this.buildUrl(opts.path, opts.query);
     const eligible = isRetryableRequest(method, opts.idempotencyKey);
     // Encode the body ONCE, outside the retry loop: every attempt re-sends the
-    // exact same bytes, and a bodyEncoder is never re-invoked per attempt
-    // (PW-601 — retries must be byte-identical even for a non-pure encoder).
+    // exact same bytes, and a bodyEncoder is never re-invoked per attempt —
+    // retries must be byte-identical even for a non-pure encoder.
     const encoded = opts.body !== undefined ? this.encodeBody(opts.body) : undefined;
     let attempt = 0;
     let did401Refresh = false;

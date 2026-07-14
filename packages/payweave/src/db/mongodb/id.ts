@@ -1,16 +1,16 @@
 /**
- * `pwv_<ulid>` id generation for the MongoDB adapter (docs/v1/database.md §2,
- * PW-709). Self-contained copy of `src/db/sqlite/id.ts`'s implementation (that
+ * `pwv_<ulid>` id generation for the MongoDB adapter. Self-contained copy of
+ * `src/db/sqlite/id.ts`'s implementation (that
  * module's own header explains why: no ULID generator exists anywhere in
  * `src/`, and pulling in a third-party `ulid` package would violate the SDK's
- * zod-only `dependencies` rule, database.md §7). Every first-party adapter
+ * zod-only `dependencies` rule). Every first-party adapter
  * that needs `pwv_` ids keeps its own copy rather than reaching across
- * `src/db/<other-adapter>/` — adapter directories are disjoint by design
- * (epic-07-database.md's parallel-safety guarantee).
+ * `src/db/<other-adapter>/` — adapter directories are disjoint by design,
+ * safe to develop in parallel.
  *
  * `pw_customers`/`pw_plans`/`pw_subscriptions`/`pw_feature_balances` use this
- * as their MongoDB `_id` (database.md §4: "Documents use the row schemas
- * verbatim with `id` stored as `_id`"). `pw_webhook_events`/`pw_migrations`
+ * as their MongoDB `_id` — documents use the row schemas
+ * verbatim with `id` stored as `_id`. `pw_webhook_events`/`pw_migrations`
  * are the documented exceptions — natural keys (`dedupeKey`/`name`) ARE their
  * `_id`, no ULID involved.
  */

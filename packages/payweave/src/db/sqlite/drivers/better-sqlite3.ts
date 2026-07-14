@@ -1,6 +1,6 @@
 /**
- * `better-sqlite3` backend for the sqlite adapter (docs/v1/database.md §4,
- * PW-706). This module is the ONLY place that touches a `better-sqlite3`
+ * `better-sqlite3` backend for the sqlite adapter. This module is the ONLY
+ * place that touches a `better-sqlite3`
  * `Database` instance; `../index.ts` dynamically imports the driver package
  * and passes the resulting instance in here, so core/`payweave` never pulls
  * `better-sqlite3` into its module graph.
@@ -34,7 +34,7 @@ export class BetterSqlite3Raw implements RawDriver {
 }
 
 /**
- * Convert a `file:` URL (database.md §1 example: `"file:./payweave.db"`) into
+ * Convert a `file:` URL (e.g. `"file:./payweave.db"`) into
  * the plain filesystem path `better-sqlite3`'s constructor expects — it does
  * NOT parse `file:` URIs itself (verified empirically: passing the URI
  * literally is treated as a filename containing a colon and fails to open).
@@ -52,8 +52,8 @@ export function sqliteFileUrlToPath(url: string): string {
 /**
  * Open (or reuse) a `better-sqlite3` `Database` for `url` (`:memory:`,
  * `file:...`, or a bare filesystem path — routing already resolved by
- * `../url.ts`). File-backed databases get WAL + a `busy_timeout` (PW-706
- * brief: cross-PROCESS contention on a shared file needs the engine's own
+ * `../url.ts`). File-backed databases get WAL + a `busy_timeout`:
+ * cross-PROCESS contention on a shared file needs the engine's own
  * wait/retry, since this adapter's `AutoQueueRunner` only serializes writers
  * within THIS process). `:memory:` skips both — a private in-memory database
  * has no other process to contend with, and WAL is meaningless for it.
