@@ -1,10 +1,9 @@
 /**
  * The aggregation-pipeline expression computing the CURRENT anchor-relative
  * billing period `{ index, start, end }` for a `pw_feature_balances` document
- * — the in-pipeline analog of `src/products/period.ts`'s `currentPeriod()`
- * (metered-usage.md §5; database.md §5's mongo bullet: "reset-if-expired +
- * decrement in one server-side operation", "$dateAdd by n intervals FROM THE
- * ANCHOR — never iterate on previously clamped outputs").
+ * — the in-pipeline analog of `src/products/period.ts`'s `currentPeriod()`:
+ * reset-if-expired + decrement in one server-side operation, `$dateAdd` by n
+ * intervals FROM THE ANCHOR — never iterate on previously clamped outputs.
  *
  * ── Why this can be a closed-form / small-bounded pipeline expression ──────
  * - `day`/`week`: fixed-width epoch-ms periods — `index = floor((now - anchor)
@@ -31,7 +30,7 @@
  * day-of-month to the target month's last day, exactly like `period.ts`'s
  * `addUtcMonthsClamped` (documented MongoDB behavior — e.g. adding 1 month to
  * `2020-01-31` yields `2020-02-29`). This sandbox has no real `mongod` to
- * execute the pipeline against; PW-710's CI conformance run (both standalone
+ * execute the pipeline against; the CI conformance run (both standalone
  * and replica-set topologies) is the actual proof. `test/db/mongodb.test.ts`
  * instead proves the ALGORITHM correct: {@link simulatePeriodPipeline} is a
  * pure-JS re-implementation of this exact expression tree (same estimate,
@@ -40,8 +39,8 @@
  * `currentPeriod()` across hundreds of anchors/resets/`now`s including leap
  * years, end-of-month anchors, and multi-period idle jumps. The only thing
  * that test CANNOT verify is whether MongoDB's real `$dateAdd`/`$dateToParts`/
- * `$switch`/`$let` operators behave as modeled — see PW-709's report for the
- * honest accounting of what only CI-docker verifies.
+ * `$switch`/`$let` operators behave as modeled — only a real docker-backed CI
+ * run against a real `mongod` can confirm that.
  */
 import { DAY_MS, WEEK_MS, advance, type ResetInterval } from "../../products/period";
 
@@ -50,8 +49,8 @@ export { DAY_MS, WEEK_MS };
 /**
  * Build the aggregation expression for `{ index, start, end }` given
  * expressions for the document's `anchor` (a Date) and `resetInterval`
- * (a string), and the caller's `now` baked in as a literal (database.md §3:
- * "use the caller's `now` parameter... never `$$NOW`" — this pipeline is
+ * (a string), and the caller's `now` baked in as a literal — use the
+ * caller's `now` parameter, never `$$NOW` — this pipeline is
  * built fresh, in JS, per `consume()` call, so `now` is always a plain Date
  * literal, never the server clock).
  */

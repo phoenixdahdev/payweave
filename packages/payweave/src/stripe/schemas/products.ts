@@ -8,16 +8,16 @@
  *   - List:     https://docs.stripe.com/api/products/list
  *   - Search:   https://docs.stripe.com/api/products/search
  *
- * Products are PW-803's sync target for Payweave plans (`payweave push`,
- * plans-and-features.md §12): in sync flows a product is ARCHIVED
+ * Products are the sync target for Payweave plans (`payweave push`): in sync
+ * flows a product is ARCHIVED
  * (`update({ active: false })`) rather than deleted — DELETE only succeeds
  * for products with no prices attached. `name`, `metadata` and `active` are
  * the fields the push loop leans on.
  *
- * `default_price_data.unit_amount` is integer MINOR units (providers.md
- * §3.1). `default_price_data.currency_options` (per-currency amounts keyed
+ * `default_price_data.unit_amount` is integer MINOR units.
+ * `default_price_data.currency_options` (per-currency amounts keyed
  * by a dynamic currency code) is deliberately NOT typed in this P0 subset
- * (conservative per AGENTS.md §8, PW-602 precedent) — add it with a docs
+ * (conservative) — add it with a docs
  * re-check when multi-currency sync is needed. Response schemas are LOOSE:
  * unknown fields pass through, drift is logged, never thrown.
  */

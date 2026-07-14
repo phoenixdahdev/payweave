@@ -1,9 +1,9 @@
 /**
- * Error helpers for the sqlite adapter (docs/v1/database.md §7, PW-706):
+ * Error helpers for the sqlite adapter:
  * actionable install-hint errors when an optional peer driver is missing
- * (mirrors the PW-505 stub's message style: name the subpath, the missing
+ * (mirrors the other db-adapter stubs' message style: name the subpath, the missing
  * package, and an install command), and a thin wrapper turning raw driver
- * exceptions into {@link PayweaveError} subclasses (AGENTS.md §2: public SDK
+ * exceptions into {@link PayweaveError} subclasses (public SDK
  * methods only ever throw `PayweaveError` subclasses).
  */
 import { PayweaveConfigError, PayweaveError, PayweaveValidationError } from "../../core/errors";
@@ -17,8 +17,8 @@ const DRIVER_PACKAGE: Record<SqliteDriverKind, string> = {
 /**
  * The optional peer driver required to open `url` is not installed. Named
  * per-URL (not a generic "install a sqlite driver" message) so the caller
- * knows exactly which of the two packages this specific URL needs
- * (database.md §4: "TWO optional peer drivers behind one subpath").
+ * knows exactly which of the two packages this specific URL needs —
+ * two optional peer drivers behind one subpath.
  */
 export function installHintError(driver: SqliteDriverKind, url: string, cause: unknown): PayweaveConfigError {
   const pkg = DRIVER_PACKAGE[driver];

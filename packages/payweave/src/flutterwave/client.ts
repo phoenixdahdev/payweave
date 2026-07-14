@@ -1,7 +1,7 @@
 /**
  * FlutterwaveClient — Surface A. Holds the shared {@link HttpClient} and the
- * active `version`, and mounts the version-isolated resource surface (TDD §11:
- * v3 and v4 schemas are NEVER shared). Wave 3 mounts the **v3** resources; v4 is
+ * active `version`, and mounts the version-isolated resource surface (v3 and
+ * v4 schemas are NEVER shared). Wave 3 mounts the **v3** resources; v4 is
  * a later wave. The provider-narrowing facade wires `sdk.flutterwave` from these
  * public fields.
  */
@@ -79,14 +79,14 @@ export class FlutterwaveClient {
   }
 }
 
-// ── Provider adapter contract v2 (PW-608, providers.md §4) ──────────────────
-// One adapter DEFINITION parameterized by `version` (AGENTS.md §11: v3/v4 stay
+// ── Provider adapter contract v2 ─────────────────────────────────────────────
+// One adapter DEFINITION parameterized by `version` (AGENTS.md: v3/v4 stay
 // isolated inside one adapter, never sharing schemas/webhook schemes) — additive
 // metadata alongside the direct wiring in `src/index.ts` (unchanged). `unified`/
 // `billing` are intentionally left unset for the same reason as the Paystack
 // adapter: the real unified ops (`unified/flutterwave.ts`'s
 // `createFlutterwaveUnified`) are HttpClient-bound factories with nowhere to
-// live on a static descriptor; billing is an unimplemented PW-803/804 placeholder.
+// live on a static descriptor; billing is an unimplemented placeholder.
 
 function flutterwaveHttp(cfg: ResolvedProviderConfig): HttpClient {
   if (cfg.version === "v4") {

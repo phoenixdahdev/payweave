@@ -1,7 +1,7 @@
 /**
  * StripeClient — Surface A for the `stripe` config key
- * (`payweave.stripe.*`, providers.md §3.2). Holds the provider's shared
- * {@link HttpClient} (constructed from PW-601's `stripeHttpOptions`:
+ * (`payweave.stripe.*`). Holds the provider's shared
+ * {@link HttpClient} (constructed from `stripeHttpOptions`:
  * form-encoded bodies, pinned `Stripe-Version`) and exposes each resource as
  * a `public readonly` field, exactly like the Paystack and Flutterwave
  * clients.
@@ -77,7 +77,7 @@ export class StripeClient {
   }
 }
 
-// ── Provider adapter contract v2 (PW-608, providers.md §4) ──────────────────
+// ── Provider adapter contract v2 ─────────────────────────────────────────────
 // `stripeAdapter` is additive metadata alongside the direct wiring in
 // `src/index.ts` (`createPayweave` still builds `StripeClient` via
 // `stripeHttpOptions` directly, unchanged). `createHttp` below REUSES
@@ -86,7 +86,7 @@ export class StripeClient {
 // wiring, not a re-implementation. `unified`/`billing` are intentionally left
 // unset: the real unified ops are HttpClient-bound (and, for stripe, not
 // implemented yet — `stripeUnifiedNamespace` in `src/index.ts`); billing is an
-// unimplemented PW-803/804 placeholder.
+// unimplemented placeholder.
 
 function stripeHttp(cfg: ResolvedProviderConfig): HttpClient {
   return new HttpClient(stripeHttpOptions(cfg));

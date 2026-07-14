@@ -1,11 +1,11 @@
 /**
- * Concurrency backbone for the sqlite adapter (docs/v1/database.md §5, PW-706).
+ * Concurrency backbone for the sqlite adapter.
  *
  * WHY THIS EXISTS (spec-silent engineering decision — see the module-level
  * comment on `consume` in `./adapter` for the full reasoning): `balances.consume`
  * must recompute the CURRENT billing window from the row's OWN stored `anchor`/
  * `resetInterval` (`init` is a creation template only — ignored once a row
- * exists, database.md §3), using the EXACT same clamp-once calendar arithmetic
+ * exists), using the EXACT same clamp-once calendar arithmetic
  * as `src/products/period.ts` (the conformance suite's oracle). Replicating
  * that arithmetic as portable raw SQL (safe across both better-sqlite3 and
  * `@libsql/client`, neither of which exposes a way to call back into JS from
@@ -13,11 +13,10 @@
  * from the oracle. Instead this adapter reads the current row, computes the
  * decision in JS via `period.ts` directly, and writes the result back — made
  * SAFE under concurrency by fully serializing every operation through the
- * adapter's single connection (below), exactly matching database.md §5's
- * framing for sqlite: "rely on serialized writes." The PW-706 brief itself
- * says as much: "An in-memory SQLite database is PER CONNECTION — the adapter
+ * adapter's single connection (below) — rely on serialized writes. An
+ * in-memory SQLite database is PER CONNECTION — the adapter
  * must hold exactly one connection... serialization makes it correct, but
- * only through one connection."
+ * only through one connection.
  *
  * `AutoQueueRunner` is that one connection's gatekeeper: every top-level call
  * (`execute` or `transaction`) is queued onto a single FIFO chain, so at most

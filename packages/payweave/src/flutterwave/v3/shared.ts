@@ -1,12 +1,12 @@
 /**
  * Shared Flutterwave **v3** schema primitives (envelope, pagination, metadata,
- * request-parse helper). Version-isolated per AGENTS.md §11 / TDD §11: these are
+ * request-parse helper). Version-isolated per AGENTS.md: these are
  * NEVER shared with v4 — v4 uses a different envelope + pagination shape.
  *
  * Flutterwave v3 wraps every response in
  *   `{ status: "success" | "error", message: string, data: ... }`
- * where `status` is a STRING (provider-reference §5.5 — do NOT reuse Paystack's
- * boolean-`status` envelope here). Response schemas are LOOSE
+ * where `status` is a STRING — do NOT reuse Paystack's
+ * boolean-`status` envelope here. Response schemas are LOOSE
  * ({@link https://zod.dev | zod `looseObject`}) so unknown provider fields pass
  * straight through — drift is logged by the HttpClient, never thrown.
  */
@@ -37,7 +37,7 @@ export function parseRequest<S extends z.ZodType>(schema: S, input: unknown): z.
 
 /**
  * Wrap a `data` schema in Flutterwave v3's standard response envelope.
- * `status` is the STRING `"success"`/`"error"` (quirk §5.5) — not a boolean.
+ * `status` is the STRING `"success"`/`"error"` — not a boolean.
  */
 export const flwEnvelope = <T extends z.ZodTypeAny>(
   data: T,
@@ -51,7 +51,7 @@ export const flwEnvelope = <T extends z.ZodTypeAny>(
 /**
  * Flutterwave v3 pagination block. List endpoints return
  * `meta: { page_info: { total, current_page, total_pages } }`
- * (provider-reference §1). Loose + string|number tolerant by response policy.
+ * Loose + string|number tolerant by response policy.
  */
 export const pageInfo = z.looseObject({
   total: z.union([z.number(), z.string()]).optional(),
