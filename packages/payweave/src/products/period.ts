@@ -12,9 +12,7 @@
  * clamped outputs is forbidden: a Jan 31 anchor yields Feb 28/29, **Mar 31**,
  * Apr 30, May 31, … — never the drifted Jan 31 → Feb 28 → Mar 28 → … sequence.
  *
- * These functions are internal until PW-505 wires `src/products/` into the
- * exports map; PW-902 consumes them for the lazy reset inside
- * `balances.consume`.
+ * These functions back the lazy reset inside `balances.consume`.
  */
 import { PayweaveValidationError } from "../core/errors";
 
@@ -79,8 +77,7 @@ function addUtcMonthsClamped(anchorMs: number, months: number): number {
 }
 
 /**
- * Advance an anchor instant by `count` whole reset intervals
- * (metered-usage.md §5's `advance(anchor, reset, n)`).
+ * Advance an anchor instant by `count` whole reset intervals.
  *
  * - `day` / `week`: fixed {@link DAY_MS} / {@link WEEK_MS} multiples — pure
  *   integer ms arithmetic, DST-free by construction (UTC).
@@ -128,7 +125,7 @@ export function advance(anchorMs: number, reset: ResetInterval, count: number): 
 }
 
 /**
- * Multi-period roll-forward (metered-usage.md §5's lazy reset): the CURRENT
+ * Multi-period roll-forward (lazy reset): the CURRENT
  * billing period for `nowMs` — the smallest `index >= 0` with
  * `nowMs < advance(anchorMs, reset, (index + 1) * every)`. A balance row idle
  * for many periods lands directly in the window containing `nowMs`, never an

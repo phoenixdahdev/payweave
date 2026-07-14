@@ -1,10 +1,10 @@
 /**
- * Dialect detection for `drizzleAdapter(db)` (docs/v1/database.md §1/§4, PW-708).
+ * Dialect detection for `drizzleAdapter(db)`.
  *
- * ── Build-time resolution (recorded in database.md §4) ──────────────────────
- * The PW-708 brief flags dialect detection as a ⚠️-style check: "attempt
+ * ── Build-time resolution ────────────────────────────────────────────────
+ * Dialect detection was flagged early on as a ⚠️-style check: attempt
  * detection from the instance; if drizzle-orm exposes no stable public
- * discriminator... accept an explicit second argument." Verified against the
+ * discriminator, accept an explicit second argument. Verified against the
  * installed `drizzle-orm@0.45.2`: it DOES expose a stable, public
  * discriminator — `drizzle(...)` for postgres/mysql/sqlite each return an
  * instance of a dialect base class the package exports from a driver-INDEPENDENT

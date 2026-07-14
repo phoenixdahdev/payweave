@@ -1,12 +1,12 @@
 /**
- * `pw_migrations` checksum-ledger SQL (docs/v1/database.md §2/§4, PW-703).
+ * `pw_migrations` checksum-ledger SQL.
  * One row per applied migration: `name` (PK — the embedded migration's `id`),
  * `applied_at`, `checksum`. The engine bootstraps the ledger with
  * `CREATE TABLE IF NOT EXISTS` before every read, and `0001_init` embeds the
- * SAME statement so the DDL set alone realizes the full §2 schema.
+ * SAME statement so the DDL set alone realizes the full schema.
  *
- * Placeholder + parameter conventions (kept here so PW-704/705/706 executors
- * stay pass-through): postgres uses `$1…`, mysql/sqlite use `?`; `applied_at`
+ * Placeholder + parameter conventions (kept here so every SQL adapter's
+ * executor stays pass-through): postgres uses `$1…`, mysql/sqlite use `?`; `applied_at`
  * binds a `Date` on postgres/mysql and an epoch-millisecond integer on sqlite
  * (sqlite stores all timestamps as `INTEGER` epoch ms — see `./ddl`).
  */

@@ -1,10 +1,10 @@
 /**
- * Published Drizzle schema — SQLite/libSQL dialect (docs/v1/database.md
- * §2/§4, PW-708). Merge these table definitions into your own `schema.ts` and
+ * Published Drizzle schema — SQLite/libSQL dialect. Merge these table
+ * definitions into your own `schema.ts` and
  * migrate them with `drizzle-kit` (`push` for local/dev, `generate` +
  * `migrate` for tracked migrations) — Payweave never runs migrations for the
  * Drizzle adapter itself (`../index.ts`'s `migrations.apply()` returns
- * instructions, never DDL; database.md §4 "Same model" as the Prisma
+ * instructions, never DDL — "same model" as the Prisma
  * adapter).
  *
  * Column-for-column equivalent to `src/db/migrations/ddl.ts`'s
@@ -16,8 +16,8 @@
  * marshals to/from a JS `Date` automatically); JSON columns are `text`
  * (`{ mode: "json" }`); booleans are `integer` (`{ mode: "boolean" }`).
  *
- * The `pw_subscriptions` partial-unique active-subscription rule (database.md
- * §2) uses SQLite's NATIVE partial index support: `uniqueIndex(...).where(...)`.
+ * The `pw_subscriptions` partial-unique active-subscription rule uses
+ * SQLite's NATIVE partial index support: `uniqueIndex(...).where(...)`.
  */
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";

@@ -1,6 +1,6 @@
 /**
- * The driver-agnostic SQL migrations engine (docs/v1/database.md §4, PW-703).
- * SQL adapters (PW-704/705/706) expose it as `DatabaseAdapter.migrations`:
+ * The driver-agnostic SQL migrations engine.
+ * SQL adapters expose it as `DatabaseAdapter.migrations`:
  *
  * ```ts
  * migrations: {
@@ -102,7 +102,7 @@ async function readVerifiedLedger(
         `Payweave migration history mismatch: the pw_migrations ledger contains "${name}", ` +
           `which is not among the migrations embedded in this build. Refusing to plan or apply ` +
           `against an unknown migration history — this usually means the database was migrated ` +
-          `by a newer Payweave version, or the ledger was edited by hand (docs/v1/database.md §4).`,
+          `by a newer Payweave version, or the ledger was edited by hand.`,
         { migrationId: name, reason: "unknown-migration" },
       );
     }
@@ -112,7 +112,7 @@ async function readVerifiedLedger(
         `Payweave migration "${name}" was modified after it was applied: ledger checksum ` +
           `${checksum} does not match this build's checksum ${expected}. Applied migrations are ` +
           `immutable — NEVER edit an applied migration; ship the change as a new migration ` +
-          `instead (forward-only, docs/v1/database.md §4).`,
+          `instead (forward-only).`,
         { migrationId: name, reason: "checksum-mismatch" },
       );
     }

@@ -7,8 +7,7 @@
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
  * JSON resources — no envelope.
  *
- * PW-803 syncs Payweave plans onto products (`payweave push`,
- * plans-and-features.md §12): sync flows ARCHIVE a product
+ * `payweave push` syncs Payweave plans onto products: sync flows ARCHIVE a product
  * (`update(id, { active: false })`) instead of deleting it — DELETE only
  * succeeds for products with no prices attached. `name`, `metadata` and
  * `active` are the fields the push loop keys on.
@@ -104,8 +103,8 @@ export class Products {
   /**
    * Update a Product. Fields not provided remain unchanged. `active: false`
    * ARCHIVES the product (no new purchases) — the sync-flow alternative to
-   * deletion, since products with prices cannot be deleted (PW-803 relies on
-   * this). Pass `idempotencyKey` to make the POST safely replayable (and
+   * deletion, since products with prices cannot be deleted. Pass
+   * `idempotencyKey` to make the POST safely replayable (and
    * retry-eligible).
    *
    * Docs: https://docs.stripe.com/api/products/update
@@ -176,8 +175,8 @@ export class Products {
 
   /**
    * Async iterator over ALL Products matching `query`, transparently
-   * following `has_more` with `starting_after = <last id>` (providers.md
-   * §3.1). `ids` is not supported here — Stripe forbids combining it with
+   * following `has_more` with `starting_after = <last id>`.
+   * `ids` is not supported here — Stripe forbids combining it with
    * cursors; use {@link Products.list}.
    *
    * Docs: https://docs.stripe.com/api/products/list

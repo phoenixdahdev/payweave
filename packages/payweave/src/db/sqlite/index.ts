@@ -1,8 +1,8 @@
 /**
- * `payweave/db/sqlite` — SQLite / libSQL adapter (docs/v1/database.md §1/§4,
- * PW-706). Wraps EITHER `better-sqlite3` or `@libsql/client` behind one
- * `sqliteAdapter(...)` factory — both are OPTIONAL peerDependencies
- * : this module never imports either package at the top
+ * `payweave/db/sqlite` — SQLite / libSQL adapter. Wraps EITHER
+ * `better-sqlite3` or `@libsql/client` behind one
+ * `sqliteAdapter(...)` factory — both are OPTIONAL peerDependencies:
+ * this module never imports either package at the top
  * level, only lazily inside `connect()` once a query actually runs, so
  * importing `payweave/db/sqlite` — let alone `payweave` core — never pulls
  * driver code into the graph unless a query is made.
@@ -20,7 +20,7 @@
  * call. An in-memory database is per-connection (better-sqlite3) or
  * per-client (`@libsql/client`) — this adapter holds exactly ONE connection
  * for the lifetime of the returned `DatabaseAdapter`, memoized on first use,
- * so `:memory:` data survives across calls (PW-706 brief).
+ * so `:memory:` data survives across calls.
  */
 import { buildAdapter } from "./adapter";
 import { BetterSqlite3Raw, openBetterSqlite3 } from "./drivers/better-sqlite3";

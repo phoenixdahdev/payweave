@@ -57,13 +57,13 @@ export class PaystackClient {
   }
 }
 
-// ── Provider adapter contract v2 (PW-608, providers.md §4) ──────────────────
+// ── Provider adapter contract v2 ─────────────────────────────────────────────
 // `paystackAdapter` is additive metadata: it does not (yet) replace the direct
 // wiring in `src/index.ts` (`createPayweave` still builds `PaystackClient`
 // straight from its resolved config, unchanged) — it PROVES the paystack
 // surface satisfies the v2 `ProviderAdapter` contract via `configKey` +
-// `configSchema`, so a config-key-registry style composition (unified-config.md
-// §7) can be built on top later without any core edits.
+// `configSchema`, so a config-key-registry style composition can be built on
+// top later without any core edits.
 
 function paystackHttp(cfg: ResolvedProviderConfig): HttpClient {
   if (!cfg.secretKey) {
@@ -85,7 +85,7 @@ function paystackHttp(cfg: ResolvedProviderConfig): HttpClient {
  * left unset here: the real unified ops (`unified/paystack.ts`'s
  * `createPaystackUnified`) are HttpClient-BOUND factories wired directly by
  * `createPayweave`, and this static descriptor has no HttpClient instance to
- * bind them to; the billing slot is an unimplemented PW-803/804 placeholder.
+ * bind them to; the billing slot is an unimplemented placeholder.
  */
 export const paystackAdapter: ProviderAdapter = defineProvider({
   id: "paystack",

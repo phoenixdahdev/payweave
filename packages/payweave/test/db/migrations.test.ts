@@ -381,7 +381,7 @@ describe("planMigrations", () => {
       `Payweave migration "0001_init" was modified after it was applied: ledger checksum ` +
         `sha256:tampered does not match this build's checksum ${expected}. Applied migrations are ` +
         `immutable — NEVER edit an applied migration; ship the change as a new migration ` +
-        `instead (forward-only, docs/v1/database.md §4).`,
+        `instead (forward-only).`,
     );
   });
 
@@ -403,7 +403,7 @@ describe("planMigrations", () => {
       `Payweave migration history mismatch: the pw_migrations ledger contains "0000_ghost", ` +
         `which is not among the migrations embedded in this build. Refusing to plan or apply ` +
         `against an unknown migration history — this usually means the database was migrated ` +
-        `by a newer Payweave version, or the ledger was edited by hand (docs/v1/database.md §4).`,
+        `by a newer Payweave version, or the ledger was edited by hand.`,
     );
   });
 
