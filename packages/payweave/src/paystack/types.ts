@@ -1,7 +1,7 @@
 /**
  * Shared Paystack schema primitives (envelope, pagination meta, metadata, list
  * query). Paystack wraps every response in `{ status: boolean, message: string,
- * data: ... }` (provider-reference §1). Response schemas are LOOSE
+ * data: ... }`. Response schemas are LOOSE
  * ({@link https://zod.dev | zod v4 `looseObject`}) so unknown provider fields
  * pass straight through — drift is logged by the HttpClient, never thrown.
  */
@@ -32,7 +32,7 @@ export function parseRequest<S extends z.ZodType>(schema: S, input: unknown): z.
 
 /**
  * Wrap a `data` schema in Paystack's standard response envelope.
- * `status` is a JSON boolean (NOT the string Flutterwave uses — quirk §5.5).
+ * `status` is a JSON boolean (NOT the string Flutterwave uses).
  */
 export const paystackEnvelope = <T extends z.ZodTypeAny>(
   data: T,
@@ -81,8 +81,8 @@ export const paystackListEnvelope = <T extends z.ZodTypeAny>(
   }>;
 
 /**
- * Paystack `metadata`. The API accepts an object OR a JSON string on some flows
- * (quirk §5.7); the SDK ALWAYS sends an object, so the request schema only
+ * Paystack `metadata`. The API accepts an object OR a JSON string on some flows;
+ * the SDK ALWAYS sends an object, so the request schema only
  * accepts an object. Arbitrary custom fields are allowed.
  */
 export const metadataSchema = z.record(z.string(), z.unknown());

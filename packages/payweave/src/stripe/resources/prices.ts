@@ -8,8 +8,7 @@
  * JSON resources — no envelope. All `unit_amount`s are
  * integer minor units.
  *
- * PW-803 syncs Payweave plan pricing onto prices (`payweave push`,
- * plans-and-features.md §12). Prices are largely IMMUTABLE — amount,
+ * `payweave push` syncs Payweave plan pricing onto prices. Prices are largely IMMUTABLE — amount,
  * currency, product and recurring cannot change after creation, and there is
  * NO delete endpoint: a price change means creating a NEW Price and archiving
  * the old one (`update(id, { active: false })`), optionally moving the
@@ -107,7 +106,7 @@ export class Prices {
    * `metadata`, `nickname` and `tax_behavior` (until set) are updatable —
    * amount/currency/product/recurring are immutable, and prices cannot be
    * deleted: rotate by creating a new Price and archiving this one with
-   * `active: false` (PW-803's price-change flow). Pass `idempotencyKey` to
+   * `active: false`. Pass `idempotencyKey` to
    * make the POST safely replayable (and retry-eligible).
    *
    * Docs: https://docs.stripe.com/api/prices/update

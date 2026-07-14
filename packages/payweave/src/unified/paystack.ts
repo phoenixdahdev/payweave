@@ -1,11 +1,11 @@
 /**
- * Paystack unified-layer implementation (Surface B, PRD §6.2). Routes the six
+ * Paystack unified-layer implementation (Surface B). Routes the six
  * unified ops to Paystack REST endpoints via `http.request` directly — this
  * keeps `unified/` decoupled from the Surface A resource classes while reusing
  * the same shared {@link HttpClient} (auth, retries, error mapping, redaction).
  *
  * Amount contract: the unified layer speaks MINOR units and Paystack ALSO uses
- * minor units (kobo), so amounts pass through unchanged (provider-reference §1).
+ * minor units (kobo), so amounts pass through unchanged.
  * Status is normalized through `toUnifiedStatus("paystack", …)`.
  */
 import type { HttpClient } from "../core/http";
@@ -67,7 +67,7 @@ export function createPaystackUnified(http: HttpClient): UnifiedNamespace {
     },
 
     async verify(input: VerifyInput): Promise<VerifyResult> {
-      // Paystack verifies by reference (provider-reference §5.2). A 404 surfaces
+      // Paystack verifies by reference. A 404 surfaces
       // as PayweaveNotFoundError from http.request's error map — never swallowed.
       const raw = await http.request<unknown>({
         method: "GET",

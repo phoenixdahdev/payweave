@@ -1,6 +1,6 @@
 /**
- * The embedded, ordered migration list per SQL dialect (docs/v1/database.md
- * §4, PW-703). Pure data: no filesystem reads, no drivers — `dist` never
+ * The embedded, ordered migration list per SQL dialect. Pure data: no
+ * filesystem reads, no drivers — `dist` never
  * touches runtime files. Ordering is id-lexicographic (zero-padded numeric
  * prefixes), and the list is APPEND-ONLY: a migration that has been applied
  * anywhere is immutable forever; changes ship as the next id.
@@ -48,7 +48,7 @@ export function migrationsFor(dialect: PwSqlDialect): readonly PwSqlMigration[] 
       throw new PayweaveMigrationError(
         `Unsupported SQL migration dialect ${JSON.stringify(dialect satisfies never)} — ` +
           `the Payweave migrations engine covers "postgres", "mysql" and "sqlite" only ` +
-          `(docs/v1/database.md §4: mongodb/prisma/drizzle have no Payweave-owned SQL migrations).`,
+          `(mongodb/prisma/drizzle have no Payweave-owned SQL migrations).`,
       );
   }
 }

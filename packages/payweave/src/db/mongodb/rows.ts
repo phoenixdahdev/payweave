@@ -1,6 +1,6 @@
 /**
- * Document ⇄ row mapping for the MongoDB adapter (docs/v1/database.md §2/§4,
- * PW-709). Documents are the `src/db/schema.ts` row shapes verbatim with `id`
+ * Document ⇄ row mapping for the MongoDB adapter. Documents are the
+ * `src/db/schema.ts` row shapes verbatim with `id`
  * stored as `_id` — mapped at the adapter boundary in both directions
  * `pw_webhook_events.dedupeKey` and (conceptually)
  * `pw_migrations.name` are the schema's own documented exceptions to the

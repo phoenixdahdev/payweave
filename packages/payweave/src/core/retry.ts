@@ -1,5 +1,5 @@
 /**
- * Retry policy (TDD §6.2, PRD §6.4). Full-jitter exponential backoff for
+ * Retry policy. Full-jitter exponential backoff for
  * network errors and 429/5xx. Eligibility is deliberately conservative: only
  * GETs, or POSTs the caller made idempotent with an `idempotencyKey`. A bare
  * POST (a charge) is NEVER auto-retried.
@@ -7,11 +7,11 @@
 
 /** Tunable backoff parameters. */
 export interface RetryPolicy {
-  /** Max retry attempts AFTER the initial try (TDD default: 2). */
+  /** Max retry attempts AFTER the initial try. */
   maxRetries: number;
-  /** Base backoff in ms (TDD: 250). */
+  /** Base backoff in ms. */
   baseMs: number;
-  /** Backoff cap in ms (TDD: 8000). */
+  /** Backoff cap in ms. */
   capMs: number;
 }
 
@@ -22,7 +22,7 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   capMs: 8_000,
 };
 
-/** HTTP statuses that are retryable (transient) per TDD §6.2. */
+/** HTTP statuses that are retryable (transient). */
 export const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([429, 500, 502, 503, 504]);
 
 /** `Retry-After` is honored but capped at this ceiling. */

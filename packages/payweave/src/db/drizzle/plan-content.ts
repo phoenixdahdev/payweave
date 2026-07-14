@@ -1,6 +1,6 @@
 /**
- * Shared `plans.pushVersion` content-comparison helper (docs/v1/database.md
- * §2/§3, PW-708) — dialect-agnostic pure JS, reused by all three Drizzle
+ * Shared `plans.pushVersion` content-comparison helper —
+ * dialect-agnostic pure JS, reused by all three Drizzle
  * dialect stores so the append-only/no-op-on-unchanged-content rule can never
  * drift between them.
  */

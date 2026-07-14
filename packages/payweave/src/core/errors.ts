@@ -1,5 +1,5 @@
 /**
- * Error taxonomy (PRD §6.3, TDD §6.3). One base class + eight subclasses; a
+ * Error taxonomy. One base class + eight subclasses; a
  * single {@link mapHttpError} converts an HTTP status + body into the right
  * class. `toJSON()` is always safe to log — `raw` is passed through `redact()`.
  * Public SDK methods MUST only ever throw a {@link PayweaveError} subclass.
@@ -8,8 +8,6 @@ import { redact } from "./redact";
 
 /**
  * Providers the SDK targets. `"unknown"` covers pre-classification failures.
- * Stripe joined the set in the v1 pivot (docs/v1/providers.md, PW-501) — its
- * config/env-inference lands first; the full client surface follows in EPIC 6.
  */
 export type PayweaveProvider = "paystack" | "flutterwave" | "stripe";
 

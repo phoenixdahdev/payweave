@@ -1,6 +1,6 @@
 /**
- * Error classes thrown by the SQL migrations engine (docs/v1/database.md §4,
- * PW-703). Both extend {@link PayweaveError} so adapter `migrations.status()`
+ * Error classes thrown by the SQL migrations engine. Both extend
+ * {@link PayweaveError} so adapter `migrations.status()`
  * / `migrations.apply()` methods satisfy the golden rule that public SDK
  * methods only ever throw `PayweaveError` subclasses.
  */
@@ -23,8 +23,8 @@ export class PayweaveMigrationError extends PayweaveError {
 export type PwMigrationHistoryErrorReason = "checksum-mismatch" | "unknown-migration";
 
 /**
- * Mutated-history detection (database.md §4 — "never re-run mutated
- * history"). Raised by BOTH `planMigrations` and `applyMigrations` when the
+ * Mutated-history detection — never re-run mutated
+ * history. Raised by BOTH `planMigrations` and `applyMigrations` when the
  * `pw_migrations` ledger disagrees with the migrations embedded in this
  * build:
  *

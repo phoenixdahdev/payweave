@@ -1,10 +1,10 @@
 /**
- * Error helpers for the MongoDB adapter (docs/v1/database.md §7, PW-709):
+ * Error helpers for the MongoDB adapter:
  * an actionable install-hint error when the optional `mongodb` peer driver
  * is missing (mirrors `src/db/sqlite/errors.ts`'s message style: name the
  * subpath, the missing package, and an install command), and a thin wrapper
  * turning raw driver exceptions into {@link PayweaveError} subclasses
- * (AGENTS.md §2: public SDK methods only ever throw `PayweaveError`
+ * (public SDK methods only ever throw `PayweaveError`
  * subclasses).
  */
 import { PayweaveConfigError, PayweaveError, PayweaveValidationError } from "../../core/errors";
