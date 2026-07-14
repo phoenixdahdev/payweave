@@ -1,15 +1,14 @@
 /**
- * First-use table verification for the Drizzle adapter (docs/v1/database.md
- * §4, PW-708) — mirrors the Prisma adapter's model exactly (per the PW-708
- * brief: "PW-707's brief/PR — mirror its verification + instructions
- * patterns"): since `migrations.apply()` never runs DDL (drizzle-kit is
+ * First-use table verification for the Drizzle adapter — mirrors the Prisma
+ * adapter's model exactly (the same verification + instructions
+ * patterns): since `migrations.apply()` never runs DDL (drizzle-kit is
  * user-owned), the adapter instead verifies — on FIRST USE, not at factory
- * construction time (§1's sync/side-effect-free contract) — that the
+ * construction time (sync/side-effect-free contract) — that the
  * expected `pw_*` tables exist, and throws a `PayweaveConfigError` naming the
  * missing tables AND the packaged schema file if not.
  *
- * "Verification caches its result per adapter instance — it must not tax the
- * hot path on every call" (brief): {@link createVerifier} memoizes a SUCCESSFUL
+ * Verification caches its result per adapter instance — it must not tax the
+ * hot path on every call: {@link createVerifier} memoizes a SUCCESSFUL
  * check forever, but clears the cache on failure so a later call (e.g. after
  * the user runs `drizzle-kit push` mid-process) re-attempts rather than
  * wedging into a permanent throw.
@@ -28,8 +27,8 @@ const REQUIRED_TABLES: readonly PwTableName[] = [
 ];
 
 const SCHEMA_FILE_HINT =
-  '"payweave/db/drizzle"\'s published schema (src/db/drizzle/schema/{pg,mysql,sqlite}.ts — ' +
-  "docs/v1/database.md §4) — merge it into your own Drizzle schema and run `drizzle-kit push` " +
+  '"payweave/db/drizzle"\'s published schema (src/db/drizzle/schema/{pg,mysql,sqlite}.ts) — ' +
+  "merge it into your own Drizzle schema and run `drizzle-kit push` " +
   "or `drizzle-kit generate`/`migrate`.";
 
 function missingTablesError(missing: readonly string[]): PayweaveConfigError {

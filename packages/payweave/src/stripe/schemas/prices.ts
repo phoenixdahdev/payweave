@@ -7,8 +7,8 @@
  *   - List:     https://docs.stripe.com/api/prices/list
  *   - Search:   https://docs.stripe.com/api/prices/search
  *
- * Prices are PW-803's sync target for Payweave plan pricing (`payweave push`,
- * plans-and-features.md §12). Two facts the push loop leans on (both verified
+ * Prices are the sync target for Payweave plan pricing (`payweave push`).
+ * Two facts the push loop leans on (both verified
  * 2026-07-12 on the pages above):
  *   1. Prices are largely IMMUTABLE — `unit_amount`, `currency`, `product`,
  *      `recurring`, `billing_scheme`, `tiers` etc. cannot change after
@@ -23,7 +23,7 @@
  * `unit_amount` is integer MINOR units end to end — no
  * conversion anywhere. `currency_options` (per-currency amounts keyed by a
  * dynamic currency code) is deliberately NOT typed in this P0 subset
- * (conservative per AGENTS.md §8, PW-602 precedent) — add it with a docs
+ * (conservative) — add it with a docs
  * re-check when multi-currency sync is needed. Response schemas are LOOSE:
  * unknown fields pass through, drift is logged, never thrown.
  */
@@ -122,7 +122,7 @@ export const priceCreateReq = z.object({
   active: z.boolean().optional(),
   /** Defaults to `per_unit`. */
   billing_scheme: z.enum(["per_unit", "tiered"]).optional(),
-  /** Stable retrieval key (≤200 chars) — PW-803's price identifier. */
+  /** Stable retrieval key (≤200 chars) — the sync engine's price identifier. */
   lookup_key: z.string().max(200).optional(),
   /** Atomically move `lookup_key` off the price currently holding it. */
   transfer_lookup_key: z.boolean().optional(),
@@ -159,7 +159,7 @@ export type PriceCreateReq = z.input<typeof priceCreateReq>;
  * untyped (see module JSDoc).
  */
 export const priceUpdateReq = z.object({
-  /** `false` archives the price for new purchases (PW-803 price rotation). */
+  /** `false` archives the price for new purchases (price rotation). */
   active: z.boolean().optional(),
   /** Stable retrieval key (≤200 chars). */
   lookup_key: z.string().max(200).optional(),

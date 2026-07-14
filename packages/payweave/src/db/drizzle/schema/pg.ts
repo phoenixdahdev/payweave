@@ -1,12 +1,12 @@
 /**
- * Published Drizzle schema — PostgreSQL dialect (docs/v1/database.md §2/§4,
- * PW-708). Merge these table definitions into your own `schema.ts` and
+ * Published Drizzle schema — PostgreSQL dialect. Merge these table
+ * definitions into your own `schema.ts` and
  * migrate them with `drizzle-kit` (`push` for local/dev, `generate` +
  * `migrate` for tracked migrations) — Payweave never runs migrations for the
  * Drizzle adapter itself (`../index.ts`'s `migrations.apply()` returns
- * instructions, never DDL; database.md §4 "Same model" as the Prisma
+ * instructions, never DDL — "same model" as the Prisma
  * adapter). This is the dialect the shared conformance suite runs against in
- * CI — a dockerized `postgres:16` via PW-710's matrix; it
+ * CI — a dockerized `postgres:16`; it
  * cannot run in this sandbox (no docker), so it is exercised here via the
  * schema + adapter code, not a live conformance run (see `test/db/drizzle.test.ts`).
  *
@@ -17,8 +17,8 @@
  * `"number"`, since these values are safe-integer money/usage counters —
  * AGENTS.md rule 7 — never JS `bigint`) for money/usage/version-scale integers.
  *
- * The `pw_subscriptions` partial-unique active-subscription rule (database.md
- * §2) uses Postgres's NATIVE partial index support: `uniqueIndex(...).where(...)`.
+ * The `pw_subscriptions` partial-unique active-subscription rule uses
+ * Postgres's NATIVE partial index support: `uniqueIndex(...).where(...)`.
  */
 import { sql } from "drizzle-orm";
 import { bigint, boolean, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";

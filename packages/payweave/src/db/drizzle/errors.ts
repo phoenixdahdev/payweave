@@ -1,11 +1,11 @@
 /**
- * Error helpers for the Drizzle adapter (docs/v1/database.md §4/§7, PW-708):
+ * Error helpers for the Drizzle adapter:
  * a thin wrapper turning raw driver/drizzle exceptions into
- * {@link PayweaveError} subclasses (AGENTS.md §2: public SDK methods only
+ * {@link PayweaveError} subclasses (public SDK methods only
  * ever throw `PayweaveError` subclasses).
  *
  * NOTE on the "dynamic import + install-hint" pattern the other first-party
- * adapters use (PW-505/PW-706 style) for their optional peer driver: it does
+ * adapters use for their optional peer driver: it does
  * NOT apply cleanly here, and this is a deliberate, documented deviation —
  * see `../index.ts`'s module header for the full reasoning. In short:
  * dialect detection (`../detect.ts`) MUST use `instanceof` against
@@ -14,7 +14,7 @@
  * built from — a lazy `import()` executed later is safe for that (Node
  * caches modules), but making `drizzleAdapter(db)` itself `async` to await
  * one would break the factory contract every other adapter shares (sync,
- * side-effect-free construction — database.md §1), and a synchronous
+ * side-effect-free construction), and a synchronous
  * `require()` escape hatch risks loading a SEPARATE module instance than the
  * caller's `import`, silently breaking `instanceof`. `drizzle-orm` is also
  * this subpath's ONE unavoidable optional peer (unlike sqlite's two

@@ -1,20 +1,20 @@
 /**
- * Input routing for `sqliteAdapter(...)` (docs/v1/database.md §1/§4, PW-706).
+ * Input routing for `sqliteAdapter(...)`.
  *
  * `sqliteAdapter` accepts EITHER `{ url }` (routed to the right driver by
- * scheme, database.md §4: "TWO optional peer drivers behind one subpath") OR
+ * scheme — two optional peer drivers behind one subpath) OR
  * an already-constructed driver instance — a `better-sqlite3` `Database` or an
  * `@libsql/client` `Client` — matching how the postgres/mysql adapters accept
  * a caller-owned `Pool`. Detection is structural (no driver import needed to
- * classify — core pulls no driver code, database.md §7).
+ * classify — core pulls no driver code).
  *
- * URL scheme routing (PW-706 brief, backlog AC):
+ * URL scheme routing:
  * - `:memory:`, `file:...`, or a bare filesystem path (no `scheme://`) →
  *   `better-sqlite3`.
  * - `libsql://`, `wss://`, `https://`, `http://` → `@libsql/client` (Turso /
  *   remote libSQL; `http(s)://` also covers a local `sqld` server).
  * - Any other `scheme://...` is rejected EAGERLY (synchronously, at
- *   `sqliteAdapter()` call time — database.md §1: adapters validate input
+ *   `sqliteAdapter()` call time — adapters validate input
  *   eagerly and connect lazily).
  *
  * All validation here is pure and synchronous — no driver import, no I/O.

@@ -1,5 +1,5 @@
 /**
- * Embedded DDL for migration `0001_init` — the full docs/v1/database.md §2
+ * Embedded DDL for migration `0001_init` — the full
  * logical schema, per dialect. These string constants ARE the
  * migration content: they are hashed byte-for-byte into the `pw_migrations`
  * checksum, so **once `0001_init` has been applied anywhere it is immutable
@@ -7,8 +7,7 @@
  * existing database fail loudly. Schema changes ship as
  * `0002_...`, never as edits here. Forward-only: no down migrations exist.
  *
- * Per-dialect storage mapping (build-time resolutions, recorded in
- * database.md §4):
+ * Per-dialect storage mapping (build-time resolutions):
  *
  * | logical            | postgres      | mysql                      | sqlite            |
  * |--------------------|---------------|----------------------------|-------------------|
@@ -19,8 +18,8 @@
  * | id / key string    | `TEXT`        | `VARCHAR(255)`             | `TEXT`            |
  *
  * - NO float/decimal column exists anywhere — money is integer minor units +
- *   currency code (golden rule 7 applies to storage; database.md §2).
- * - MySQL sessions must run in UTC (`time_zone = '+00:00'`) — PW-705 forces
+ *   currency code (golden rule 7 applies to storage).
+ * - MySQL sessions must run in UTC (`time_zone = '+00:00'`) — the adapter forces
  *   this in the pool config; `DATETIME` has no zone of its own.
  * - MySQL tables are `utf8mb4` with BINARY collation (`utf8mb4_bin`) so key
  *   comparisons stay case-sensitive, matching postgres/sqlite semantics.
@@ -43,7 +42,7 @@
  *   treat NULLs as equal, so inactive rows can pile up freely while a second
  *   active-set row collides. `active_slot` is generated storage: adapters
  *   must NEVER write it (an INSERT that names it errors — that is the DDL
- *   working). Recorded in database.md §4 (PW-703 build-time resolution).
+ *   working).
  */
 import { PW_ACTIVE_SUBSCRIPTION_STATUSES, PW_TABLES } from "../schema";
 import { ledgerEnsureSql } from "./ledger";

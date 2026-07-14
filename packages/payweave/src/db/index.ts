@@ -1,8 +1,8 @@
 /**
- * The `DatabaseAdapter` contract (docs/v1/database.md §3, PW-701) — the ONLY
+ * The `DatabaseAdapter` contract — the ONLY
  * interface core/billing code may touch. No SQL outside adapters.
  *
- * First-party adapters (PW-704+) live under `payweave/db/*` subpaths with
+ * First-party adapters live under `payweave/db/*` subpaths with
  * their drivers as optional peerDependencies; anything that
  * satisfies this contract — and passes the conformance suite in
  * `test/db/conformance.ts` — can be a community adapter.
@@ -11,7 +11,7 @@
  * shape it exchanges (`PwCustomer`, `PwPlanVersion`, …) is `z.infer` of the
  * row schemas in `./schema`, which remain the source of truth.
  *
- * Public as the `payweave/db` subpath since PW-505.
+ * Public as the `payweave/db` subpath.
  */
 import type {
   PwCustomer,
@@ -134,9 +134,9 @@ export interface DatabaseAdapter {
     /**
      * THE hot path. Atomically: lazy-reset the period if expired (`now >=
      * periodEnd` — periods are half-open, so the reset jumps to the CURRENT
-     * anchor-relative window per metered-usage.md §5), then decrement by
+     * anchor-relative window), then decrement by
      * `amount` (0 = peek/check, which always "applies"). Single statement or
-     * transaction — see database.md §5; never a read-modify-write across
+     * transaction; never a read-modify-write across
      * statements without a lock. Returns the post-operation balance snapshot
      * plus whether the decrement applied.
      *

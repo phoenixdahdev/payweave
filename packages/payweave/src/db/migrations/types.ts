@@ -1,11 +1,9 @@
 /**
- * Shared types for the embedded SQL migrations engine (docs/v1/database.md §4,
- * PW-703). The engine is pure TypeScript: it emits SQL text through an
+ * Shared types for the embedded SQL migrations engine. The engine is pure
+ * TypeScript: it emits SQL text through an
  * injected {@link MigrationExecutor} and never imports a driver
- * or reads files at runtime (database.md §4 — migrations are
- * embedded string constants, so `dist` is self-contained).
- *
- * INTERNAL until PW-505 wires the `payweave/db` subpaths into the exports map.
+ * or reads files at runtime — migrations are
+ * embedded string constants, so `dist` is self-contained.
  */
 
 /** SQL dialects with Payweave-owned migrations. */
@@ -25,7 +23,7 @@ export type PwSqlDialect = (typeof PW_SQL_DIALECTS)[number];
  * (lexicographic — zero-padded numeric prefix, e.g. `0001_init`); `name` is a
  * short human-readable label. A migration that has ever been applied anywhere
  * is IMMUTABLE — changes ship as a new id (`0002_...`), never as an edit
- * (database.md §4: forward-only, mutated history fails loudly).
+ * (forward-only; mutated history fails loudly).
  */
 export interface PwSqlMigration {
   /** Ledger key + sort key, e.g. `"0001_init"`. */
@@ -47,7 +45,7 @@ export interface MigrationQueryResult {
 }
 
 /**
- * The minimal execution surface a SQL adapter (PW-704/705/706) injects into
+ * The minimal execution surface a SQL adapter injects into
  * the engine — the engine's ONLY channel to the database. Implementations are
  * thin driver wrappers; the engine emits dialect-appropriate placeholders
  * (`$1…` for postgres, `?` for mysql/sqlite), so executors pass `sql` +

@@ -1,10 +1,10 @@
 /**
- * Published Drizzle schema — MySQL dialect (docs/v1/database.md §2/§4,
- * PW-708). Merge these table definitions into your own `schema.ts` and
+ * Published Drizzle schema — MySQL dialect. Merge these table
+ * definitions into your own `schema.ts` and
  * migrate them with `drizzle-kit` (`push` for local/dev, `generate` +
  * `migrate` for tracked migrations) — Payweave never runs migrations for the
  * Drizzle adapter itself (`../index.ts`'s `migrations.apply()` returns
- * instructions, never DDL; database.md §4 "Same model" as the Prisma
+ * instructions, never DDL — "same model" as the Prisma
  * adapter).
  *
  * Column-for-column equivalent to `src/db/migrations/ddl.ts`'s
@@ -13,8 +13,8 @@
  * `datetime(3)` timestamps, native `json`, `tinyint(1)`-backed `boolean`,
  * `bigint` (mode `"number"`) for money/usage/version-scale integers.
  *
- * MySQL has NO partial unique indexes (database.md §4 build-time resolution,
- * mirroring PW-703's `src/db/migrations/ddl.ts` header exactly): the
+ * MySQL has NO partial unique indexes, mirroring
+ * `src/db/migrations/ddl.ts`'s header exactly: the
  * `pw_subscriptions` active-subscription rule is emulated with a `STORED`
  * generated column `active_slot` (`'x'` when `status` is in the active set,
  * `NULL` otherwise) plus a composite unique index on

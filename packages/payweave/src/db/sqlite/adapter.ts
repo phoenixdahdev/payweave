@@ -1,37 +1,35 @@
 /**
- * Builds a `DatabaseAdapter` (docs/v1/database.md §3) over a {@link Runner} —
+ * Builds a `DatabaseAdapter` over a {@link Runner} —
  * the sqlite dialect's store implementations. Driver-agnostic: works
  * identically whether `runner` is backed by `better-sqlite3` or
  * `@libsql/client` (see `./runner`'s header for the concurrency model this
  * relies on).
  *
  * ── `balances.consume` atomicity (spec-silent engineering decision) ────────
- * database.md §5's sqlite bullet says to "express reset+decrement as one
- * statement." A literal single `INSERT … ON CONFLICT DO UPDATE … RETURNING`
+ * The sqlite approach is to "express reset+decrement as one
+ * statement" wherever possible. A literal single `INSERT … ON CONFLICT DO UPDATE … RETURNING`
  * is what this adapter uses for `webhookEvents.claim` (no calendar math
  * needed there — see below). For `consume`, doing the same would require
  * replicating `src/products/period.ts`'s clamp-once month/year arithmetic
- * (the conformance suite's oracle, `metered-usage.md §5`) as portable raw SQL
+ * (the conformance suite's oracle) as portable raw SQL
  * — and NEITHER driver offers a way to call back into that exact JS function
  * from inside a statement (`better-sqlite3` supports registering scalar
  * functions, but `@libsql/client` does not, and the two drivers must behave
  * identically — reimplementing the calendar math independently in SQL risks
- * silent drift from the oracle, which PW-704's own contract notes call out as
- * the one unacceptable outcome: "if your SQL disagrees, the SQL is wrong").
- * `init` is also a per-call CREATION template only — an
- * existing row's OWN stored `anchor`/`resetInterval` must drive its reset,
- * which the caller cannot know in advance, so a blind single write can't
- * express this correctly regardless of the calendar-math question.
+ * silent drift from the oracle — the one unacceptable outcome: "if your SQL
+ * disagrees, the SQL is wrong"). `init` is also a per-call CREATION template
+ * only — an existing row's OWN stored `anchor`/`resetInterval` must drive its
+ * reset, which the caller cannot know in advance, so a blind single write
+ * can't express this correctly regardless of the calendar-math question.
  *
  * Instead: `consume` reads the current row, decides using `period.ts`
  * directly (exact parity with the oracle by construction), and writes the
  * result back inside `runner.transaction(...)` — atomic because the whole
  * read-decide-write sequence runs as one unit through the adapter's single
- * serialized connection (`./runner`), which is the mechanism database.md §5
- * itself names for sqlite ("rely on serialized writes"). `webhookEvents.claim`
- * needs no such read, so it stays a literal single INSERT…ON CONFLICT…
- * RETURNING statement, atomic by the engine's own guarantees regardless of
- * this adapter's serialization.
+ * serialized connection (`./runner`), relying on serialized writes.
+ * `webhookEvents.claim` needs no such read, so it stays a literal single
+ * INSERT…ON CONFLICT… RETURNING statement, atomic by the engine's own
+ * guarantees regardless of this adapter's serialization.
  */
 import { PayweaveNotFoundError } from "../../core/errors";
 import { applyMigrations, planMigrations } from "../migrations/index";
@@ -433,7 +431,7 @@ async function balancesConsume(runner: Runner, input: PwConsumeInput): Promise<P
     const applied = input.conditional !== true || remaining >= input.amount;
 
     if (!applied && !resetDue) {
-      // Denied and no reset was due: database.md §3 requires the row be left
+      // Denied and no reset was due: the row must be left
       // COMPLETELY untouched — including `updatedAt` — so issue no write at all.
       return { ...existing, applied: false };
     }

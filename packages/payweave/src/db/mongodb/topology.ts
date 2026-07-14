@@ -1,6 +1,6 @@
 /**
- * Replica-set vs standalone transaction handling (docs/v1/database.md §4/§5,
- * PW-709). Standalone MongoDB servers do not support multi-document
+ * Replica-set vs standalone transaction handling. Standalone MongoDB
+ * servers do not support multi-document
  * transactions ("Transaction numbers are only allowed on a replica set
  * member or mongos") — rather than pre-probing topology with an extra
  * `hello`/`isMaster` round trip (fragile across deployment shapes: replica
@@ -16,15 +16,13 @@
  * session, is equivalent to never having attempted a transaction at all. No
  * double-write risk from the failed attempt.
  *
- * database.md §4/§2: this fallback is safe for Payweave's purposes because
+ * This fallback is safe for Payweave's purposes because
  * the two contract paths with a hard atomicity requirement —
  * `balances.consume` and `webhookEvents.claim` — are EACH already atomic
  * per-document via a single pipeline `findOneAndUpdate` regardless of
  * topology (`./period-pipeline.ts`, `./adapter.ts`); `transaction()` only
  * adds cross-document rollback on top of that, which the stale-claim timeout
- * substitutes for on standalone (never a permanently-unclaimable event,
- * database.md §2's "never a state where an unapplied event is permanently
- * unclaimable" design rule).
+ * substitutes for on standalone — never a permanently-unclaimable event.
  *
  * CAVEAT inherited from MongoDB's own `withTransaction` helper (not specific
  * to this adapter): the driver may invoke the callback MULTIPLE TIMES on
@@ -52,7 +50,7 @@ const UNSUPPORTED_MESSAGE_PATTERN =
  * `IllegalOperation`) combined with "transaction" in the message, OR a set of
  * known message substrings, defensively (the exact wording is a real `mongod`
  * implementation detail this sandbox cannot execute against — see the module
- * header and PW-709's report).
+ * header).
  */
 export function isTransactionsUnsupportedError(error: unknown): boolean {
   if (error === null || typeof error !== "object") return false;
