@@ -5,7 +5,7 @@
  * before the form encoder runs) and passes a loose response schema to the
  * HttpClient (drift is logged, never thrown). Requests go to the wire as
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
- * JSON resources — no envelope (providers.md §3.1). All `unit_amount`s are
+ * JSON resources — no envelope. All `unit_amount`s are
  * integer minor units.
  *
  * PW-803 syncs Payweave plan pricing onto prices (`payweave push`,
@@ -158,7 +158,7 @@ export class Prices {
 
   /**
    * Async iterator over ALL Prices matching `query`, transparently following
-   * `has_more` with `starting_after = <last id>` (providers.md §3.1).
+   * `has_more` with `starting_after = <last id>`.
    *
    * Docs: https://docs.stripe.com/api/prices/list
    *

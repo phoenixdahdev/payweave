@@ -1,16 +1,16 @@
 /**
- * MySQL store implementation for the Drizzle adapter (docs/v1/database.md
- * §2/§3/§5, PW-708). Built against the published `./schema/mysql.ts` tables.
+ * MySQL store implementation for the Drizzle adapter. Built against the
+ * published `./schema/mysql.ts` tables.
  *
  * Like the postgres dialect, this is NOT exercised by a live conformance run
- * in this sandbox (no docker — database.md §6's obligation for Drizzle is
+ * in this sandbox (no docker — Drizzle's CI conformance obligation is
  * the Postgres variant; see `./postgres-adapter.ts`'s header and
  * `test/db/drizzle.test.ts`). MySQL has neither `RETURNING` nor a
  * conditional/`WHERE` clause on `ON DUPLICATE KEY UPDATE` (confirmed against
  * the installed `drizzle-orm@0.45.2`'s `mysql-core` insert query-builder
  * types — no `setWhere`/`where` option exists there, unlike pg-core's), so
- * this file follows the PW-705 (mysql raw-driver adapter) brief's two
- * sanctioned techniques verbatim:
+ * this file follows the same two sanctioned techniques as the (not yet
+ * shipped) mysql raw-driver adapter's own design brief, verbatim:
  *
  * - No `RETURNING`: every write is followed by a `SELECT` on the same
  *   connection/transaction to fetch the resulting row.
@@ -59,7 +59,7 @@ import { createVerifier, findMissingTablesForStatus, makeSqlTableProbe } from ".
 export type MysqlDrizzleDb = MySqlDatabase<AnyMySqlQueryResultHKT, PreparedQueryHKTBase>;
 
 const DRIZZLE_KIT_INSTRUCTIONS =
-  "payweave/db/drizzle never runs migrations for you (database.md §4). Merge " +
+  "payweave/db/drizzle never runs migrations for you. Merge " +
   '"payweave/db/drizzle"\'s published schema (see `./schema/mysql.ts`) into your own Drizzle ' +
   "schema, then run `drizzle-kit push` (dev) or `drizzle-kit generate` + `drizzle-kit migrate` " +
   "(tracked migrations) yourself.";
@@ -514,7 +514,7 @@ async function webhookEventsClaim(
   const staleThreshold = new Date(meta.now.getTime() - staleClaimAfterMs);
   // Raw SQL: mysql-core's `.onDuplicateKeyUpdate` has no conditional/`WHERE`
   // form (see module header) — the `IF(...)` expression is the standard
-  // MySQL substitute (PW-705's sanctioned technique).
+  // MySQL substitute (the sanctioned technique).
   const raw = await db.execute(
     sql`insert into ${pwWebhookEvents} (dedupe_key, provider, type, received_at, claimed_at, applied_at)
         values (${dedupeKey}, ${meta.provider}, ${meta.type}, ${meta.now}, ${meta.now}, null)

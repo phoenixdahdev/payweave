@@ -1,5 +1,5 @@
 /**
- * Smoke test for the conformance suite (PW-702).
+ * Smoke test for the conformance suite.
  *
  * WHY THIS EXISTS INSTEAD OF RUNNING THE SUITE: `test/db/conformance.ts` is
  * the contract's executable spec and "lands red" — no adapter exists until

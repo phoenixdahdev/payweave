@@ -5,7 +5,7 @@
  * before the form encoder runs) and passes a loose response schema to the
  * HttpClient (drift is logged, never thrown). Requests go to the wire as
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
- * JSON resources — no envelope (providers.md §3.1).
+ * JSON resources — no envelope.
  *
  * PW-803 upserts customers here during `subscribe()` — `metadata` (with the
  * `pwv_` reference) and `email` are the fields its create-or-adopt loop keys
@@ -165,7 +165,7 @@ export class Customers {
 
   /**
    * Async iterator over ALL Customers matching `query`, transparently
-   * following `has_more` with `starting_after = <last id>` (providers.md §3.1).
+   * following `has_more` with `starting_after = <last id>`.
    *
    * Docs: https://docs.stripe.com/api/customers/list
    *

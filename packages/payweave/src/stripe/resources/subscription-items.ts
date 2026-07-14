@@ -5,7 +5,7 @@
  * call — and therefore before the form encoder runs) and passes a loose
  * response schema to the HttpClient (drift is logged, never thrown). Requests
  * go to the wire as `application/x-www-form-urlencoded` bracket notation;
- * responses are bare JSON resources — no envelope (providers.md §3.1). All
+ * responses are bare JSON resources — no envelope. All
  * amounts are integer minor units.
  *
  * On the SDK's pinned API version, each item carries the billing-period
@@ -174,7 +174,7 @@ export class SubscriptionItems {
 
   /**
    * Async iterator over ALL items of a subscription, transparently following
-   * `has_more` with `starting_after = <last id>` (providers.md §3.1).
+   * `has_more` with `starting_after = <last id>`.
    *
    * Docs: https://docs.stripe.com/api/subscription_items/list
    *

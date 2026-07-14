@@ -1,6 +1,6 @@
 /**
- * PW-804 — `subscribe()` (plans-and-features.md §11). End-to-end against a
- * REAL in-memory sqlite `DatabaseAdapter` (PW-706) and a REAL `createPayweave`
+ * `subscribe()`. End-to-end against a
+ * REAL in-memory sqlite `DatabaseAdapter` and a REAL `createPayweave`
  * client, with MSW mocking only the network edge (never HttpClient/fetch,
  * AGENTS.md §7). `pw_plans` rows are seeded by hand via
  * `database.plans.pushVersion(...)` — PW-803's sync engine hasn't landed yet

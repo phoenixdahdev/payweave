@@ -1,17 +1,15 @@
 /**
- * Idempotent collection + index setup for the MongoDB adapter
- * (docs/v1/database.md §4, PW-709). MongoDB does NOT use
- * `src/db/migrations/*` (the SQL-only engine, PW-703) — instead
+ * Idempotent collection + index setup for the MongoDB adapter. MongoDB does
+ * NOT use `src/db/migrations/*` (the SQL-only engine) — instead
  * `migrations.status()`/`apply()` directly introspect and (re)create the
  * `pw_*` collections' indexes every time they run, so there is no ledger to
- * drift out of sync with reality (database.md §4: "`migrations.status()`
- * reports missing indexes").
+ * drift out of sync with reality.
  *
  * `createIndex(...)` both creates the target collection (if it doesn't exist
  * yet — an implicit MongoDB behavior) AND the index in one idempotent call:
  * calling it again with the IDENTICAL spec/name is a documented no-op, so
- * `apply()` is safe to run any number of times (backlog AC: "run twice, no
- * error, no duplicate indexes"). Every index below is given an EXPLICIT,
+ * `apply()` is safe to run any number of times — run it twice and there's no
+ * error, no duplicate indexes. Every index below is given an EXPLICIT,
  * stable `name` so re-running `apply()` after a partial failure, or a
  * differently-ordered driver call, can never accidentally create a SECOND
  * index with the same keys under an auto-generated name.
@@ -48,10 +46,9 @@ interface RequiredIndex {
 }
 
 /**
- * Every index database.md §2/§4 requires, beyond the default `_id` index
+ * Every index the schema requires, beyond the default `_id` index
  * (which already covers `pw_webhook_events.dedupeKey` and, conceptually,
- * every other collection's `pwv_` id — both are stored AS `_id`, database.md
- * §4).
+ * every other collection's `pwv_` id — both are stored AS `_id`).
  */
 const REQUIRED_INDEXES: readonly RequiredIndex[] = [
   {
@@ -72,7 +69,7 @@ const REQUIRED_INDEXES: readonly RequiredIndex[] = [
     key: { customerId: 1, group: 1 },
     options: {
       unique: true,
-      // The §2 partial-unique active-subscription rule: at most one row per
+      // The partial-unique active-subscription rule: at most one row per
       // (customerId, group) whose status is in the active set — everything
       // else (canceled/incomplete, and any OTHER status a community fork
       // might add) falls outside the filter and never collides.

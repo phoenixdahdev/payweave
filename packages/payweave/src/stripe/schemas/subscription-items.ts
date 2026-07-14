@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Subscription Items module (PW-604). Request
+ * Zod schemas for the Stripe Subscription Items module. Request
  * fields are sourced verbatim from the official API reference (all verified
  * 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/subscription_items/create
@@ -8,7 +8,7 @@
  *   - Delete:   https://docs.stripe.com/api/subscription_items/delete
  *   - List:     https://docs.stripe.com/api/subscription_items/list
  *
- * `unit_amount` is integer MINOR units end to end (providers.md §3.1) — no
+ * `unit_amount` is integer MINOR units end to end — no
  * conversion anywhere. Proration parameter names are copied EXACTLY from the
  * docs and never abstracted (PW-604 contract note). Response schemas are
  * LOOSE: unknown provider fields pass through, drift is logged, never thrown.

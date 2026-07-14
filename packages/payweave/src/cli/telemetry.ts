@@ -1,20 +1,18 @@
 /**
- * Anonymous CLI usage telemetry (docs/v1/cli.md §6; PW-1007).
+ * Anonymous CLI usage telemetry.
  *
  * Collects exactly: which command ran, whether it succeeded, how long it
  * took, and two coarse platform facts (the CLI's own version, Node's major
  * version) — {@link TelemetryPayload} is the exhaustive field list. Never
  * keys, plan/config content, file paths, argument values, error message
- * text, or a user/machine identifier of any kind (cli.md §6 — "never keys,
- * plan contents, or identifiers"; the PW-1007 brief is explicit that this
- * means NO install id either: "resist adding an install id without a spec
- * change — §6 says counts only"). Every payload additionally passes through
- * the SDK's one {@link redact} path before being returned/serialized —
- * defense in depth, even though none of these fields are ever secret-shaped
- * by construction (see `buildTelemetryPayload`'s doc comment).
+ * text, or a user/machine identifier of any kind — no install id either;
+ * this collects counts, deliberately nothing more. Every payload
+ * additionally passes through the SDK's one {@link redact} path before
+ * being returned/serialized — defense in depth, even though none of these
+ * fields are ever secret-shaped by construction (see
+ * `buildTelemetryPayload`'s doc comment).
  *
  * Two independent kill switches — either alone disables telemetry entirely
- * (cli.md §6):
  *   - `PAYWEAVE_TELEMETRY_DISABLED=1`
  *   - `DO_NOT_TRACK=1` (the community convention, https://do-not-track.dev)
  *
@@ -25,20 +23,18 @@
  * spec requirement in itself.
  *
  * Fail-safe by construction: the disabled check runs before ANY network or
- * state-file activity (brief's contract note — "env-var check happens before
- * any network or state-file activity"); a disabled run is a complete no-op,
+ * state-file activity; a disabled run is a complete no-op,
  * indistinguishable from a build with no telemetry code at all. When
  * enabled, both the first-run notice and the outbound send are wrapped so
  * nothing they do — a read-only home directory, an unreachable endpoint, a
  * slow network — can throw, block, or change a command's exit code. The send
  * itself carries a short timeout and its socket is `unref()`d so the process
  * can exit the instant the real command is done, never waiting on telemetry
- * (brief: "telemetry must never delay exit, fail a command, or print network
- * errors").
+ * — it must never delay exit, fail a command, or print network errors.
  *
  * SDK scope: nothing under `src/` outside `src/cli/` imports this module, or
- * duplicates any of its logic (cli.md §6 — "No telemetry is collected from
- * the SDK itself — CLI only"); `test/cli/telemetry.test.ts` greps the source
+ * duplicates any of its logic — no telemetry is collected from
+ * the SDK itself, CLI only; `test/cli/telemetry.test.ts` greps the source
  * tree to prove that.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -52,7 +48,7 @@ import { CLI_VERSION } from "./version";
 
 // ── Payload shape ────────────────────────────────────────────────────────────
 
-/** The exact, exhaustive set of fields ever sent (cli.md §6). Nothing else is ever added. */
+/** The exact, exhaustive set of fields ever sent. Nothing else is ever added. */
 export interface TelemetryPayload {
   readonly event: "cli_command";
   readonly command: string;
@@ -69,9 +65,9 @@ function nodeMajorVersion(): number {
 }
 
 /**
- * Duck-typed error taxonomy class — `.name` only, NEVER `.message` (brief:
- * "Failure telemetry must not embed error messages verbatim (they can
- * contain paths/URLs)"). Never `instanceof` (config-loader.ts precedent —
+ * Duck-typed error taxonomy class — `.name` only, NEVER `.message` (failure
+ * telemetry must not embed error messages verbatim — they can contain
+ * paths/URLs). Never `instanceof` (config-loader.ts precedent —
  * bundled copies of the SDK break identity checks); any thrown value without
  * a string `.name` reports as `"Unknown"` rather than risk stringifying
  * arbitrary (possibly sensitive) content.
@@ -85,8 +81,8 @@ function errorTaxonomyClass(error: unknown): string {
 
 /**
  * Assemble one payload. The final `redact()` pass is defense-in-depth over
- * the WHOLE object (brief: "every outbound payload passes through redact()
- * before serialization ... even though fields are already non-sensitive") —
+ * the WHOLE object — every outbound payload passes through `redact()` before
+ * serialization, even though fields are already non-sensitive —
  * none of these keys ever match `redact()`'s sensitive-key patterns
  * (`authorization`/`secret`/`key`/`token`/... — see `core/redact.ts`), so
  * this is a no-op for a well-behaved caller. It only matters if a future bug
@@ -114,7 +110,7 @@ export function buildTelemetryPayload(input: {
 
 // ── Kill switches + automation auto-disable ─────────────────────────────────
 
-/** Either variable disables telemetry outright, independently (cli.md §6). */
+/** Either variable disables telemetry outright, independently. */
 const KILL_SWITCH_ENV_VARS = ["PAYWEAVE_TELEMETRY_DISABLED", "DO_NOT_TRACK"] as const;
 
 function isTruthyEnvValue(value: string | undefined): boolean {
@@ -123,7 +119,7 @@ function isTruthyEnvValue(value: string | undefined): boolean {
   return normalized !== "" && normalized !== "0" && normalized !== "false";
 }
 
-/** True iff either of the two documented kill-switch variables is set (cli.md §6). */
+/** True iff either of the two documented kill-switch variables is set. */
 export function isKillSwitchSet(env: NodeJS.ProcessEnv = process.env): boolean {
   return KILL_SWITCH_ENV_VARS.some((name) => isTruthyEnvValue(env[name]));
 }
@@ -135,8 +131,9 @@ export function isKillSwitchSet(env: NodeJS.ProcessEnv = process.env): boolean {
  * Deliberately separate from {@link isKillSwitchSet} — this is an
  * implementation safeguard against inflating "usage" with ephemeral
  * automated invocations (precedent: Next.js/Turborepo telemetry both
- * auto-disable under CI), not one of cli.md §6's two named variables. A real
- * user's interactive terminal is never affected by it.
+ * auto-disable under CI), not one of the two documented kill-switch
+ * variables above. A real user's interactive terminal is never affected by
+ * it.
  */
 export function isAutomationEnvironment(env: NodeJS.ProcessEnv = process.env): boolean {
   return isTruthyEnvValue(env.CI) || isTruthyEnvValue(env.VITEST) || env.NODE_ENV === "test";
@@ -159,11 +156,11 @@ interface TelemetryState {
 }
 
 /**
- * User-scoped (never project-scoped — brief: "persist ... in a small
- * user-scoped state file ... never inside the user's project") state file
- * location. `XDG_CONFIG_HOME` is honored where set (Linux convention);
- * otherwise `~/.config` — good enough across the platforms this ticket needs
- * to support without adding a dependency for OS-specific config-dir lookup.
+ * User-scoped (never project-scoped — a small user-scoped state file, never
+ * inside the user's project) state file location. `XDG_CONFIG_HOME` is
+ * honored where set (Linux convention); otherwise `~/.config` — good enough
+ * across the supported platforms without adding a dependency for
+ * OS-specific config-dir lookup.
  */
 function defaultStateFilePath(env: NodeJS.ProcessEnv): string {
   const configHome =
@@ -186,8 +183,8 @@ function readState(path: string): TelemetryState {
  * Print the one-time notice if it hasn't been shown before, then persist that
  * fact. Every filesystem operation here is wrapped: a read-only home
  * directory (some CI/sandboxed containers) must never crash a command over
- * telemetry bookkeeping (brief: "the state file write can fail ... degrade
- * silently; never crash a command over telemetry bookkeeping") — worst case,
+ * telemetry bookkeeping — the state file write can fail and should degrade
+ * silently rather than ever crash a command; worst case,
  * the notice repeats on a future run.
  */
 function printFirstRunNoticeOnce(io: CliIo, statePath: string): void {
@@ -204,10 +201,9 @@ function printFirstRunNoticeOnce(io: CliIo, statePath: string): void {
 // ── Fire-and-forget send ─────────────────────────────────────────────────────
 
 /**
- * Client-side contract only (PW-1007 scope, per the brief's file list — the
- * ingestion service itself is not part of this ticket). Kept as a named
- * constant so a real endpoint can replace it in one place once that service
- * exists.
+ * Client-side contract only — the ingestion service itself is separate,
+ * out-of-scope work. Kept as a named constant so a real endpoint can replace
+ * it in one place once that service exists.
  */
 const DEFAULT_ENDPOINT = "https://telemetry.payweave.dev/v1/cli-events";
 const SEND_TIMEOUT_MS = 300;
@@ -240,7 +236,7 @@ const defaultSender: TelemetrySender = (payload) => {
       },
     );
     req.on("error", () => {
-      /* fail-safe: never surface a network error (brief) */
+      /* fail-safe: never surface a network error */
     });
     req.on("timeout", () => req.destroy());
     req.on("socket", (socket) => socket.unref());
@@ -261,10 +257,9 @@ export interface TelemetryRuntimeOptions {
 }
 
 /**
- * Wrap one command invocation with telemetry (cli.md §6). This is the single
- * seam `./run`'s dispatch calls — kept in its own module/function precisely
- * so PW-1006's `listen` registration touches a different region of `run.ts`
- * and the two changes merge without conflict.
+ * Wrap one command invocation with telemetry. This is the single
+ * seam `./run`'s dispatch calls — kept in its own module/function so it
+ * stays decoupled from the rest of `run.ts`'s command-registration logic.
  *
  * Always resolves to (or rethrows) exactly what `invoke()` does — telemetry
  * only OBSERVES the outcome, it never changes it. Reporting itself never
@@ -305,7 +300,7 @@ export async function withTelemetry(
       });
       send(payload);
     } catch {
-      // fail-safe: telemetry construction/send never affects the command (brief).
+      // fail-safe: telemetry construction/send never affects the command.
     }
   }
 }

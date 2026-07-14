@@ -118,7 +118,7 @@ describe("stripe HttpClient over the network edge (MSW)", () => {
     expect(req.headers.get("idempotency-key")).toBe("idem-stripe-1");
 
     const raw = await req.text();
-    // Acceptance (providers.md §6): bracket-notation form body, and no JSON
+    // Acceptance: bracket-notation form body, and no JSON
     // body ever leaves the Stripe client.
     expect(raw).toBe(
       "mode=payment&line_items[0][price]=price_1&line_items[0][quantity]=2" +

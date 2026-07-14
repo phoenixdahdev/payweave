@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe WebhookEndpoints module (PW-605). Request fields
+ * Zod schemas for the Stripe WebhookEndpoints module. Request fields
  * are sourced verbatim from the official API reference (all verified
  * 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/webhook_endpoints/create
@@ -9,7 +9,7 @@
  *   - List:     https://docs.stripe.com/api/webhook_endpoints/list
  *   - Object:   https://docs.stripe.com/api/webhook_endpoints/object
  *
- * SECRET HANDLING (AGENTS.md §2.5): the endpoint's signing secret (`whsec_*`)
+ * SECRET HANDLING: the endpoint's signing secret (`whsec_*`)
  * is "Only returned at creation" (object docs, verified 2026-07-12) — the
  * response schema names `secret` so `create` callers can capture it ONCE;
  * retrieve/update/list responses never carry it. Core `redact` masks any

@@ -6,9 +6,9 @@
  * a `public readonly` field, exactly like the Paystack and Flutterwave
  * clients.
  *
- * Mounted: checkout.sessions + paymentIntents (PW-602), customers/products/
- * prices (PW-603), subscriptions + subscriptionItems (PW-604), refunds +
- * webhookEndpoints (PW-605) — the complete P0 module table.
+ * Mounted: checkout.sessions + paymentIntents, customers/products/
+ * prices, subscriptions + subscriptionItems, refunds +
+ * webhookEndpoints — the complete P0 module table.
  */
 import { HttpClient } from "../core/http";
 import { defineProvider, readHeader, type ProviderAdapter } from "../core/provider";
@@ -81,7 +81,7 @@ export class StripeClient {
 // `stripeAdapter` is additive metadata alongside the direct wiring in
 // `src/index.ts` (`createPayweave` still builds `StripeClient` via
 // `stripeHttpOptions` directly, unchanged). `createHttp` below REUSES
-// `stripeHttpOptions` (PW-601) so the form-encoded body transport and
+// `stripeHttpOptions` so the form-encoded body transport and
 // `Stripe-Version`/`Stripe-Account` headers are byte-identical to the real
 // wiring, not a re-implementation. `unified`/`billing` are intentionally left
 // unset: the real unified ops are HttpClient-bound (and, for stripe, not

@@ -1,13 +1,13 @@
 /**
- * PW-1004 — `payweave push` (docs/v1/cli.md §2, §8).
+ * `payweave push` (docs/v1/cli.md §2, §8).
  *
- * Three layers of coverage, mirroring `status.test.ts` (PW-1003):
+ * Three layers of coverage, mirroring `status.test.ts`:
  *   1. Pure helpers — `resolvePlanDiffAction`, `computePlanDiff`, and the
  *      `format*` renderers — against hand-built fakes.
  *   2. `runPushCommand` — flags, gating (`-y`, non-TTY, declined prompt),
  *      pipeline ORDER, and exit codes — against a hand-built `PushClientLike`
  *      fake with an injected `loadConfig`.
- *   3. End-to-end against a REAL in-memory `sqliteAdapter` (PW-706) + a REAL
+ *   3. End-to-end against a REAL in-memory `sqliteAdapter` + a REAL
  *      `createPayweave` client, with MSW mocking only the network edge
  *      (`onUnhandledRequest: "error"` doubles as the zero-provider-write proof
  *      for the abort and idempotent-second-push cases).
@@ -513,9 +513,8 @@ describe("runPushCommand — non-Error rejection shapes (errorMessage/errorName 
 });
 
 describe("pushCommand registration", () => {
-  it("registers as \"push\" (PW-1004) — no longer the PW-1001 placeholder", () => {
+  it('registers as "push"', () => {
     expect(pushCommand.name).toBe("push");
-    expect(pushCommand.ticket).toBe("PW-1004");
   });
 });
 

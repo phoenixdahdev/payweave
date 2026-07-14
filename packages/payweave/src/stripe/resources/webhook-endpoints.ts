@@ -2,14 +2,14 @@
  * Stripe WebhookEndpoints resource (Surface A,
  * `payweave.stripe.webhookEndpoints`). Plain REST management of webhook
  * endpoints — signature VERIFICATION lives in `src/webhooks/stripe.ts`
- * (PW-606) and is deliberately kept apart. `payweave listen` (PW-1006)
+ * and is deliberately kept apart. `payweave listen`
  * provisions endpoints through `create` and tears them down through `delete`.
  *
  * Every method validates its input with a request schema (throws
  * {@link PayweaveValidationError} before the network call) and passes a loose
  * response schema to the HttpClient (drift is logged, never thrown). Requests
  * go to the wire as `application/x-www-form-urlencoded` bracket notation;
- * responses are bare JSON resources — no envelope (providers.md §3.1).
+ * responses are bare JSON resources — no envelope.
  *
  * ⚠️ SECRET: the `create` response is the ONLY one carrying the endpoint's
  * `whsec_*` signing secret ("Only returned at creation" —
@@ -123,7 +123,7 @@ export class WebhookEndpoints {
   /**
    * Delete a webhook endpoint. Returns `{ id, object, deleted: true }`;
    * deleting an already-deleted endpoint raises a Stripe error (404 →
-   * {@link PayweaveNotFoundError}). `payweave listen` (PW-1006) calls this on
+   * {@link PayweaveNotFoundError}). `payweave listen` calls this on
    * teardown.
    *
    * Docs: https://docs.stripe.com/api/webhook_endpoints/delete
@@ -164,7 +164,7 @@ export class WebhookEndpoints {
 
   /**
    * Async iterator over ALL webhook endpoints, transparently following
-   * `has_more` with `starting_after = <last id>` (providers.md §3.1).
+   * `has_more` with `starting_after = <last id>`.
    *
    * Docs: https://docs.stripe.com/api/webhook_endpoints/list
    *

@@ -33,7 +33,7 @@ describe("flutterwave unified.checkout.create", () => {
     expect(req.method).toBe("POST");
     expect(req.path).toBe("/v3/payments");
     const body = req.body as Record<string, unknown>;
-    // Acceptance (PRD §11): Flutterwave outgoing body carries amount: 5000 (major).
+    // Acceptance: Flutterwave outgoing body carries amount: 5000 (major).
     expect(body.amount).toBe(5000);
     expect(body.tx_ref).toBe("order_8123");
     expect(body.redirect_url).toBe("https://app.example.com/cb");

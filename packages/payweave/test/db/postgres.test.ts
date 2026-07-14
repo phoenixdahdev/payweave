@@ -90,7 +90,7 @@ describe.skipIf(!RUN_DOCKER_CONFORMANCE)(
   },
 );
 
-// ── Input validation — synchronous, side-effect-free (database.md §1) ──────
+// ── Input validation — synchronous, side-effect-free ──────
 
 describe("assertPostgresConnectionString / resolvePostgresInput", () => {
   it("accepts postgres:// and postgresql:// schemes", () => {
@@ -626,7 +626,7 @@ describe("period-sql.ts parity vs. src/products/period.ts's currentPeriod (struc
     for (let months = -2; months <= 30; months++) {
       const boundary = new Date(anchor);
       // A representative "now" a bit into period `months` — cheap and covers
-      // the idle-multi-period-jump case (metered-usage.md §5) via large `months`.
+      // the idle-multi-period-jump case via large `months`.
       const probe = clampedMonthAddSql(anchor, months) + 3_600_000; // +1h into the period
       void boundary;
       expectParity(anchor, "month", probe);

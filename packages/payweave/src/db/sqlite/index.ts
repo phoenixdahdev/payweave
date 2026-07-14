@@ -2,7 +2,7 @@
  * `payweave/db/sqlite` — SQLite / libSQL adapter (docs/v1/database.md §1/§4,
  * PW-706). Wraps EITHER `better-sqlite3` or `@libsql/client` behind one
  * `sqliteAdapter(...)` factory — both are OPTIONAL peerDependencies
- * (database.md §7): this module never imports either package at the top
+ * : this module never imports either package at the top
  * level, only lazily inside `connect()` once a query actually runs, so
  * importing `payweave/db/sqlite` — let alone `payweave` core — never pulls
  * driver code into the graph unless a query is made.
@@ -14,7 +14,7 @@
  * - An already-constructed `better-sqlite3` `Database` instance.
  * - An already-constructed `@libsql/client` `Client` instance.
  *
- * Construction is synchronous and side-effect-free (database.md §1): the
+ * Construction is synchronous and side-effect-free: the
  * input is validated (and the URL scheme classified) eagerly, but the driver
  * package is imported and the connection opened lazily, on the first store
  * call. An in-memory database is per-connection (better-sqlite3) or

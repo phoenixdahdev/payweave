@@ -1,8 +1,8 @@
 /**
- * Stripe HttpClient construction pieces (PW-601): auth strategy + fully-wired
+ * Stripe HttpClient construction pieces: auth strategy + fully-wired
  * `HttpClientOptions`. PW-602's `StripeClient` consumes {@link stripeHttpOptions}
  * so every Stripe request carries the right headers and the form-encoded body
- * transport — no JSON body ever leaves the Stripe client (providers.md §3.1).
+ * transport — no JSON body ever leaves the Stripe client.
  */
 import { STRIPE_API_VERSION, type ResolvedProviderConfig } from "../core/config";
 import { PayweaveConfigError } from "../core/errors";

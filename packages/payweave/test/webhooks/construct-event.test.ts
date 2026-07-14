@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPaystack, createFlutterwave } from "../../src/index";
+import { createPayweave } from "../../src/index";
 import { PayweaveConfigError, PayweaveWebhookVerificationError } from "../../src/core/errors";
 import { signWebhook } from "../../src/testing/sign-webhook";
 import { createHash } from "node:crypto";
@@ -8,14 +8,18 @@ const PS_SECRET = "sk_test_construct";
 const FLW_HASH = "flw_dashboard_secret_hash";
 const FLW_V4_HASH = "flw_v4_secret_hash";
 
-const psSdk = createPaystack({ secretKey: PS_SECRET });
-const flwV3 = createFlutterwave({ secretKey: "FLWSECK_TEST-x", webhookSecret: FLW_HASH });
-const flwV4 = createFlutterwave({
-  version: "v4",
-  clientId: "cid",
-  clientSecret: "csecret",
-  tokenUrl: "https://auth.example/token",
-  webhookSecret: FLW_V4_HASH,
+const psSdk = createPayweave({ paystack: { secretKey: PS_SECRET } });
+const flwV3 = createPayweave({
+  flutterwave: { secretKey: "FLWSECK_TEST-x", webhookSecret: FLW_HASH },
+});
+const flwV4 = createPayweave({
+  flutterwave: {
+    version: "v4",
+    clientId: "cid",
+    clientSecret: "csecret",
+    tokenUrl: "https://auth.example/token",
+    webhookSecret: FLW_V4_HASH,
+  },
 });
 
 // ── Paystack scheme ──────────────────────────────────────────────────────────
@@ -154,7 +158,7 @@ describe("constructEvent — Flutterwave v3 (verif-hash equality)", () => {
   });
 
   it("missing webhookSecret → PayweaveConfigError (fail closed)", () => {
-    const noSecret = createFlutterwave({ secretKey: "FLWSECK_TEST-x" });
+    const noSecret = createPayweave({ flutterwave: { secretKey: "FLWSECK_TEST-x" } });
     expect(() =>
       noSecret.webhooks.constructEvent({ rawBody: signed.body, headers: { "verif-hash": signed.header } }),
     ).toThrow(PayweaveConfigError);

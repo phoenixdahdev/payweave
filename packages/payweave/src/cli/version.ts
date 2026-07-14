@@ -1,5 +1,5 @@
 /**
- * Build-time CLI version (cli.md §7/§8 — dist performs no runtime file reads).
+ * Build-time CLI version (dist performs no runtime file reads).
  *
  * `tsup.cli.config.ts` injects `__PAYWEAVE_CLI_VERSION__` via esbuild `define`
  * from `package.json#version` at build time, so `dist/cli/index.js` carries the

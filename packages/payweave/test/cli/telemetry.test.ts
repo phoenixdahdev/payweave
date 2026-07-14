@@ -1,5 +1,5 @@
 /**
- * PW-1007 — anonymous CLI telemetry (docs/v1/cli.md §6).
+ * anonymous CLI telemetry (docs/v1/cli.md §6).
  *
  * Four layers, mirroring the other `test/cli/*.test.ts` suites:
  *   1. `buildTelemetryPayload` — the exact anonymous field shape, and the

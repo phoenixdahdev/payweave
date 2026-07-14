@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Prices module (PW-603). Request fields are
+ * Zod schemas for the Stripe Prices module. Request fields are
  * sourced verbatim from the official API reference (all verified 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/prices/create
  *   - Retrieve: https://docs.stripe.com/api/prices/retrieve
@@ -20,7 +20,7 @@
  *   2. `lookup_key` (≤200 chars) + `transfer_lookup_key: true` atomically
  *      move a stable identifier onto the replacement price.
  *
- * `unit_amount` is integer MINOR units end to end (providers.md §3.1) — no
+ * `unit_amount` is integer MINOR units end to end — no
  * conversion anywhere. `currency_options` (per-currency amounts keyed by a
  * dynamic currency code) is deliberately NOT typed in this P0 subset
  * (conservative per AGENTS.md §8, PW-602 precedent) — add it with a docs

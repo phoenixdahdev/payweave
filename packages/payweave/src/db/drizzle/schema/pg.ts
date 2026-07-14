@@ -6,13 +6,13 @@
  * Drizzle adapter itself (`../index.ts`'s `migrations.apply()` returns
  * instructions, never DDL; database.md §4 "Same model" as the Prisma
  * adapter). This is the dialect the shared conformance suite runs against in
- * CI (database.md §6) — a dockerized `postgres:16` via PW-710's matrix; it
+ * CI — a dockerized `postgres:16` via PW-710's matrix; it
  * cannot run in this sandbox (no docker), so it is exercised here via the
  * schema + adapter code, not a live conformance run (see `test/db/drizzle.test.ts`).
  *
  * Column-for-column equivalent to `src/db/migrations/ddl.ts`'s
- * `POSTGRES_INIT_STATEMENTS` (PW-703) — asserted by `test/db/drizzle.test.ts`'s
- * cross-dialect parity test. Per-dialect storage mapping (database.md §4):
+ * `POSTGRES_INIT_STATEMENTS` — asserted by `test/db/drizzle.test.ts`'s
+ * cross-dialect parity test. Per-dialect storage mapping:
  * `timestamptz` timestamps, `jsonb` JSON, native `boolean`, `bigint` (mode
  * `"number"`, since these values are safe-integer money/usage counters —
  * AGENTS.md rule 7 — never JS `bigint`) for money/usage/version-scale integers.

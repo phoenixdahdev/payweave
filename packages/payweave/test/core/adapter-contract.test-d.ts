@@ -1,5 +1,5 @@
 /**
- * PW-608 — Adapter contract v2 extension-point proof (providers.md §4,
+ * Adapter contract v2 extension-point proof (providers.md §4,
  * unified-config.md §7). A completely fictional, test-only provider ("acme")
  * registers via `defineProvider` + its OWN `configKey`/`configSchema` with
  * ZERO edits to `core/provider.ts`, `core/config.ts`, or any other core file —

@@ -5,11 +5,11 @@
  * before the form encoder runs) and passes a loose response schema to the
  * HttpClient (drift is logged, never thrown). Requests go to the wire as
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
- * JSON resources — no envelope (providers.md §3.1). All amounts are integer
+ * JSON resources — no envelope. All amounts are integer
  * minor units.
  *
  * Refunds MOVE MONEY: `create` is a bare POST and is therefore never
- * auto-retried (AGENTS.md §2.4) — pass `idempotencyKey` to make it safely
+ * auto-retried — pass `idempotencyKey` to make it safely
  * replayable and retry-eligible.
  *
  * Docs: https://docs.stripe.com/api/refunds
@@ -162,7 +162,7 @@ export class Refunds {
 
   /**
    * Async iterator over ALL refunds matching `query`, transparently following
-   * `has_more` with `starting_after = <last id>` (providers.md §3.1).
+   * `has_more` with `starting_after = <last id>`.
    *
    * Docs: https://docs.stripe.com/api/refunds/list
    *

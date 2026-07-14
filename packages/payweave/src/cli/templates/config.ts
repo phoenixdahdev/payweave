@@ -1,10 +1,9 @@
 /**
- * `payweave.ts` + `products.ts` renderers (docs/v1/cli.md §1; unified-config.md
- * §1; plans-and-features.md §1–§3, PW-1005).
+ * `payweave.ts` + `products.ts` renderers.
  */
 import type { DatabaseChoice, ProviderId, ScaffoldInput } from "./types";
 
-/** Per-provider config block (unified-config.md §1's `payweave.ts` example, verbatim shape). */
+/** Per-provider config block, matching the documented `payweave.ts` example shape. */
 const PROVIDER_CONFIG_BLOCK: Readonly<Record<ProviderId, readonly string[]>> = {
   stripe: [
     "  stripe: {",
@@ -13,13 +12,13 @@ const PROVIDER_CONFIG_BLOCK: Readonly<Record<ProviderId, readonly string[]>> = {
     "  },",
   ],
   // NOTE: Paystack has no `webhookSecret` config field — its webhook scheme
-  // signs with the secret key itself (unified-config.md §5's dispatch table:
-  // "x-paystack-signature | paystack | HMAC-SHA512 hex, key = secret key").
+  // signs with the secret key itself (x-paystack-signature header, HMAC-SHA512
+  // hex, key = secret key).
   paystack: ["  paystack: {", "    secretKey: process.env.PAYSTACK_SECRET_KEY!,", "  },"],
-  // v3 (the default) uses `webhookSecret` for `verif-hash` equality
-  // (unified-config.md §5); v4's OAuth `clientId`/`clientSecret` shape is a
-  // distinct opt-in the wizard doesn't offer in v1 (spec-silent: v3 is
-  // Flutterwave's documented default and the shape the CLI scaffolds).
+  // v3 (the default) uses `webhookSecret` for `verif-hash` equality. v4's
+  // OAuth `clientId`/`clientSecret` shape is a distinct opt-in the wizard
+  // doesn't offer in v1 (spec-silent: v3 is Flutterwave's documented default
+  // and the shape the CLI scaffolds).
   flutterwave: [
     "  flutterwave: {",
     "    secretKey: process.env.FLUTTERWAVE_SECRET_KEY!,",
@@ -29,7 +28,7 @@ const PROVIDER_CONFIG_BLOCK: Readonly<Record<ProviderId, readonly string[]>> = {
 };
 
 /**
- * Import line(s) for the chosen database adapter (database.md §1, §4 subpaths).
+ * Import line(s) for the chosen database adapter.
  * Absent for `"none"` — a payments-only project imports nothing extra.
  */
 const DATABASE_IMPORT: Readonly<Partial<Record<DatabaseChoice, string>>> = {
@@ -45,7 +44,7 @@ const DATABASE_IMPORT: Readonly<Partial<Record<DatabaseChoice, string>>> = {
   mongodb: 'import { mongodbAdapter } from "payweave/db/mongodb";',
 };
 
-/** The `database:` factory call for the chosen adapter (database.md §1 examples, same shape). */
+/** The `database:` factory call for the chosen adapter. */
 const DATABASE_FACTORY: Readonly<Partial<Record<DatabaseChoice, string>>> = {
   prisma: "prismaAdapter(prisma)",
   drizzle: "drizzleAdapter(db)",
@@ -56,18 +55,17 @@ const DATABASE_FACTORY: Readonly<Partial<Record<DatabaseChoice, string>>> = {
 };
 
 /**
- * Render `payweave.ts` — the file PW-1002's discovery contract finds at the
- * project root (cli.md §5; unified-config.md §1). Exports the client as
+ * Render `payweave.ts` — the file the config-loader's discovery contract
+ * finds at the project root. Exports the client as
  * `export const payweave = createPayweave(...)` (a named `payweave` export —
  * one of the two shapes `loadConfig` accepts).
  *
- * Spec-silent decision: `products`/`database` are wired together or not at
- * all. plans-and-features.md §2 rule 5 makes `products` without a `database`
- * a `PayweaveConfigError` AT CONSTRUCTION — so a `"none"` database choice
- * omits both from the generated config (never a config that throws the
- * moment the user runs anything). `products.ts` is still scaffolded
- * separately either way (cli.md §1's artifact list is unconditional) so
- * wiring it in later is a two-line diff once a database is added.
+ * Decision: `products`/`database` are wired together or not at all.
+ * `products` without a `database` is a `PayweaveConfigError` AT
+ * CONSTRUCTION — so a `"none"` database choice omits both from the generated
+ * config (never a config that throws the moment the user runs anything).
+ * `products.ts` is still scaffolded separately either way, so wiring it in
+ * later is a two-line diff once a database is added.
  */
 export function renderPayweaveConfig(input: ScaffoldInput): string {
   const { providers, database } = input;
@@ -81,7 +79,7 @@ export function renderPayweaveConfig(input: ScaffoldInput): string {
   for (const provider of providers) {
     lines.push(...PROVIDER_CONFIG_BLOCK[provider]);
   }
-  // unified-config.md §2 rule 3: omitted + multiple providers configured is a
+  // `defaultProvider` omitted + multiple providers configured is a
   // PayweaveConfigError — required the moment more than one provider is picked.
   if (providers.length > 1) {
     lines.push(`  defaultProvider: "${providers[0]}",`);
@@ -96,7 +94,7 @@ export function renderPayweaveConfig(input: ScaffoldInput): string {
 
   if (database === "none") {
     lines.push(
-      "// Add a `database` adapter (database.md §1) and pass `products` above to",
+      "// Add a `database` adapter and pass `products` above to",
       "// unlock the billing surface — subscribe()/check()/report(). products.ts",
       "// already has an example plan structure ready to import.",
       "",
@@ -107,11 +105,8 @@ export function renderPayweaveConfig(input: ScaffoldInput): string {
 }
 
 /**
- * Render `products.ts` — the example plan structure cli.md §1 calls for
- * (plans-and-features.md §1–§3, matched close to verbatim since that spec
- * section is written as the public docs page). `feature`/`plan` are
- * re-exported from the package root (PW-802) — imported from `"payweave"`
- * directly, exactly as plans-and-features.md §1 shows.
+ * Render `products.ts` — an example plan structure. `feature`/`plan` are
+ * re-exported from the package root — imported from `"payweave"` directly.
  */
 export function renderProducts(): string {
   return [

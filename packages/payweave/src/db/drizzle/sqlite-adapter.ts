@@ -1,21 +1,21 @@
 /**
- * SQLite/libSQL store implementation for the Drizzle adapter (docs/v1/database.md
- * §2/§3/§5, PW-708). Built against the published `./schema/sqlite.ts` tables —
- * works identically whether the caller's `drizzle-orm` instance wraps
- * `better-sqlite3` or `@libsql/client` (any `BaseSQLiteDatabase`).
+ * SQLite/libSQL store implementation for the Drizzle adapter. Built against
+ * the published `./schema/sqlite.ts` tables — works identically whether the
+ * caller's `drizzle-orm` instance wraps `better-sqlite3` or `@libsql/client`
+ * (any `BaseSQLiteDatabase`).
  *
- * ── Atomicity (spec-silent engineering decision, mirrors PW-706) ───────────
+ * ── Atomicity (spec-silent engineering decision) ────────────────────────────
  * `balances.consume` must recompute the CURRENT billing window from the row's
  * OWN stored `anchor`/`resetInterval` using `src/products/period.ts`'s exact
  * clamp-once calendar arithmetic (the conformance suite's oracle) — no
  * portable single SQL statement can replicate that safely across every
- * `drizzle-orm` sqlite backend (PW-706's `./adapter.ts` header explains this
+ * `drizzle-orm` sqlite backend (`./adapter.ts`'s header explains this
  * in full for the raw-driver case; the same reasoning applies here, doubled,
  * since this ONE adapter must also work over postgres/mysql `drizzle-orm`
  * instances via the SAME public interface). So `consume` reads the current
  * row, decides via `period.ts` directly, and writes the result back.
  *
- * Correctness under `database.md §5`'s N=50 concurrent-call requirement does
+ * Correctness under a high-concurrency requirement does
  * NOT come from SQL transactions here — empirically, `drizzle-orm`'s own
  * `.transaction()` is unusable for this purpose: the `better-sqlite3` session
  * rejects an async transaction callback outright ("Transaction function
@@ -24,15 +24,15 @@
  * `:memory:` `@libsql/client` can each open a DISTINCT physical connection
  * (verified empirically: a second concurrent transaction saw a blank,
  * table-less database) — exactly the "an in-memory database is PER
- * CONNECTION" hazard PW-706's brief calls out. Instead, {@link SerialQueue}
- * (below) serializes every operation issued through THIS adapter instance
- * onto one logical FIFO queue, so at most one read-decide-write sequence (or
- * user-visible `transaction()` callback) is ever in flight against the
- * caller's `db` — the single-connection assumption PW-706 documents holds
- * for Drizzle-wrapped sqlite too (a pooled sqlite `db` is not a realistic
- * configuration). `transaction()` still issues REAL `BEGIN IMMEDIATE` /
- * `COMMIT` / `ROLLBACK` (via `db.run(sql\`...\`)`) so a thrown callback rolls
- * back every write the user made inside it (conformance's
+ * CONNECTION" hazard the sibling sqlite adapter's brief calls out. Instead,
+ * {@link SerialQueue} (below) serializes every operation issued through THIS
+ * adapter instance onto one logical FIFO queue, so at most one
+ * read-decide-write sequence (or user-visible `transaction()` callback) is
+ * ever in flight against the caller's `db` — the same single-connection
+ * assumption holds for Drizzle-wrapped sqlite too (a pooled sqlite `db` is
+ * not a realistic configuration). `transaction()` still issues REAL `BEGIN
+ * IMMEDIATE` / `COMMIT` / `ROLLBACK` (via `db.run(sql\`...\`)`) so a thrown
+ * callback rolls back every write the user made inside it (conformance's
  * "transaction — visibility + atomicity" scenario) — internal single-writer
  * helpers (`consume`, `pushVersion`, `linkProviderRef`) rely on the queue
  * alone (their one terminal write is already atomic at the SQLite level; if
@@ -137,7 +137,7 @@ export function buildSqliteAdapter(
   db: SqliteDrizzleDb,
   runner: SqliteRunner = new TopLevelRunner(),
 ): DatabaseAdapter {
-  // First-use table verification (database.md §4 "Same model" as Prisma —
+  // First-use table verification ("same model" as Prisma —
   // see ./verify.ts). Every store method is gated behind it EXCEPT
   // `migrations.status()/apply()`, which must keep working (to report what's
   // missing / hand back instructions) even before the schema exists.
@@ -202,10 +202,10 @@ export function buildSqliteAdapter(
   };
 }
 
-// ── migrations (database.md §4 — "Same model" as Prisma: instructions only) ─
+// ── migrations ("same model" as Prisma: instructions only) ─────────────────
 
 const DRIZZLE_KIT_INSTRUCTIONS =
-  "payweave/db/drizzle never runs migrations for you (database.md §4). Merge " +
+  "payweave/db/drizzle never runs migrations for you. Merge " +
   '"payweave/db/drizzle"\'s published schema (see `./schema/sqlite.ts`) into your own Drizzle ' +
   "schema, then run `drizzle-kit push` (dev) or `drizzle-kit generate` + `drizzle-kit migrate` " +
   "(tracked migrations) yourself.";
@@ -512,7 +512,7 @@ async function balancesConsume(db: SqliteDrizzleDb, input: PwConsumeInput): Prom
   const applied = input.conditional !== true || remaining >= input.amount;
 
   if (!applied && !resetDue) {
-    // Denied and no reset was due: database.md §3 requires the row be left
+    // Denied and no reset was due: the row must be left
     // COMPLETELY untouched — including `updatedAt` — so issue no write at all.
     return { ...existingRow, applied: false };
   }

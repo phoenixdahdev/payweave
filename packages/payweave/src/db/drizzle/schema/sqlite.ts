@@ -8,10 +8,10 @@
  * adapter).
  *
  * Column-for-column equivalent to `src/db/migrations/ddl.ts`'s
- * `SQLITE_INIT_STATEMENTS` (PW-703) — asserted by `test/db/drizzle.test.ts`'s
+ * `SQLITE_INIT_STATEMENTS` — asserted by `test/db/drizzle.test.ts`'s
  * cross-dialect parity test so this file, `./mysql.ts`, and `./pg.ts` can
  * never silently drift from each other or from the SQL adapters' DDL
- * knowledge. Per-dialect storage mapping (database.md §4): timestamps are
+ * knowledge. Per-dialect storage mapping: timestamps are
  * epoch-millisecond `integer` columns (`{ mode: "timestamp_ms" }` — drizzle
  * marshals to/from a JS `Date` automatically); JSON columns are `text`
  * (`{ mode: "json" }`); booleans are `integer` (`{ mode: "boolean" }`).

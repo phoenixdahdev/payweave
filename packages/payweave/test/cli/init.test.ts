@@ -1,5 +1,5 @@
 /**
- * PW-1005 — `payweave init` (docs/v1/cli.md §1).
+ * `payweave init` (docs/v1/cli.md §1).
  *
  * Four layers of coverage, mirroring `push.test.ts`/`status.test.ts`:
  *   1. `detectFramework` against committed fixture projects
@@ -568,7 +568,6 @@ describe("runInitCommand", () => {
 
   it("the registered initCommand wires straight into runInitCommand's non-interactive guard", async () => {
     expect(initCommand.name).toBe("init");
-    expect(initCommand.ticket).toBe("PW-1005");
     const { io, err } = capture();
     // No injected prompts + no real TTY under the test runner => guard fires.
     const code = await initCommand.run([], io);

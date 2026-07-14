@@ -1,5 +1,5 @@
 /**
- * Unified layer (Surface B) — shared operation input/result types (PRD §6.2).
+ * Unified layer (Surface B) — shared operation input/result types.
  * These signatures are IDENTICAL across providers; each provider implementation
  * (`unified/paystack.ts`, `unified/flutterwave.ts`) satisfies {@link UnifiedNamespace}.
  *

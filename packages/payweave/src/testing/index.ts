@@ -1,4 +1,4 @@
-// testing/ — signWebhook, fixtures loader, MSW helpers (PW-008).
+// testing/ — signWebhook, fixtures loader, MSW helpers.
 // Public subpath: `payweave/testing`.
 
 export {

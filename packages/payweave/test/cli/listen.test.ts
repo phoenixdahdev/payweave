@@ -1,5 +1,5 @@
 /**
- * PW-1006 — `payweave listen` (docs/v1/cli.md §3, §8 "listen transport").
+ * `payweave listen` (docs/v1/cli.md §3, §8 "listen transport").
  *
  * Layers:
  *   1. `parseRetryWindow` — the `--retry` window parser, in isolation.

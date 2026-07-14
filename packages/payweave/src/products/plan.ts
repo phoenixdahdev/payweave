@@ -1,19 +1,19 @@
 /**
- * `plan()` primitive (plans-and-features.md §3–§6, §9, PW-801).
+ * `plan()` primitive.
  *
  * `plan()` validates the parts of a plan definition that don't need the rest
- * of the `products` array: `id`, the `default: true` ⇒ `group` requirement
- * (§4), the price shape (§6 — still MAJOR units, see below), and its own
- * `includes` (§9 — duplicate feature ids, a raw uncalled feature passed by
+ * of the `products` array: `id`, the `default: true` ⇒ `group` requirement,
+ * the price shape (still MAJOR units, see below), and its own
+ * `includes` (duplicate feature ids, a raw uncalled feature passed by
  * mistake, and the deferred boolean-called-with-argument violation from
  * `feature()`). Rules that need the WHOLE `products` array — duplicate plan
  * ids, more than one `default: true` per group, a feature id used with
  * conflicting types across plans, currency resolution against
- * `defaultCurrency` — are `createPayweave`'s job (PW-802, agent-playbook
+ * `defaultCurrency` — are `createPayweave`'s job (agent-playbook
  * contract notes: "cross-plan rules... belong to config parse, not here. Do
  * not half-implement them.").
  *
- * **The money deviation** (AGENTS.md golden rule 7, §9, §6): `price.amount`
+ * **The money deviation** (AGENTS.md golden rule 7): `price.amount`
  * stays in MAJOR units on the value `plan()` returns — that is the ONE place
  * a float is allowed to sit in a Payweave-defined shape. Conversion to
  * integer minor units happens exactly once, via {@link resolvePlanPricing},
@@ -34,11 +34,11 @@ import {
 } from "./feature";
 
 const planPriceSchema = z.strictObject({
-  /** Major units at definition time ONLY (§6, §9) — e.g. `19.99` for $19.99. */
+  /** Major units at definition time ONLY — e.g. `19.99` for $19.99. */
   amount: z
     .number({ error: "price.amount must be a finite number" })
     .positive("price.amount must be positive"),
-  /** ISO 4217; omit to use `defaultCurrency` from `createPayweave` (§6). */
+  /** ISO 4217; omit to use `defaultCurrency` from `createPayweave`. */
   currency: z
     .string()
     .regex(/^[A-Za-z]{3}$/, 'price.currency must be a 3-letter ISO 4217 code, e.g. "USD"')
@@ -47,9 +47,9 @@ const planPriceSchema = z.strictObject({
   interval: z.enum(["month", "year"]),
 });
 
-/** A plan's price at DEFINITION time — `amount` is MAJOR units (the money deviation, §9). */
+/** A plan's price at DEFINITION time — `amount` is MAJOR units (the money deviation). */
 export type PlanPrice = z.infer<typeof planPriceSchema>;
-/** `price` as accepted by `plan()` (§6). */
+/** `price` as accepted by `plan()`. */
 export type PlanPriceInput = z.input<typeof planPriceSchema>;
 
 const planBaseSchema = z.strictObject({
@@ -67,15 +67,15 @@ function zodDetail(err: z.ZodError): string {
 /** `plan()`'s accepted input shape, minus `includes` (handled separately — see module docs). */
 type PlanBaseInput = z.input<typeof planBaseSchema>;
 
-/** `plan()`'s accepted input — the bound for its `const` generic (§10). */
+/** `plan()`'s accepted input — the bound for its `const` generic. */
 export type PlanDefInput = PlanBaseInput & {
   readonly includes?: readonly FeatureInclusion[];
 };
 
 /**
- * A defined plan (§3), generic over its literal id/group/feature-ids so
+ * A defined plan, generic over its literal id/group/feature-ids so
  * `PayweaveClient<C>` can extract `PlanIds<C>`/`FeatureIds<C>` from a
- * `products` array (§10, PW-802). `price` stays in MAJOR units — see
+ * `products` array. `price` stays in MAJOR units — see
  * {@link resolvePlanPricing} for the config-parse-time conversion.
  */
 export type Plan<
@@ -91,10 +91,10 @@ export type Plan<
   readonly includes: readonly FeatureInclusion<FeatureIds>[];
 };
 
-/** Extracts `Def["group"]` as a literal, or `undefined` when omitted (§10). */
+/** Extracts `Def["group"]` as a literal, or `undefined` when omitted. */
 export type PlanGroupOf<Def> = Def extends { group: infer G extends string } ? G : undefined;
 
-/** Extracts the union of every `includes` entry's literal feature id (§10). */
+/** Extracts the union of every `includes` entry's literal feature id. */
 export type PlanFeatureIdsOf<Def> = Def extends { includes: infer Includes }
   ? Includes extends readonly (infer Item)[]
     ? Item extends FeatureInclusion<infer FeatureId>
@@ -104,7 +104,7 @@ export type PlanFeatureIdsOf<Def> = Def extends { includes: infer Includes }
   : never;
 
 /**
- * Validates one plan's `includes` array (§9): a raw, uncalled feature passed
+ * Validates one plan's `includes` array: a raw, uncalled feature passed
  * by mistake gets the "did you mean" hint; a boolean feature called with an
  * argument (deferred from `feature()`, see feature.ts docs) is rejected
  * here; duplicate feature ids within this SAME plan are rejected. Anything
@@ -147,9 +147,9 @@ function validateIncludes(planId: string, raw: readonly unknown[]): FeatureInclu
 }
 
 /**
- * Define a plan (§3). Validates `id`, the `default: true` ⇒ `group`
- * requirement (§4), the price shape (§6 — still major units), and
- * `includes` (§9) — every rule that needs only THIS plan, not the rest of
+ * Define a plan. Validates `id`, the `default: true` ⇒ `group`
+ * requirement, the price shape (still major units), and
+ * `includes` — every rule that needs only THIS plan, not the rest of
  * the `products` array (see module docs for what's deliberately NOT here).
  *
  * ```ts
@@ -179,7 +179,7 @@ export function plan<const Def extends PlanDefInput>(
 
   if (base.default === true && base.group === undefined) {
     throw new PayweaveValidationError(
-      `plan "${base.id}": default: true requires a group (plans-and-features.md §4)`,
+      `plan "${base.id}": default: true requires a group`,
     );
   }
 
@@ -197,7 +197,7 @@ export function plan<const Def extends PlanDefInput>(
   return result as unknown as Plan<Def["id"], PlanGroupOf<Def>, PlanFeatureIdsOf<Def>>;
 }
 
-// ── Money deviation — price resolution (§9, AGENTS.md golden rule 7) ───────
+// ── Money deviation — price resolution (AGENTS.md golden rule 7) ───────────
 
 /** A plan's price AFTER config-parse conversion — integer minor units. */
 export type ResolvedPlanPrice = {
@@ -206,23 +206,23 @@ export type ResolvedPlanPrice = {
   readonly interval: "month" | "year";
 };
 
-/** The `999,999.99`-equivalent bound for a currency's minor-unit exponent (§6). */
+/** The `999,999.99`-equivalent bound for a currency's minor-unit exponent. */
 function maxMajorAmount(exponent: number): string {
   const bound = 10 ** (6 + exponent) - 1;
   return (bound / 10 ** exponent).toFixed(exponent);
 }
 
 /**
- * Convert a paid plan's `price.amount` (major units, §6) to integer minor
+ * Convert a paid plan's `price.amount` (major units) to integer minor
  * units — the ONE place `toMinor` runs for a plan (AGENTS.md golden rule 7).
  * Returns `undefined` for a free plan (no `price`).
  *
- * The plan's OWN `price.currency` always wins when set (§6: "omit it to use
+ * The plan's OWN `price.currency` always wins when set ("omit it to use
  * `defaultCurrency`") — `defaultCurrency` is the FALLBACK a plan without its
- * own currency resolves against. `createPayweave` (PW-802) decides "neither
+ * own currency resolves against. `createPayweave` decides "neither
  * present → config error" (`PayweaveConfigError`, cross-plan rule) BEFORE
  * ever calling this helper — this function only wraps the conversion itself
- * and the `§6` amount bound, naming the offending plan id on failure
+ * and the amount bound, naming the offending plan id on failure
  * (`toMinor`'s own message doesn't — agent-playbook contract notes).
  */
 export function resolvePlanPricing(

@@ -2,8 +2,7 @@
  * SQL translation of `src/products/period.ts`'s anchor-relative billing-period
  * math, for the ONE place `balances.consume`'s single-statement design needs
  * it: recomputing an EXISTING row's current window from its own stored
- * `anchor`/`reset_interval` when a lazy reset is due (metered-usage.md §5,
- * database.md §5 pg bullet — "this ticket's headline").
+ * `anchor`/`reset_interval` when a lazy reset is due.
  *
  * ── Why this exists instead of reading the row in JS (deviation from the
  * sqlite/drizzle adapters) ──────────────────────────────────────────────────
@@ -11,12 +10,12 @@
  * read the current row (locked, in a transaction), decide in JS via
  * `currentPeriod()` directly, and write the result back — sidestepping any
  * need to reimplement calendar math in SQL, at the cost of an explicit
- * multi-statement transaction. PW-704's brief is explicit that the DIRECT
- * `pg` adapter's headline requirement is different: `consume` must be ONE
- * statement leveraging pg's native row locking (database.md §5: "pg row
- * locking / single-statement atomicity — NOT a read-then-write"). Getting
- * that MUST express the reset-due branch's period math as SQL evaluated
- * against the locked row's own `anchor`/`reset_interval` — hence this module.
+ * multi-statement transaction. The DIRECT `pg` adapter's headline
+ * requirement is different: `consume` must be ONE statement leveraging pg's
+ * native row locking — single-statement atomicity, NOT a read-then-write.
+ * Getting that MUST express the reset-due branch's period math as SQL
+ * evaluated against the locked row's own `anchor`/`reset_interval` — hence
+ * this module.
  *
  * The FRESH-row branch of `consume` (no existing row) needs NO SQL month
  * math at all: `src/db/postgres/adapter.ts` computes that branch's
@@ -59,15 +58,15 @@
  * it does not clamp to Feb 28, which is exactly the bug this hand-rolled
  * expression avoids).
  *
- * VERIFICATION NOTE (no docker in this environment — see the ticket's
- * handoff report): this SQL cannot be executed against a real postgres here.
+ * VERIFICATION NOTE (no docker in this environment): this SQL cannot be
+ * executed against a real postgres here.
  * `test/db/postgres.test.ts` instead cross-checks a byte-for-byte JS mirror
  * of this exact formula (same operations: `Math.floor` for `FLOOR`, `%` +
  * normalization for `MOD`, the same four-candidate/`CASE` structure) against
  * `src/products/period.ts`'s `currentPeriod` across day/week/month/year,
  * leap years, end-of-month anchors, and both directions of drift — the
  * strongest confidence available without a live database; a real postgres
- * run (PW-710's CI matrix) is the only thing that can confirm postgres's
+ * run against a live database is the only thing that can confirm postgres's
  * own `EXTRACT`/`make_timestamptz`/interval semantics agree with the mirror.
  */
 

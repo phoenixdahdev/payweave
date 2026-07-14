@@ -1,5 +1,5 @@
 /**
- * Provider adapter contract v2 (PW-608, providers.md §4, unified-config.md §7).
+ * Provider adapter contract v2.
  * Third parties (and our own three adapters) implement {@link ProviderAdapter};
  * {@link defineProvider} is the Arcie-style identity helper that also validates
  * the shape at runtime. Adapters may depend ONLY on `core/`; `unified/` depends
@@ -9,16 +9,15 @@
  * - `configKey` + `configSchema`: the root config key an adapter registers
  *   under and the Zod schema validating its slice of config, so third-party
  *   adapters can compose onto `createPayweave`'s config WITHOUT core edits
- *   (unified-config.md §7).
  * - `webhooks.signatureHeader`: the webhook signature header name this
- *   adapter's scheme is detected by (unified-config.md §5) — the multi-provider
+ *   adapter's scheme is detected by — the multi-provider
  *   dispatcher matches on header NAMES only, never the body.
  * - `unified`: unchanged shape, documented as a PARTIAL surface — an adapter
- *   may implement any subset of the unified ops (providers.md §3.3; not every
- *   provider supports every op).
+ *   may implement any subset of the unified ops (not every provider supports
+ *   every op).
  * - `billing`: a typed placeholder for the billing-adapter conformance suite
- *   (PW-803/804) — present so adapters can start declaring the slot, not yet
- *   enforced or consumed anywhere.
+ *   — present so adapters can start declaring the slot, not yet enforced or
+ *   consumed anywhere.
  */
 import { z } from "zod";
 import { PayweaveConfigError } from "./errors";
@@ -72,8 +71,8 @@ export interface UnifiedEvent {
 }
 
 /**
- * Optional unified-layer operations an adapter can implement to join Surface B
- * (providers.md §3.3). Deliberately loose/PARTIAL — a real adapter may (and
+ * Optional unified-layer operations an adapter can implement to join Surface
+ * B. Deliberately loose/PARTIAL — a real adapter may (and
  * often does) implement only a subset of `UnifiedNamespace`'s ops; the actual
  * per-op shape lives in `unified/types.ts` (which `core/` never imports —
  * dependency direction is `unified/` → adapters → `core/`, never reversed).
@@ -81,17 +80,17 @@ export interface UnifiedEvent {
 export type UnifiedOps = Record<string, unknown>;
 
 /**
- * Billing-adapter conformance slot — a typed placeholder for PW-803/804.
- * Third-party adapters that want to participate in the billing surface
- * (`subscribe`/`check`/`report`) will implement this; the shape is
- * intentionally opaque today (mirrors {@link UnifiedOps}'s own looseness) —
- * the conformance suite that gives it real structure and enforces it lands
- * with PW-803/804. Not consumed anywhere yet.
+ * Billing-adapter conformance slot — a typed placeholder for third-party
+ * adapters that want to participate in the billing surface
+ * (`subscribe`/`check`/`report`); the shape is intentionally opaque today
+ * (mirrors {@link UnifiedOps}'s own looseness) — the conformance suite that
+ * gives it real structure and enforces it is separate follow-up work. Not
+ * consumed anywhere yet.
  */
 export type BillingOps = Record<string, unknown>;
 
 /**
- * The contract every provider adapter satisfies (providers.md §4). `id` is the
+ * The contract every provider adapter satisfies. `id` is the
  * adapter's identity; `configKey` is the root config key it registers under
  * (usually equal to `id` — kept separate so a third-party adapter can choose
  * its own key without colliding). `webhooks.verify` runs on raw bytes with a
@@ -100,7 +99,7 @@ export type BillingOps = Record<string, unknown>;
 export interface ProviderAdapter {
   readonly id: string;
   /**
-   * Root config key this adapter registers under (unified-config.md §7) — the
+   * Root config key this adapter registers under — the
    * key third-party consumers pass to `createPayweave({ [configKey]: ... })`.
    */
   readonly configKey: string;
@@ -118,8 +117,8 @@ export interface ProviderAdapter {
   webhooks: {
     /**
      * The webhook signature header name this adapter's scheme is detected by
-     * (unified-config.md §5, e.g. `"stripe-signature"`). Drives multi-provider
-     * header dispatch — matched case-insensitively, on the header NAME only.
+     * (e.g. `"stripe-signature"`). Drives multi-provider header dispatch —
+     * matched case-insensitively, on the header NAME only.
      */
     signatureHeader: string;
     verify(input: { rawBody: string | Uint8Array; headers: HeaderLookup; secret: string }): boolean;
@@ -128,7 +127,7 @@ export interface ProviderAdapter {
   };
   /** Partial unified-ops surface (Surface B) this adapter implements — see {@link UnifiedOps}. */
   unified?: UnifiedOps;
-  /** Billing conformance slot (placeholder for PW-803/804) — typed, not implemented. */
+  /** Billing conformance slot (placeholder) — typed, not implemented. */
   billing?: BillingOps;
 }
 
@@ -164,7 +163,7 @@ const providerAdapterSchema = z.object({
 
 /**
  * Identity helper that validates an adapter's shape at runtime (Arcie `define*`
- * pattern, providers.md §4). Returns the same object (typed) on success; throws
+ * pattern). Returns the same object (typed) on success; throws
  * {@link PayweaveConfigError} describing the first structural problem otherwise.
  *
  * @example

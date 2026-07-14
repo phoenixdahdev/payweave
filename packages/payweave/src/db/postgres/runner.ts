@@ -1,6 +1,5 @@
 /**
- * Concurrency backbone for the postgres adapter (docs/v1/database.md §5,
- * PW-704).
+ * Concurrency backbone for the postgres adapter.
  *
  * Unlike the sqlite adapter (one serialized connection) or the drizzle
  * Postgres adapter (a `db.transaction()` + `SELECT ... FOR UPDATE` per

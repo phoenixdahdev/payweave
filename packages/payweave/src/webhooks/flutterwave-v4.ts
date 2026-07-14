@@ -1,5 +1,5 @@
 /**
- * Flutterwave v4 webhook verification (TDD §10). HMAC-SHA256 over the RAW body,
+ * Flutterwave v4 webhook verification. HMAC-SHA256 over the RAW body,
  * BASE64 digest, keyed with the dashboard secret hash. Timing-safe with a
  * length-guard; fails closed on a missing header. Active only when the client's
  * configured `version` is `"v4"` — never accept both v3 and v4 on one client.

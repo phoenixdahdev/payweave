@@ -1,5 +1,5 @@
 /**
- * Unified-ops capability matrix (providers.md §3.3, PW-607). Pure data +
+ * Unified-ops capability matrix. Pure data +
  * pure functions — no network, no HttpClient — so these are plain unit tests
  * over `unified/mappings.ts`'s exports, exhaustively covering every
  * provider/op cell.

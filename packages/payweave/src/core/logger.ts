@@ -1,5 +1,5 @@
 /**
- * Structured logging primitives (TDD §6.1). The SDK NEVER calls `console.*`
+ * Structured logging primitives. The SDK NEVER calls `console.*`
  * in `src/`; every diagnostic goes through an injected {@link Logger}. Payloads
  * are always passed through `redact()` before they reach a logger.
  */

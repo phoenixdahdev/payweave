@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe PaymentIntents module (PW-602). Request fields are
+ * Zod schemas for the Stripe PaymentIntents module. Request fields are
  * sourced verbatim from the official API reference (all verified 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/payment_intents/create
  *   - Retrieve: https://docs.stripe.com/api/payment_intents/retrieve
@@ -148,7 +148,7 @@ export const paymentIntent = z.looseObject({
   /**
    * `requires_payment_method` | `requires_confirmation` | `requires_action` |
    * `processing` | `requires_capture` | `canceled` | `succeeded` —
-   * normalization is the unified layer's job (providers.md §3.3).
+   * normalization is the unified layer's job.
    */
   status: z.string().optional(),
   client_secret: z.string().nullable().optional(),

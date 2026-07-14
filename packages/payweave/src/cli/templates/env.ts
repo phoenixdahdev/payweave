@@ -1,10 +1,10 @@
 /**
- * `.env.example` renderer (docs/v1/cli.md §1, §7; PW-1005).
+ * `.env.example` renderer.
  *
  * Env var NAMES only, no values — real secrets never belong in a scaffolded
- * file (cli.md §1: "collects the env var names"), and the AGENTS.md §2 rule 5
- * secret-regex CI gate (`scripts/check-no-secrets.mjs`) scans every committed
- * file, so no placeholder here may even resemble a real key shape.
+ * file, and the secret-regex CI gate (`scripts/check-no-secrets.mjs`) scans
+ * every committed file, so no placeholder here may even resemble a real key
+ * shape.
  */
 import type { DatabaseChoice, ProviderId, ScaffoldInput } from "./types";
 
@@ -36,7 +36,7 @@ const DATABASE_ENV_BLOCK: Readonly<Partial<Record<DatabaseChoice, readonly strin
 export function renderEnvExample(input: ScaffoldInput): string {
   const blocks: (readonly string[])[] = [
     [
-      "# Payweave — environment variables (docs/v1/cli.md §1)",
+      "# Payweave — environment variables",
       "# Fill in real values in your own .env; never commit secrets.",
     ],
   ];

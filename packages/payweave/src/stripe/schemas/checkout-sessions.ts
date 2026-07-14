@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Checkout Sessions module (PW-602). Request fields
+ * Zod schemas for the Stripe Checkout Sessions module. Request fields
  * are sourced verbatim from the official API reference (all verified
  * 2026-07-12):
  *   - Create:     https://docs.stripe.com/api/checkout/sessions/create
@@ -9,7 +9,7 @@
  *   - Line items: https://docs.stripe.com/api/checkout/sessions/line_items
  *
  * Amounts (`unit_amount`, `amount_total`, …) are integer MINOR units on both
- * sides (providers.md §3.1) — no conversion anywhere. Response schemas are
+ * sides — no conversion anywhere. Response schemas are
  * LOOSE: unknown provider fields pass through, drift is logged, never thrown.
  */
 import { z } from "zod";

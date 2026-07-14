@@ -1,6 +1,6 @@
 // unified/ — normalized layer. `mappings.ts` is the single source of truth for
 // webhook event + transaction status normalization AND the unified-ops
-// capability matrix, and is a PUBLIC contract (AGENTS.md §9): changing its
+// capability matrix, and is a PUBLIC contract: changing its
 // semantics needs a changeset. Re-exported here so it is reachable on the
 // `payweave/unified` subpath.
 export {

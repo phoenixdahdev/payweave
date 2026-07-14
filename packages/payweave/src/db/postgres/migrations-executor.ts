@@ -1,6 +1,6 @@
 /**
- * Bridges the postgres adapter's {@link Runner} to PW-703's driver-agnostic
- * {@link MigrationExecutor} (docs/v1/database.md §4). The postgres dialect
+ * Bridges the postgres adapter's {@link Runner} to the driver-agnostic
+ * {@link MigrationExecutor}. The postgres dialect
  * already emits `$1…` placeholders and expects `Date` binds for timestamp
  * columns (`src/db/migrations/ledger.ts`), so this bridge is a thin
  * pass-through — no dialect translation needed here.

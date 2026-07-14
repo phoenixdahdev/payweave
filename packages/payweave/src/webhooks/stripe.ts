@@ -1,5 +1,5 @@
 /**
- * Stripe webhook verification (providers.md §3.4, PW-606). HMAC-SHA256 over
+ * Stripe webhook verification. HMAC-SHA256 over
  * `${t}.${rawBody}` keyed with the endpoint signing secret (`whsec_*`), hex
  * digest. The `stripe-signature` header carries `t=<unix seconds>` plus one
  * `v1=<hex hmac>` per active secret (several during a key roll — accept if ANY

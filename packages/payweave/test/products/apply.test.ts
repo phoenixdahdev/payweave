@@ -1,11 +1,11 @@
 /**
- * PW-805 — webhook → billing state (`event.apply()`). Security-critical
+ * webhook → billing state (`event.apply()`). Security-critical
  * (AGENTS.md rule 6, `docs/v1/implementation/agent-playbook.md`): idempotency
  * and fail-closed correctness are the bar, not just "the happy path works."
  *
- * Vectors are produced by `signWebhook` ONLY (AGENTS.md §7) against a REAL
- * in-memory sqlite `DatabaseAdapter` (PW-706) and a REAL `createPayweave`
- * client, mirroring `subscribe.test.ts`'s (PW-804) conventions exactly — MSW
+ * Vectors are produced by `signWebhook` ONLY against a REAL
+ * in-memory sqlite `DatabaseAdapter` and a REAL `createPayweave`
+ * client, mirroring `subscribe.test.ts`'s conventions exactly — MSW
  * mocks only the network edge, never `HttpClient`/`fetch`.
  */
 import { describe, expect, it, afterEach } from "vitest";
@@ -814,7 +814,7 @@ describe("apply() — claimed-but-unapplied re-claim window (integration with we
     const evt = client.webhooks.constructEvent({ rawBody: signed.body, headers: signed.headers });
 
     // Simulate a PRIOR apply that claimed the event then crashed before
-    // `markApplied` — exactly the state `webhookEvents.claim` (database.md §3)
+    // `markApplied` — exactly the state `webhookEvents.claim`
     // exists to recover from, driven here (not duplicating PW-702's own
     // conformance suite) purely to prove `apply()`'s INTEGRATION with it.
     const t0 = new Date("2026-01-01T00:00:00Z");

@@ -1,5 +1,5 @@
 /**
- * PW-703 — embedded SQL migrations engine (docs/v1/database.md §4).
+ * embedded SQL migrations engine (docs/v1/database.md §4).
  *
  * Everything runs against a scripted fake executor (records every SQL call,
  * maintains an in-memory `pw_migrations` ledger) — no docker; real-database

@@ -1,15 +1,14 @@
 /**
- * Builds a `DatabaseAdapter` (docs/v1/database.md §3) over a connected
- * `mongodb` `Db` — the MongoDB dialect's store implementations
- * (docs/v1/database.md §4, PW-709).
+ * Builds a `DatabaseAdapter` over a connected
+ * `mongodb` `Db` — the MongoDB dialect's store implementations.
  *
- * ── `_id` mapping (database.md §4) ──────────────────────────────────────────
+ * ── `_id` mapping ──────────────────────────────────────────
  * Every document IS the `src/db/schema.ts` row shape, with `id` stored as
  * `_id`: `pw_customers`/`pw_plans`/`pw_subscriptions`/`pw_feature_balances`
  * use a `pwv_<ulid>` (`./id.ts`); `pw_webhook_events`' `_id` IS `dedupeKey`
  * directly (the schema's own documented natural-key exception, `./rows.ts`).
  *
- * ── `balances.consume` / `webhookEvents.claim` atomicity (database.md §5) ──
+ * ── `balances.consume` / `webhookEvents.claim` atomicity ──
  * Each is EXACTLY ONE `findOneAndUpdate` with `upsert: true` and an
  * AGGREGATION-PIPELINE update (an array of stages, not a plain `$set`
  * object) — MongoDB evaluates the whole pipeline against the matched (or, on
@@ -47,7 +46,7 @@
  * documents always treat their values as literals, pipeline or not is the
  * whole distinction.
  *
- * ── Transactions (database.md §4) ────────────────────────────────────────────
+ * ── Transactions ────────────────────────────────────────────
  * `transaction()` delegates to `./topology.ts`'s `runTransaction`, which
  * tries a real multi-document transaction and falls back to the documented
  * non-atomic path on standalone deployments. Every store method below
@@ -313,8 +312,8 @@ async function plansPushVersion(
   sessionOpt: Record<string, unknown>,
 ): Promise<PwPlanVersion> {
   // No injectable `now`/no atomicity race REQUIRED by the conformance suite
-  // (only `balances.consume`/`webhookEvents.claim` carry that obligation,
-  // database.md §5/§6) — but a bounded retry loop on the (planId, version)
+  // (only `balances.consume`/`webhookEvents.claim` carry that obligation)
+  // — but a bounded retry loop on the (planId, version)
   // unique-index collision hardens this against real concurrent pushes
   // without needing a session transaction for every call.
   for (let attempt = 0; attempt < PUSH_VERSION_MAX_ATTEMPTS; attempt++) {
@@ -461,7 +460,7 @@ function buildConsumePipeline(input: PwConsumeInput, generatedId: string): Recor
     // document (that behavior is a real-server implementation detail this
     // sandbox cannot verify one way or the other) — EVERY field the document
     // needs, including customerId/featureId/group, is explicitly `$ifNull`'d
-    // from this call's own inputs (database.md §4's "$ifNull defaults"),
+    // from this call's own inputs (the "$ifNull defaults" pattern),
     // so the pipeline is correct regardless of that assumption.
     {
       $set: {
@@ -504,7 +503,7 @@ function buildConsumePipeline(input: PwConsumeInput, generatedId: string): Recor
     // Each of the following stays in its OWN `$set` stage rather than sharing
     // one with the field it depends on — deliberately conservative given this
     // sandbox cannot execute a real pipeline to confirm same-stage field
-    // visibility ordering (see the PW-709 report's honesty section).
+    // visibility ordering.
     {
       $set: {
         __remaining: { $subtract: ["$limit", "$__baseUsed"] },
@@ -524,7 +523,7 @@ function buildConsumePipeline(input: PwConsumeInput, generatedId: string): Recor
       },
     },
     // D: write the real fields — untouched (including `updatedAt`) when
-    // denied AND no reset was due (database.md §3: "leave the row untouched").
+    // denied AND no reset was due (leave the row untouched in that case).
     {
       $set: {
         used: { $cond: ["$__shouldWrite", "$__finalUsed", "$used"] },
@@ -574,8 +573,8 @@ async function balancesResetTo(
   init: PwFeatureBalanceInit,
   sessionOpt: Record<string, unknown>,
 ): Promise<void> {
-  // No injectable `now` in this contract method (database.md §3) — a plan
-  // change's anchor IS "now" (metered-usage.md §5 last bullet), and this is
+  // No injectable `now` in this contract method — a plan
+  // change's anchor IS "now", and this is
   // an unconditional REPLACE regardless of the row's prior state, so no
   // pipeline/atomicity concern applies (unlike `consume`).
   const now = new Date();
@@ -618,7 +617,7 @@ async function balancesResetTo(
  * back from the returned document — no second round trip, no caller-unique
  * token needed (a single `findOneAndUpdate` is one atomic per-document
  * operation regardless of topology, so at most one concurrent caller ever
- * observes `_pwWon: true` for a given transition, database.md §3/§5).
+ * observes `_pwWon: true` for a given transition.
  */
 function buildClaimPipeline(
   dedupeKey: string,

@@ -40,7 +40,7 @@
 import { PayweaveValidationError } from "../core/errors";
 import type { EncodedBody } from "../core/http";
 
-/** The Content-Type every Stripe request body is sent with (providers.md §3.1). */
+/** The Content-Type every Stripe request body is sent with. */
 export const STRIPE_FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
 /** Plain-object check — accepts null-prototype objects, rejects class instances. */

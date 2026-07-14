@@ -1,26 +1,26 @@
 /**
- * Prisma/Drizzle schema fragment renderers (docs/v1/cli.md §1;
- * database.md §2, §4; PW-1005).
+ * Prisma/Drizzle schema fragment renderers.
  */
 import type { ScaffoldFile } from "./types";
 
 /**
- * Provisional Prisma schema fragment, hand-derived from database.md §2's
- * logical schema table. `payweave/db/prisma`'s real factory (PW-707) has not
- * shipped as of this ticket — it is still a placeholder that always throws
+ * Provisional Prisma schema fragment, hand-derived from the logical schema
+ * table (`src/db/schema.ts`). `payweave/db/prisma`'s real factory has not
+ * shipped yet — it is still a placeholder that always throws
  * `PayweaveConfigError` (see `src/db/prisma/index.ts`) — so there is no
- * canonical fragment to re-export yet. Treat this as a starting point:
- * database.md itself says PW-707 "will publish a canonical schema.prisma
- * fragment" — confirm field names against that once it ships.
+ * canonical fragment to re-export yet. Treat this as a starting point: once
+ * a real canonical schema.prisma fragment ships, confirm field names
+ * against that instead.
  *
- * `pw_migrations` is deliberately NOT included: database.md §4 is explicit
- * that Prisma/Drizzle users own their own migrations (`prisma migrate`),
- * unlike the SQL adapters where Payweave applies its own embedded migrations.
+ * `pw_migrations` is deliberately NOT included: Prisma/Drizzle users own
+ * their own migrations (`prisma migrate`), unlike the SQL adapters where
+ * Payweave applies its own embedded migrations.
  */
 export function renderPrismaSchema(): ScaffoldFile {
-  const contents = `// payweave.prisma — Payweave schema fragment (database.md §2).
-// PROVISIONAL: hand-derived pending PW-707's canonical fragment — see the
-// doc comment on this file's generator (src/cli/templates/schema.ts).
+  const contents = `// payweave.prisma — Payweave schema fragment.
+// PROVISIONAL: hand-derived pending a canonical fragment shipping with the
+// Prisma adapter — see the doc comment on this file's generator
+// (src/cli/templates/schema.ts).
 // Merge these models into your own schema.prisma.
 
 model PwCustomer {
@@ -106,13 +106,13 @@ model PwWebhookEvent {
 /**
  * Drizzle guidance file. Unlike Prisma, `payweave/db/drizzle` already SHIPS
  * real, canonical table definitions — `pgSchema`/`mysqlSchema`/`sqliteSchema`
- * (database.md's PW-708 build resolution note) — so this re-exports the real
- * thing instead of hand-duplicating a fragment that could drift from it.
+ * — so this re-exports the real thing instead of hand-duplicating a
+ * fragment that could drift from it.
  */
 export function renderDrizzleSchema(): ScaffoldFile {
   const contents = [
-    "// payweave-schema.ts — merge Payweave's tables into your Drizzle schema",
-    "// (database.md §4). Pick the export matching your SQL dialect; the other",
+    "// payweave-schema.ts — merge Payweave's tables into your Drizzle schema.",
+    "// Pick the export matching your SQL dialect; the other",
     "// two stay commented out so this file typechecks regardless of which one",
     "// you use.",
     'export { pgSchema as payweavePgSchema } from "payweave/db/drizzle";',

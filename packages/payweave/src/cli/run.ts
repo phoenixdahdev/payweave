@@ -1,11 +1,10 @@
 /**
- * `payweave` CLI dispatch (docs/v1/cli.md; PW-1001).
+ * `payweave` CLI dispatch.
  *
- * Argument parsing uses `mri` — the spec named no arg-parsing framework, so
- * PW-1001 picked the smallest pure-JS zero-dependency option and recorded the
- * choice in cli.md §7. The dispatch table itself is hand-rolled (per the
- * PW-1001 brief); subcommands register through the `CliCommand` shape in
- * `./command` and PW-1002+ swap the placeholder bodies for real ones.
+ * Argument parsing uses `mri` — the smallest pure-JS zero-dependency option
+ * for this. The dispatch table itself is hand-rolled; subcommands register
+ * through the `CliCommand` shape in `./command`, each swapping in its own
+ * real body.
  *
  * Exit codes: 0 success · 1 command failure · 2 usage error (unknown command).
  */
@@ -20,7 +19,7 @@ import { statusCommand } from "./status";
 import { withTelemetry } from "./telemetry";
 import { CLI_VERSION } from "./version";
 
-/** Dispatch table, in docs order (cli.md §1–§4). */
+/** Dispatch table, in docs order. */
 export const COMMANDS: readonly CliCommand[] = [
   initCommand,
   pushCommand,
@@ -44,7 +43,7 @@ const usage = (): string => {
     "  -h, --help     Show this help",
     "  -v, --version  Print the CLI version",
     "",
-    "Docs: docs/v1/cli.md — https://github.com/phoenixdahdev/payweave",
+    "Docs: https://github.com/phoenixdahdev/payweave",
   ].join("\n");
 };
 
@@ -62,7 +61,7 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo): Promi
   });
 
   // Global --help always wins wherever it appears (subcommands grow their own
-  // help pages with PW-1003+). --version/-v is honored only without a command
+  // help pages later). --version/-v is honored only without a command
   // so subcommands stay free to claim -v (e.g. --verbose) for themselves.
   if (args["help"] === true) {
     io.out(usage());
@@ -90,9 +89,9 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo): Promi
     return 2;
   }
 
-  // PW-1007 — anonymous usage telemetry (cli.md §6, src/cli/telemetry.ts).
+  // anonymous usage telemetry (see src/cli/telemetry.ts).
   // Wraps ONLY the matched command below (never --help/--version/unknown
-  // above); kept as its own function/module so PW-1006's listen registration
-  // — elsewhere in this file — merges without conflict.
+  // above); kept as its own function/module, decoupled from the rest of
+  // this file's command-registration logic.
   return withTelemetry(command.name, () => command.run(argv.slice(argv.indexOf(commandName) + 1), io), io);
 }

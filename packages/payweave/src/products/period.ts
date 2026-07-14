@@ -1,8 +1,8 @@
 /**
- * Billing-period math for metered features (metered-usage.md §5, PW-901).
+ * Billing-period math for metered features.
  *
  * All arithmetic is UTC on epoch milliseconds — no timezone or DST logic in v1
- * (metered-usage.md §5). `day`/`week` are fixed 86_400_000 / 604_800_000 ms
+ * `day`/`week` are fixed 86_400_000 / 604_800_000 ms
  * multiples of the anchor; UTC has no DST, so a "day" is always exactly 24h.
  *
  * THE invariant: period math is ANCHOR-RELATIVE. Period `n` is
@@ -18,13 +18,13 @@
  */
 import { PayweaveValidationError } from "../core/errors";
 
-/** Reset interval for a metered feature (plans-and-features.md §2). */
+/** Reset interval for a metered feature. */
 export type ResetInterval = "day" | "week" | "month" | "year";
 
-/** Exactly 24 UTC hours in milliseconds (metered-usage.md §5). */
+/** Exactly 24 UTC hours in milliseconds. */
 export const DAY_MS = 86_400_000;
 
-/** Exactly 7 UTC days in milliseconds (metered-usage.md §5). */
+/** Exactly 7 UTC days in milliseconds. */
 export const WEEK_MS = 604_800_000;
 
 /**
@@ -181,7 +181,7 @@ export function currentPeriod(
   }
 
   // Walk up to the spec's answer — the smallest `index` whose exclusive end is
-  // beyond `nowMs` (metered-usage.md §5). The estimate never overshoots, so at
+  // beyond `nowMs`. The estimate never overshoots, so at
   // most two exact anchor-relative probes run; `advance` is strictly
   // increasing in `count`, so the loop terminates.
   let index = Math.max(0, estimate - 1);

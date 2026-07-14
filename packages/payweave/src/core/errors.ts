@@ -187,7 +187,7 @@ export interface MapHttpErrorExtra {
 }
 
 /**
- * The single status → error-class mapping used everywhere (TDD §6.3). No
+ * The single status → error-class mapping used everywhere. No
  * per-resource error mapping is permitted. `body` is the parsed provider
  * envelope (or `undefined`); `extra` carries header-derived signals.
  *
@@ -232,7 +232,7 @@ export function mapHttpError(
     // Stripe: a failed charge (`card_error` — declines etc.). The provider
     // reported a processing failure, so this is a PayweaveProviderError with
     // `providerCode` (e.g. `card_declined`), but NOT retryable — re-sending a
-    // declined charge must be an explicit caller decision (AGENTS.md §2.4).
+    // declined charge must be an explicit caller decision.
     return new PayweaveProviderError(`${provider} payment failed (402)${summary}`, {
       ...base,
       isRetryable: false,

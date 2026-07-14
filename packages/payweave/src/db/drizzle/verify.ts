@@ -18,7 +18,7 @@ import { sql } from "drizzle-orm";
 import { PayweaveConfigError } from "../../core/errors";
 import { PW_TABLES, type PwTableName } from "../schema";
 
-/** Every table the Drizzle adapter needs — the ledger table is SQL-adapter-only (database.md §4). */
+/** Every table the Drizzle adapter needs — the ledger table is SQL-adapter-only. */
 const REQUIRED_TABLES: readonly PwTableName[] = [
   PW_TABLES.customers,
   PW_TABLES.plans,

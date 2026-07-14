@@ -1,10 +1,10 @@
 /**
  * Embedded DDL for migration `0001_init` — the full docs/v1/database.md §2
- * logical schema, per dialect (PW-703). These string constants ARE the
+ * logical schema, per dialect. These string constants ARE the
  * migration content: they are hashed byte-for-byte into the `pw_migrations`
  * checksum, so **once `0001_init` has been applied anywhere it is immutable
  * forever** — even a whitespace edit is mutated history and makes every
- * existing database fail loudly (database.md §4). Schema changes ship as
+ * existing database fail loudly. Schema changes ship as
  * `0002_...`, never as edits here. Forward-only: no down migrations exist.
  *
  * Per-dialect storage mapping (build-time resolutions, recorded in
@@ -30,7 +30,7 @@
  *   dynamically typed; no other CHECK constraints exist (row validity is
  *   enforced by the zod row schemas at the adapter boundary).
  *
- * THE PARTIAL-UNIQUE ACTIVE-SUBSCRIPTION RULE (database.md §2): at most one
+ * THE PARTIAL-UNIQUE ACTIVE-SUBSCRIPTION RULE: at most one
  * `pw_subscriptions` row per (`customer_id`, `group`) with `status` in
  * ('active', 'past_due', 'trialing').
  *

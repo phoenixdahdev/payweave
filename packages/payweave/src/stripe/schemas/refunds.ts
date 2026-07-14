@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Refunds module (PW-605). Request fields are
+ * Zod schemas for the Stripe Refunds module. Request fields are
  * sourced verbatim from the official API reference (all verified 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/refunds/create
  *   - Retrieve: https://docs.stripe.com/api/refunds/retrieve
@@ -8,7 +8,7 @@
  *   - List:     https://docs.stripe.com/api/refunds/list
  *   - Object:   https://docs.stripe.com/api/refunds/object
  *
- * `amount` is integer MINOR units end to end (providers.md §3.1) — no
+ * `amount` is integer MINOR units end to end — no
  * conversion anywhere. Documented response fields whose child shapes we have
  * not fully verified against the reference (`destination_details`'s ~40
  * payment-method-specific hashes, `next_action.display_details`) are
@@ -115,7 +115,7 @@ export type RefundListQuery = z.input<typeof refundListQuery>;
  * only stable documented fields are named; everything else passes through.
  * All amounts are integer minor units.
  *
- * Conservative-untyped child shapes (AGENTS.md §8): `destination_details`
+ * Conservative-untyped child shapes: `destination_details`
  * (~40 payment-method-specific hashes, e.g. `card.reference_status`) and
  * `next_action` (`display_details.email_sent` etc.) stay loose objects;
  * expandable references (`balance_transaction`, `charge`, `payment_intent`,
@@ -162,7 +162,7 @@ export const refund = z.looseObject({
   source_transfer_reversal: z.unknown().optional(),
   /**
    * `pending` | `requires_action` | `succeeded` | `failed` | `canceled` —
-   * normalization is the unified layer's job (providers.md §3.3).
+   * normalization is the unified layer's job.
    */
   status: z.string().nullable().optional(),
   /** Transfer reversal id string, or an expanded object — kept unknown. */

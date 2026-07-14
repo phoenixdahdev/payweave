@@ -1,5 +1,5 @@
 /**
- * Fixture loader (PW-008). Reads sanitized JSON fixtures from
+ * Fixture loader. Reads sanitized JSON fixtures from
  * `test/fixtures/<provider>/<resource>/<name>.json`. Fixtures must never carry
  * live secrets (CI regex gate enforces). Used by resource unit tests and by
  * consumers writing tests against the SDK.

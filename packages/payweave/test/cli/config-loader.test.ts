@@ -1,5 +1,5 @@
 /**
- * PW-1002 — CLI config discovery + jiti loader (docs/v1/cli.md §5).
+ * CLI config discovery + jiti loader (docs/v1/cli.md §5).
  *
  * Fixture projects live under `test/fixtures/cli/` (committed, one per
  * discovery location + failure mode). Every fixture that does

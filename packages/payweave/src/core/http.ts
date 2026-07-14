@@ -1,7 +1,7 @@
 /**
- * HttpClient + pluggable auth strategies (TDD §6.1). One class backs every
+ * HttpClient + pluggable auth strategies. One class backs every
  * resource. Builds URLs, applies auth, enforces timeouts via `AbortSignal`,
- * runs the retry policy (§6.2), maps non-2xx via {@link mapHttpError}, and
+ * runs the retry policy, maps non-2xx via {@link mapHttpError}, and
  * emits redacted logger events. Response schemas LOG drift and never throw.
  */
 import type { ZodType } from "zod";
@@ -207,7 +207,7 @@ export function oauthClientCredentials(opts: {
 }
 
 /**
- * Constructor options for {@link HttpClient} (TDD §6.1). Optional fields include
+ * Constructor options for {@link HttpClient}. Optional fields include
  * `undefined` so they can be wired straight from a {@link ResolvedConfig} under
  * `exactOptionalPropertyTypes`.
  */
@@ -222,9 +222,9 @@ export interface HttpClientOptions {
   logger?: Logger | undefined;
   userAgent?: string | undefined;
   /**
-   * Request-body serializer (PW-601). Omitted → JSON, byte-identical to the
+   * Request-body serializer. Omitted → JSON, byte-identical to the
    * historical behavior. Stripe passes its form encoder here so no JSON body
-   * ever leaves the Stripe client (providers.md §3.1).
+   * ever leaves the Stripe client.
    */
   bodyEncoder?: BodyEncoder | undefined;
 }
@@ -238,7 +238,7 @@ export interface RequestOptions<TRes> {
   path: string;
   query?: Record<string, QueryValue>;
   body?: unknown;
-  /** Presence makes a non-GET request retry-eligible (TDD §6.2). */
+  /** Presence makes a non-GET request retry-eligible. */
   idempotencyKey?: string;
   timeoutMs?: number;
   /** Response schema — drift is logged, never thrown (TDD §6.1 step 6). */

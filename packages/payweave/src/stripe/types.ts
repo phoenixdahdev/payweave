@@ -1,10 +1,10 @@
 /**
- * Shared Stripe schema primitives (PW-602): request-parse helper, the
+ * Shared Stripe schema primitives: request-parse helper, the
  * `{ object: "list", data, has_more }` list schema, the cursor iterator every
  * Stripe list endpoint reuses, and the query flattener for nested filters.
  *
- * Stripe has NO response envelope — resources come back bare (providers.md
- * §3.1), so unlike `paystack/types.ts` there are no `{status, message, data}`
+ * Stripe has NO response envelope — resources come back bare, so unlike
+ * `paystack/types.ts` there are no `{status, message, data}`
  * unwrapping helpers here. Response schemas are LOOSE (`z.looseObject`) so
  * unknown provider fields pass straight through — drift is logged by the
  * HttpClient, never thrown.
@@ -22,7 +22,7 @@ import type { QueryValue } from "../core/http";
 /**
  * Parse request input with a Zod schema, converting a {@link z.ZodError} into a
  * {@link PayweaveValidationError} so public methods only ever throw a
- * `PayweaveError` subclass (AGENTS.md §6). Runs BEFORE any network call — and
+ * `PayweaveError` subclass. Runs BEFORE any network call — and
  * therefore before the form encoder ever sees the body.
  */
 export function parseRequest<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
@@ -66,7 +66,7 @@ export const createdRange = z.object({
   lte: z.number().int().optional(),
 });
 
-/** Cursor-pagination fields shared by every Stripe list request (§3.1). */
+/** Cursor-pagination fields shared by every Stripe list request. */
 export const listCursorFields = {
   /** Page size, 1–100 (Stripe default 10). */
   limit: z.number().int().min(1).max(100).optional(),
@@ -86,8 +86,8 @@ export interface StripeList<TItem> {
 
 /**
  * Loose schema for Stripe's `{ object: "list", data, has_more, url }` list
- * response (providers.md §3.1 pagination row). `object` stays `z.string()` —
- * response schemas tolerate drift, never throw.
+ * response. `object` stays `z.string()` — response schemas tolerate drift,
+ * never throw.
  */
 export const stripeList = <T extends z.ZodTypeAny>(
   item: T,
@@ -149,7 +149,7 @@ export interface StripeRequestOptions {
    * `Idempotency-Key` header value (https://docs.stripe.com/api/idempotent_requests
    * — verified 2026-07-12: POST-only, ≤255 chars, keys stored 24h, replay
    * returns the original response). Providing one ALSO makes the POST
-   * retry-eligible under Payweave's retry policy (providers.md §3.1) — bare
+   * retry-eligible under Payweave's retry policy — bare
    * POSTs are never auto-retried.
    */
   idempotencyKey?: string;

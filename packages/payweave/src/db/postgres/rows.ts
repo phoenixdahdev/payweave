@@ -1,7 +1,7 @@
 /**
  * Row (de)serialization between `pg`'s native result rows and the `z.infer`
- * row types in `src/db/schema.ts` (docs/v1/database.md §4 storage mapping:
- * `TIMESTAMPTZ`, `JSONB`, `BOOLEAN`, `BIGINT` — `src/db/migrations/ddl.ts`
+ * row types in `src/db/schema.ts` (storage mapping:
+ * `TIMESTAMPTZ`, `JSONB`, `BOOLEAN`, `BIGINT` — see `src/db/migrations/ddl.ts`
  * header).
  *
  * `pg` already parses `TIMESTAMPTZ` -> `Date`, `JSONB` -> plain JS
@@ -10,7 +10,7 @@
  * thing `pg` does NOT do by default is `BIGINT`/`int8` (`used`, `"limit"`):
  * it returns those as strings to avoid silent precision loss for values
  * beyond `Number.MAX_SAFE_INTEGER`. Payweave's usage counters are always
- * well within safe-integer range (AGENTS.md §2 rule 7 — integers throughout),
+ * well within safe-integer range (integers throughout),
  * so this module converts them back to `number` explicitly, per row, rather
  * than installing a process-wide `pg.types` parser override (which would
  * silently change how the CALLER's own, unrelated `pg` queries elsewhere in

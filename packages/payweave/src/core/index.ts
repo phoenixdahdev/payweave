@@ -51,7 +51,7 @@ export {
   type FlutterwaveConfig,
   type FlutterwaveV3Config,
   type FlutterwaveV4Config,
-  // v1 provider-keyed root (PW-501) — `createPayweave` mounts on these in PW-502.
+  // v1 provider-keyed root — `createPayweave` mounts on these in PW-502.
   PAYWEAVE_PROVIDER_KEYS,
   payweaveConfigSchema,
   resolvePayweaveConfig,
@@ -65,7 +65,7 @@ export {
   type FlutterwaveProviderConfig,
   type ResolvedProviderConfig,
   type ResolvedPayweaveConfig,
-  // Cross-plan-validated, minor-units-resolved `products` (PW-802) — the real
+  // Cross-plan-validated, minor-units-resolved `products` — the real
   // `Plan` type itself lives on the `payweave/products` subpath.
   type ResolvedProduct,
 } from "./config";

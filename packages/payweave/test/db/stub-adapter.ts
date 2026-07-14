@@ -1,5 +1,5 @@
 /**
- * A TYPED stub `DatabaseAdapter` for contract/type/config tests (PW-701).
+ * A TYPED stub `DatabaseAdapter` for contract/type/config tests.
  *
  * This is NOT an adapter implementation (those are PW-704+) and it is NOT
  * conformant — every method throws. It exists so tests can (a) prove a

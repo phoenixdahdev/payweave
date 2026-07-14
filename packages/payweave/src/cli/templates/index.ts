@@ -1,4 +1,4 @@
-/** Barrel for `payweave init`'s string-template renderers (PW-1005). */
+/** Barrel for `payweave init`'s string-template renderers. */
 export type { DatabaseChoice, FrameworkId, ProviderId, ScaffoldFile, ScaffoldInput } from "./types";
 export { renderPayweaveConfig, renderProducts } from "./config";
 export { renderEnvExample } from "./env";

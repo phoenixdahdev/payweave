@@ -1,8 +1,8 @@
 /**
- * Builds a `DatabaseAdapter` (docs/v1/database.md §3) over a {@link Runner} —
+ * Builds a `DatabaseAdapter` over a {@link Runner} —
  * the postgres dialect's store implementations. `balances.consume` and
- * `webhookEvents.claim` are ONE statement each (`./sql.ts` — database.md §5's
- * "this ticket's headline"); every other store method is a straightforward
+ * `webhookEvents.claim` are ONE statement each (`./sql.ts` — this adapter's
+ * headline requirement); every other store method is a straightforward
  * parameterized query, mirroring the sqlite/drizzle adapters' shapes with
  * `$n` placeholders and native `pg` types (no manual date/bool/json
  * encode/decode — see `./rows.ts`'s header for what `pg` already does for us).
@@ -389,7 +389,7 @@ async function balancesResetTo(
   group: string,
   init: PwFeatureBalanceInit,
 ): Promise<void> {
-  // No injectable clock for `resetTo` (database.md §3 — unlike `consume`, it
+  // No injectable clock for `resetTo` (unlike `consume`, it
   // takes no `now`), so the period it derives is computed directly via the
   // real `period.ts` oracle in JS — this is an unconditional overwrite, not a
   // concurrency-sensitive decision, so there is no atomicity reason to

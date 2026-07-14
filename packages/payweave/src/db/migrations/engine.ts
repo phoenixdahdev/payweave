@@ -9,7 +9,7 @@
  * }
  * ```
  *
- * Mechanics (database.md §4):
+ * Mechanics:
  * - Embedded + ordered: migrations are string constants compiled into the
  *   build (`./definitions`) — no filesystem reads, no drivers, ever.
  * - Checksum ledger: every applied migration is recorded in `pw_migrations`
@@ -76,7 +76,7 @@ function normalizeMigrationSet(migrations: readonly PwSqlMigration[]): readonly 
  * Bootstrap the ledger if absent, read it, and verify it against the embedded
  * set. Returns the set of applied migration ids. Throws
  * {@link PayweaveMigrationHistoryError} on any ledger↔embedded inconsistency
- * — the loud-failure gate shared by plan and apply (database.md §4).
+ * — the loud-failure gate shared by plan and apply.
  */
 async function readVerifiedLedger(
   executor: MigrationExecutor,

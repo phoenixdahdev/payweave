@@ -1,14 +1,13 @@
 /**
- * Input resolution for `postgresAdapter(...)` (docs/v1/database.md §1/§4,
- * PW-704).
+ * Input resolution for `postgresAdapter(...)`.
  *
- * `postgresAdapter` accepts EITHER `{ connectionString }` (validated EAGERLY —
- * database.md §1: "postgresAdapter rejects a non-`postgres://`/`postgresql://`
- * connection string") — the `pg.Pool` itself is constructed LAZILY, on first
- * query, so a bad connection string never opens a socket just to fail — OR an
+ * `postgresAdapter` accepts EITHER `{ connectionString }` (validated EAGERLY
+ * — it rejects a non-`postgres://`/`postgresql://` connection string) — the
+ * `pg.Pool` itself is constructed LAZILY, on first query, so a bad
+ * connection string never opens a socket just to fail — OR an
  * already-constructed `pg` `Pool` (or `Client`) instance, detected
  * structurally (no driver import needed to classify — core pulls no driver
- * code, database.md §7), matching how the sqlite/drizzle adapters accept a
+ * code), matching how the sqlite/drizzle adapters accept a
  * caller-owned instance.
  *
  * All validation here is pure and synchronous — no driver import, no I/O.
@@ -31,7 +30,7 @@ export interface PgPoolClientLike {
 /**
  * The minimal shape of a `pg` `Pool` this adapter relies on. Structural (not
  * `import("pg").Pool`) so classifying a caller-supplied instance never
- * requires importing the driver (database.md §7).
+ * requires importing the driver.
  */
 export interface PgPoolLike {
   query(text: string, params?: readonly unknown[]): Promise<PgQueryResultLike>;
@@ -44,7 +43,7 @@ export type PostgresConnectTarget =
   | { readonly kind: "pool-instance"; readonly pool: PgPoolLike };
 
 /**
- * Validate a `{ connectionString }` value eagerly (database.md §1). Throws
+ * Validate a `{ connectionString }` value eagerly. Throws
  * {@link PayweaveConfigError} for anything other than a `postgres://` or
  * `postgresql://` URL — a garbage/foreign scheme (e.g. `mysql://`) is
  * rejected synchronously, before any connection is attempted.
@@ -74,7 +73,7 @@ function looksLikePgPool(value: object): value is PgPoolLike {
 /**
  * Resolve `postgresAdapter`'s single argument into a
  * {@link PostgresConnectTarget}. Synchronous and side-effect-free
- * (database.md §1) — no driver import, no connection opened, no query run.
+ * — no driver import, no connection opened, no query run.
  */
 export function resolvePostgresInput(input: unknown): PostgresConnectTarget {
   if (input === null || typeof input !== "object") {

@@ -1,10 +1,10 @@
 /**
- * Error helpers for the postgres adapter (docs/v1/database.md §7, PW-704):
+ * Error helpers for the postgres adapter:
  * an actionable install-hint error when the optional peer driver (`pg`) is
  * missing (mirrors the sqlite/drizzle adapters' message style: name the
  * subpath, the missing package, and an install command), and a thin wrapper
- * turning raw `pg` errors into {@link PayweaveError} subclasses (AGENTS.md §2:
- * public SDK methods only ever throw `PayweaveError` subclasses).
+ * turning raw `pg` errors into {@link PayweaveError} subclasses (public SDK
+ * methods only ever throw `PayweaveError` subclasses).
  */
 import { PayweaveConfigError, PayweaveError, PayweaveValidationError } from "../../core/errors";
 

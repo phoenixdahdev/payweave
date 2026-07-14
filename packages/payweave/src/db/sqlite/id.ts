@@ -9,7 +9,7 @@
  *
  * This is a minimal, dependency-free ULID implementation (spec:
  * https://github.com/ulid/spec) — no third-party `ulid` package, keeping the
- * SDK's zod-only `dependencies` rule intact (database.md §7). Monotonicity
+ * SDK's zod-only `dependencies` rule intact. Monotonicity
  * within the same millisecond is NOT implemented (out of scope for row ids
  * that only need to be unique, not strictly sortable under sub-ms bursts);
  * randomness is `node:crypto`'s CSPRNG.

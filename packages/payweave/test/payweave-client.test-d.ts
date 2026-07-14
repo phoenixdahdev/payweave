@@ -1,5 +1,5 @@
 /**
- * PW-502 — `createPayweave` narrowing (unified-config.md §4, assertions 1–3
+ * `createPayweave` narrowing (unified-config.md §4, assertions 1–3
  * and 5; assertion 4 — products inference — is PW-802). Type-only: this file
  * is compiled by `vitest --typecheck`, never executed.
  */
@@ -80,7 +80,7 @@ describe("createPayweave narrowing (§4)", () => {
     });
     expectTypeOf(v4.flutterwave).toEqualTypeOf<FlutterwaveV4Client>();
     expectTypeOf(v4.flutterwave.version).toEqualTypeOf<"v4">();
-    // v4 resources are a later wave — the v3-only fields are hidden (TDD §11).
+    // v4 resources are a later wave — the v3-only fields are hidden.
     expectTypeOf(v4.flutterwave).not.toHaveProperty("payments");
     expectTypeOf(v4.flutterwave).not.toHaveProperty("charges");
   });
@@ -104,8 +104,6 @@ describe("createPayweave narrowing (§4)", () => {
     const client = createPayweave({ paystack: { secretKey: "sk_test_x" } });
     expectTypeOf<PayweaveClient<C>>().toHaveProperty("paystack");
     expectTypeOf<PayweaveClient<C>>().not.toHaveProperty("stripe");
-    // The deprecated alias exposes the same op signatures as the root.
-    expectTypeOf(client.unified.checkout).toEqualTypeOf(client.checkout);
-    expectTypeOf(client.unified.banks).toEqualTypeOf(client.banks);
+    void client;
   });
 });

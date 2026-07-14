@@ -1,16 +1,14 @@
 /**
- * `pwv_<ulid>` id generation for the postgres adapter (docs/v1/database.md §2,
- * PW-704). Deliberately self-contained — NOT imported from
- * `src/db/sqlite/id.ts` or `src/db/drizzle/id.ts` (both read-only for this
- * ticket) — each first-party adapter owns an independent copy so the
- * disjoint-directory parallel-safety the epic brief describes
- * (`epic-07-database.md` PW-704…709 preamble) holds for real, not just by
- * convention. This is a minimal, dependency-free ULID implementation (spec:
- * https://github.com/ulid/spec) — no third-party `ulid` package, keeping the
- * SDK's zod-only `dependencies` rule intact (database.md §7). Monotonicity
- * within the same millisecond is NOT implemented (row ids only need to be
- * unique, not strictly sortable under sub-ms bursts); randomness is
- * `node:crypto`'s CSPRNG.
+ * `pwv_<ulid>` id generation for the postgres adapter. Deliberately
+ * self-contained — NOT imported from `src/db/sqlite/id.ts` or
+ * `src/db/drizzle/id.ts` — each first-party adapter owns an independent copy
+ * so each adapter's directory stays disjoint and safe to develop in parallel,
+ * not just by convention. This is a minimal, dependency-free ULID
+ * implementation (spec: https://github.com/ulid/spec) — no third-party
+ * `ulid` package, keeping the SDK's zod-only `dependencies` rule intact.
+ * Monotonicity within the same millisecond is NOT implemented (row ids only
+ * need to be unique, not strictly sortable under sub-ms bursts); randomness
+ * is `node:crypto`'s CSPRNG.
  */
 import { randomInt } from "node:crypto";
 

@@ -1,5 +1,5 @@
 /**
- * PW-608 — the three real providers migrated onto the v2 `ProviderAdapter`
+ * the three real providers migrated onto the v2 `ProviderAdapter`
  * contract (`src/{paystack,flutterwave,stripe}/client.ts`'s exported
  * `*Adapter` descriptors). These are additive alongside the direct wiring in
  * `src/index.ts` (unchanged, asserted by the rest of the existing suite) —

@@ -18,7 +18,7 @@
  * identically — reimplementing the calendar math independently in SQL risks
  * silent drift from the oracle, which PW-704's own contract notes call out as
  * the one unacceptable outcome: "if your SQL disagrees, the SQL is wrong").
- * `init` is also a per-call CREATION template only (database.md §3) — an
+ * `init` is also a per-call CREATION template only — an
  * existing row's OWN stored `anchor`/`resetInterval` must drive its reset,
  * which the caller cannot know in advance, so a blind single write can't
  * express this correctly regardless of the calendar-math question.

@@ -1,5 +1,5 @@
 /**
- * Config wiring for the `database` slot (PW-701): the placeholder is gone —
+ * Config wiring for the `database` slot: the placeholder is gone —
  * `resolvePayweaveConfig` structurally checks for a real `DatabaseAdapter`
  * and keeps the spec's exact required-with-products message
  * (unified-config.md §2 rule 5, database.md §1).

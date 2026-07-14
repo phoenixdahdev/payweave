@@ -1,5 +1,5 @@
 /**
- * Flutterwave v3 webhook verification (TDD §10). v3 uses NO HMAC: the
+ * Flutterwave v3 webhook verification. v3 uses NO HMAC: the
  * `verif-hash` header must equal the dashboard secret hash verbatim. Compared
  * timing-safely with a length-guard; fails closed on a missing header.
  *

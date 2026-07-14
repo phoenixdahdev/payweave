@@ -8,8 +8,8 @@
  * adapter).
  *
  * Column-for-column equivalent to `src/db/migrations/ddl.ts`'s
- * `MYSQL_INIT_STATEMENTS` (PW-703) — asserted by `test/db/drizzle.test.ts`'s
- * cross-dialect parity test. Per-dialect storage mapping (database.md §4):
+ * `MYSQL_INIT_STATEMENTS` — asserted by `test/db/drizzle.test.ts`'s
+ * cross-dialect parity test. Per-dialect storage mapping:
  * `datetime(3)` timestamps, native `json`, `tinyint(1)`-backed `boolean`,
  * `bigint` (mode `"number"`) for money/usage/version-scale integers.
  *

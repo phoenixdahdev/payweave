@@ -104,7 +104,7 @@ describe("mapHttpError", () => {
     expect(err).toBeInstanceOf(PayweaveProviderError);
   });
 
-  // Stripe error envelope (PW-602): `{ error: { type, code, message, param } }`
+  // Stripe error envelope: `{ error: { type, code, message, param } }`
   // per https://docs.stripe.com/api/errors.
   describe("stripe error envelope", () => {
     const stripeBody = {

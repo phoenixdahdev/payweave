@@ -1,32 +1,33 @@
 /**
- * Row schemas + storage constants for the Payweave database layer
- * (docs/v1/database.md §2, PW-701). These Zod schemas ARE the logical storage
- * contract — every row an adapter returns must parse against them, and the
- * conformance suite (`test/db/conformance.ts`) enforces exactly that. Exact
- * DDL per dialect lives with each adapter (PW-704+), which owns the mapping
- * from these camelCase field names to the spec's snake_case column names
- * (`externalId` ↔ `external_id`, `periodEnd` ↔ `period_end`, …).
+ * Row schemas + storage constants for the Payweave database layer. These Zod
+ * schemas ARE the logical storage contract — every row an adapter returns
+ * must parse against them, and the conformance suite
+ * (`test/db/conformance.ts`) enforces exactly that. Exact DDL per dialect
+ * lives with each adapter, which owns the mapping from these camelCase field
+ * names to snake_case column names (`externalId` ↔ `external_id`,
+ * `periodEnd` ↔ `period_end`, …).
  *
- * Conventions (database.md §2 "Key columns" notation):
- * - Columns marked `?` in the spec are NULLABLE here (`.nullable()` — the
+ * Conventions ("Key columns" notation):
+ * - Columns marked `?` are NULLABLE here (`.nullable()` — the
  *   value is always present on the row, `null` when unset). Optional keys
  *   (`?:`) appear only on INPUT shapes.
  * - No floats anywhere: money is integer minor units + currency code (golden
  *   rule 7 applies to storage), counters/versions are integers.
  * - All timestamps are UTC `Date` instances.
  *
- * INTERNAL until PW-505 wires the `payweave/db` subpath into the exports map.
+ * Re-exported from `./db/index.ts` as part of the public `payweave/db`
+ * subpath.
  */
 import { z } from "zod";
 
 // ── Table names ──────────────────────────────────────────────────────────────
 
-/** Every Payweave-owned table/collection is prefixed `pw_` (database.md §2). */
+/** Every Payweave-owned table/collection is prefixed `pw_`. */
 export const PW_TABLE_PREFIX = "pw_";
 
 /**
- * Canonical table/collection names, keyed by the adapter store that owns them
- * (database.md §2). Adapters and migrations MUST use these constants — never
+ * Canonical table/collection names, keyed by the adapter store that owns
+ * them. Adapters and migrations MUST use these constants — never
  * re-spell the names.
  */
 export const PW_TABLES = {
@@ -44,11 +45,10 @@ export type PwTableName = (typeof PW_TABLES)[keyof typeof PW_TABLES];
 // ── Shared scalars ───────────────────────────────────────────────────────────
 
 /**
- * Payweave row id: `pwv_<ulid>` (database.md §2 — "IDs are `pwv_<ulid>`
- * strings unless noted"). ULID = 26 chars of Crockford base32; decoding is
- * case-insensitive, so both cases are accepted. The exceptions ("unless
- * noted") are `pw_webhook_events.dedupe_key` and `pw_migrations.name`, which
- * are natural keys.
+ * Payweave row id: `pwv_<ulid>` strings, unless noted otherwise below. ULID =
+ * 26 chars of Crockford base32; decoding is case-insensitive, so both cases
+ * are accepted. The exceptions are `pw_webhook_events.dedupe_key` and
+ * `pw_migrations.name`, which are natural keys.
  */
 export const pwIdSchema = z
   .string()
@@ -58,7 +58,7 @@ export const pwIdSchema = z
   );
 
 /**
- * Subscription lifecycle states (database.md §2 `pw_subscriptions.status`).
+ * Subscription lifecycle states (`pw_subscriptions.status`).
  */
 export const pwSubscriptionStatusSchema = z.enum([
   "active",
@@ -72,20 +72,20 @@ export type PwSubscriptionStatus = z.infer<typeof pwSubscriptionStatusSchema>;
 /**
  * Statuses covered by the partial unique index on (`customer_id`, `group`) —
  * at most ONE subscription per customer/group may be in any of these states
- * (database.md §2). `subscriptions.getActive` answers from this set.
+ * `subscriptions.getActive` answers from this set.
  */
 export const PW_ACTIVE_SUBSCRIPTION_STATUSES = ["active", "past_due", "trialing"] as const;
 
-/** Metered-feature reset interval (plans-and-features.md §2, metered-usage.md §5). */
+/** Metered-feature reset interval. */
 export const pwResetIntervalSchema = z.enum(["day", "week", "month", "year"]);
 export type PwResetInterval = z.infer<typeof pwResetIntervalSchema>;
 
-/** Plan price billing interval (plans-and-features.md §4: `month` or `year`). */
+/** Plan price billing interval (`month` or `year`). */
 export const pwPriceIntervalSchema = z.enum(["month", "year"]);
 export type PwPriceInterval = z.infer<typeof pwPriceIntervalSchema>;
 
 /**
- * Default stale-claim window for `webhookEvents.claim` (database.md §3): a
+ * Default stale-claim window for `webhookEvents.claim`: a
  * claimed-but-unapplied event becomes re-claimable once
  * `now - claimed_at >= staleClaimAfterMs`, so a crashed apply is retried on
  * provider redelivery instead of silently dropped.
@@ -96,7 +96,7 @@ export const DEFAULT_STALE_CLAIM_AFTER_MS = 60_000;
 
 /**
  * `pw_customers` row — maps YOUR user id (`externalId`, unique) to
- * per-provider customer ids (database.md §2).
+ * per-provider customer ids.
  */
 export const pwCustomerSchema = z.object({
   id: pwIdSchema,
@@ -112,7 +112,7 @@ export type PwCustomer = z.infer<typeof pwCustomerSchema>;
 
 /**
  * Input for `customers.upsert` — keyed by `externalId`; provider refs are
- * linked separately via `customers.linkProviderRef` (database.md §3).
+ * linked separately via `customers.linkProviderRef`.
  */
 export const pwCustomerUpsertSchema = z.object({
   externalId: z.string().min(1),
@@ -124,8 +124,9 @@ export type PwCustomerUpsert = z.infer<typeof pwCustomerUpsertSchema>;
 
 /**
  * One resolved feature inclusion inside a plan version's `features` JSON
- * (plans-and-features.md §9). Loose objects: PW-801 may enrich inclusions
- * with extra fields — unknown keys must survive a round-trip through storage.
+ * column. Loose objects, by design — unknown keys must survive a round-trip
+ * through storage, since future callers may enrich inclusions with extra
+ * fields.
  */
 export const pwFeatureInclusionSchema = z.discriminatedUnion("type", [
   z.looseObject({ type: z.literal("boolean") }),
@@ -138,8 +139,8 @@ export const pwFeatureInclusionSchema = z.discriminatedUnion("type", [
 export type PwFeatureInclusion = z.infer<typeof pwFeatureInclusionSchema>;
 
 /**
- * `pw_plans` row — an IMMUTABLE plan version pushed from config
- * (database.md §2). Append-only: `plans.pushVersion` never mutates or deletes
+ * `pw_plans` row — an IMMUTABLE plan version pushed from config.
+ * Append-only: `plans.pushVersion` never mutates or deletes
  * an existing (`planId`, `version`) row; running app instances keep reading
  * the version they were deployed with.
  */
@@ -160,7 +161,7 @@ export const pwPlanVersionSchema = z.object({
   /**
    * Column `provider_refs` (JSON), e.g.
    * `{ stripe: { productId, priceId }, paystack: { planCode } }` — filled in
-   * by billing sync (`payweave push`, PW-803).
+   * by billing sync (`payweave push`).
    */
   providerRefs: z.record(z.string().min(1), z.record(z.string().min(1), z.string().min(1))),
   pushedAt: z.date(),
@@ -169,7 +170,7 @@ export type PwPlanVersion = z.infer<typeof pwPlanVersionSchema>;
 
 /**
  * Input for `plans.pushVersion` — the adapter assigns `id`, the next
- * `version`, and `pushedAt` (append-only versioning, database.md §2).
+ * `version`, and `pushedAt` (append-only versioning).
  */
 export const pwPlanVersionInputSchema = pwPlanVersionSchema.omit({
   id: true,
@@ -181,14 +182,13 @@ export type PwPlanVersionInput = z.infer<typeof pwPlanVersionInputSchema>;
 // ── pw_subscriptions ─────────────────────────────────────────────────────────
 
 /**
- * `pw_subscriptions` row — one active row per (customer, group)
- * (database.md §2). The default plan produces NO subscription row; "customer
+ * `pw_subscriptions` row — one active row per (customer, group).
+ * The default plan produces NO subscription row; "customer
  * is on `free`" is computed at read time.
  *
- * NOTE(spec §2 vs plans-and-features.md §11): `provider` and
- * `providerSubscriptionRef` are nullable here although §2's column list does
- * not mark them `?` — a free (non-default) plan is "recorded locally, no
- * provider object" (§11), so a local activation has no provider ref to store.
+ * `provider` and `providerSubscriptionRef` are nullable: a free
+ * (non-default) plan is "recorded locally, no provider object", so a local
+ * activation has no provider ref to store.
  */
 export const pwSubscriptionSchema = z.object({
   id: pwIdSchema,
@@ -229,14 +229,13 @@ export type PwSubscriptionPatch = z.infer<typeof pwSubscriptionPatchSchema>;
 // ── pw_feature_balances ──────────────────────────────────────────────────────
 
 /**
- * `pw_feature_balances` row — metered usage state with lazy reset
- * (database.md §2, metered-usage.md §5). Unique per
- * (`customerId`, `featureId`, `group`).
+ * `pw_feature_balances` row — metered usage state with lazy reset. Unique
+ * per (`customerId`, `featureId`, `group`).
  *
  * `used` is a plain integer, NOT non-negative: unconditional `consume` (the
- * `report` path) may push a balance below zero by design (metered-usage.md
- * §6). All period math derives from `anchor` — never from a previously
- * computed (clamped) `periodStart` (metered-usage.md §5).
+ * `report` path) may push a balance below zero by design. All period math
+ * derives from `anchor` — never from a previously computed (clamped)
+ * `periodStart`.
  */
 export const pwFeatureBalanceSchema = z.object({
   id: pwIdSchema,
@@ -261,7 +260,7 @@ export type PwFeatureBalance = z.infer<typeof pwFeatureBalanceSchema>;
  * Row template for `balances.consume`'s lazy creation and for
  * `balances.resetTo` (plan changes). Only the underivable fields: the adapter
  * derives `used` (starts at 0), the current `periodStart`/`periodEnd` (from
- * `anchor` + `resetInterval` + `now`, metered-usage.md §5), and `updatedAt`.
+ * `anchor` + `resetInterval` + `now`), and `updatedAt`.
  */
 export const pwFeatureBalanceInitSchema = z.object({
   limit: z.number().int().nonnegative(),
@@ -275,8 +274,8 @@ export type PwFeatureBalanceInit = z.infer<typeof pwFeatureBalanceInitSchema>;
 // ── pw_webhook_events ────────────────────────────────────────────────────────
 
 /**
- * `pw_webhook_events` row — the idempotency gate for `event.apply()`
- * (database.md §2). `dedupeKey` is the primary key (a natural key, not a
+ * `pw_webhook_events` row — the idempotency gate for `event.apply()`.
+ * `dedupeKey` is the primary key (a natural key, not a
  * `pwv_` id); `claimedAt`/`appliedAt` drive the once-only + stale-claim
  * semantics of `webhookEvents.claim`.
  */
@@ -293,9 +292,9 @@ export type PwWebhookEvent = z.infer<typeof pwWebhookEventSchema>;
 // ── pw_migrations ────────────────────────────────────────────────────────────
 
 /**
- * `pw_migrations` row — migration ledger for SQL adapters (database.md §2).
+ * `pw_migrations` row — migration ledger for SQL adapters.
  * `name` is the primary key; a checksum mismatch on an applied migration
- * fails loudly (never re-run mutated history — database.md §4).
+ * fails loudly (never re-run mutated history).
  */
 export const pwMigrationRecordSchema = z.object({
   name: z.string().min(1),

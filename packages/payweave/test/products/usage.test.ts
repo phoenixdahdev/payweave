@@ -1,7 +1,7 @@
 /**
- * PW-902 — `check()` + `report()` (metered-usage.md §1–§7, minus the
+ * `check()` + `report()` (metered-usage.md §1–§7, minus the
  * conformance-matrix runs which are PW-903's job). End-to-end against a REAL
- * in-memory sqlite `DatabaseAdapter` (PW-706) and a REAL `createPayweave`
+ * in-memory sqlite `DatabaseAdapter` and a REAL `createPayweave`
  * client — mirrors `test/products/subscribe.test.ts`'s style. Active
  * subscriptions are seeded directly via `database.subscriptions.create`
  * (bypassing checkout) since `check`/`report` never touch a provider.
@@ -155,7 +155,7 @@ describe("report() — metered decrements + lazy creation (§4, §5)", () => {
       planId: "free",
       planVersion: 1,
     });
-    // Default-plan balances anchor at first use (§5) — not before "now".
+    // Default-plan balances anchor at first use — not before "now".
     expect(row!.anchor.getTime()).toBeGreaterThanOrEqual(before);
     expect(row!.anchor.getTime()).toBeLessThanOrEqual(Date.now());
     expect(row!.periodEnd.getTime()).toBe(advance(row!.anchor.getTime(), "month", 1));

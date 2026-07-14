@@ -1,5 +1,5 @@
 /**
- * Test-only MongoDB fakes for `test/db/mongodb.test.ts` (PW-709). NOT a
+ * Test-only MongoDB fakes for `test/db/mongodb.test.ts`. NOT a
  * conformant `mongodb` driver replacement and NEVER exported from `src/` —
  * mirrors `test/db/stub-adapter.ts`/`fixture-adapter.ts`'s "helper file that
  * doesn't match the `*.test.ts` glob" convention.

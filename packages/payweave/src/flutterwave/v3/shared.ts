@@ -16,7 +16,7 @@ import { PayweaveValidationError } from "../../core/errors";
 /**
  * Parse request input with a Zod schema, converting a {@link z.ZodError} into a
  * {@link PayweaveValidationError} so public methods only ever throw a
- * `PayweaveError` subclass (AGENTS.md §6). Runs BEFORE any network call.
+ * `PayweaveError` subclass. Runs BEFORE any network call.
  */
 export function parseRequest<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
   try {

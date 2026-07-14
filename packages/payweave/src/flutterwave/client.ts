@@ -65,7 +65,7 @@ export class FlutterwaveClient {
     this.version = version;
 
     // ── resources wired here in Wave 3 ─────────────────────────────────────
-    // Version-isolated (TDD §11): mount v3 resources when version === "v3";
+    // Version-isolated: mount v3 resources when version === "v3";
     // v4 resources land in a later wave (branch intentionally left empty).
     if (version === "v3") {
       this.payments = new Payments(this.http);

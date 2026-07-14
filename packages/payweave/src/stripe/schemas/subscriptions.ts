@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Subscriptions module (PW-604). Request fields
+ * Zod schemas for the Stripe Subscriptions module. Request fields
  * are sourced verbatim from the official Billing API reference (all verified
  * 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/subscriptions/create
@@ -9,7 +9,7 @@
  *   - Resume:   https://docs.stripe.com/api/subscriptions/resume
  *   - List:     https://docs.stripe.com/api/subscriptions/list
  *
- * Cancel semantics (PW-604 contract note, verified 2026-07-12): Stripe has
+ * Cancel semantics (verified 2026-07-12): Stripe has
  * TWO cancellation shapes and this module exposes both faithfully —
  *   1. IMMEDIATE cancellation: `DELETE /v1/subscriptions/{id}`
  *      (`subscriptions.cancel()`; optional `invoice_now` / `prorate` /
@@ -17,17 +17,17 @@
  *   2. END-OF-PERIOD cancellation: `cancel_at_period_end: true` via
  *      `POST /v1/subscriptions/{id}` (`subscriptions.update()`) — the
  *      subscription stays `active` until the period closes.
- * PW-805's state machine depends on the distinction; they are never merged.
+ * The local billing state machine depends on the distinction; they are never merged.
  *
  * Proration parameter names (`proration_behavior`, `proration_date`) are
- * copied EXACTLY from the docs, never abstracted (PW-604 contract note).
- * Amounts are integer minor units end to end (providers.md §3.1). Response
+ * copied EXACTLY from the docs, never abstracted.
+ * Amounts are integer minor units end to end. Response
  * schemas are LOOSE: unknown provider fields pass through, drift is logged,
  * never thrown.
  *
  * Documented params whose child shapes we have NOT verified against the
- * reference are deliberately untyped in this P0 subset (conservative wins,
- * AGENTS.md §8): `add_invoice_items`, `automatic_tax`,
+ * reference are deliberately untyped in this P0 subset (conservative wins):
+ * `add_invoice_items`,
  * `billing_cycle_anchor_config`, `billing_mode`, `billing_schedules`,
  * `invoice_settings`, `payment_settings`, `transfer_data`, `on_behalf_of`,
  * `application_fee_percent`, `customer_account`, and the list filters
@@ -300,7 +300,7 @@ export type SubscriptionResumeReq = z.input<typeof subscriptionResumeReq>;
  * (https://docs.stripe.com/api/subscriptions/list — verified 2026-07-12).
  * Range filters (`created`, `current_period_start`, `current_period_end`)
  * reach the URL as bracket keys (`created[gte]`); list filters are QUERY
- * params, never form body (PW-604 contract note).
+ * params, never form body.
  */
 export const subscriptionListQuery = z.object({
   ...listCursorFields,
@@ -313,7 +313,7 @@ export const subscriptionListQuery = z.object({
    * `canceled` (includes deleted customers' subscriptions), `ended` (canceled
    * + expired due to incomplete payment), `all`; omitted = all non-canceled
    * subscriptions. Kept as an open string — the docs page does not enumerate
-   * a closed value set for this filter (conservative, AGENTS.md §8); Stripe
+   * a closed value set for this filter (conservative); Stripe
    * validates server-side.
    */
   status: z.string().optional(),
@@ -331,9 +331,9 @@ export type SubscriptionListQuery = z.input<typeof subscriptionListQuery>;
  * A Subscription as returned by every endpoint
  * (https://docs.stripe.com/api/subscriptions/object — verified 2026-07-12).
  * LOOSE: only stable documented fields are named; everything else passes
- * through. `status` and the period boundaries feed EPIC 8's local billing
- * state (PW-804/805) and correlate with the `customer.subscription.*` webhook
- * payloads (providers.md §3.5).
+ * through. `status` and the period boundaries feed the local billing
+ * state and correlate with the `customer.subscription.*` webhook
+ * payloads.
  *
  * NOTE (verified 2026-07-12): on the SDK's pinned API version
  * (`2026-06-24.dahlia`) `current_period_start`/`current_period_end` are NOT
@@ -346,7 +346,7 @@ export const subscription = z.looseObject({
   /**
    * `incomplete` | `incomplete_expired` | `trialing` | `active` | `past_due`
    * | `canceled` | `unpaid` | `paused` — normalization is the unified layer's
-   * job (providers.md §3.3/§3.5).
+   * job.
    */
   status: z.string().optional(),
   /** Customer id string, or an expanded object — kept unknown. */

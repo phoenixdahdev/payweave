@@ -1,9 +1,9 @@
 /**
- * PW-503 — multi-provider webhook header dispatch (unified-config.md §5).
+ * multi-provider webhook header dispatch.
  * Detection on header NAMES only, in front of the existing timing-safe
  * verifiers; every §5 rejection fails closed with
  * `PayweaveWebhookVerificationError`. All vectors are produced by
- * `signWebhook` (AGENTS.md §7) — never hand-rolled.
+ * `signWebhook` — never hand-rolled.
  */
 import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";

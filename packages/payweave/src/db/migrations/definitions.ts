@@ -36,7 +36,7 @@ const MIGRATIONS_BY_DIALECT: Record<PwSqlDialect, readonly PwSqlMigration[]> = {
  * deterministic — same input, same (frozen) output. Throws
  * {@link PayweaveMigrationError} for any non-SQL dialect: mongodb has NO SQL
  * migrations (its adapter ensures collections/indexes itself) and
- * prisma/drizzle users own their migrations (database.md §4).
+ * prisma/drizzle users own their migrations.
  */
 export function migrationsFor(dialect: PwSqlDialect): readonly PwSqlMigration[] {
   switch (dialect) {

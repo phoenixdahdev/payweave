@@ -1,8 +1,7 @@
 /**
- * `payweave listen` — local webhook relay for development (docs/v1/cli.md §3,
- * §8 "listen transport"; PW-1006).
+ * `payweave listen` — local webhook relay for development.
  *
- * ── The ⚠️ tunnel decision (cli.md §8, resolved in this same change) ────────
+ * ── The ⚠️ tunnel decision ──────────────────────────────────────────────────
  * The spec's two options were "prefer provider-native dev delivery" (Stripe
  * CLI-style long-polling) or "fall back to a Payweave-operated relay." Both
  * were researched and rejected in favor of a THIRD option — a local-relay /
@@ -24,15 +23,15 @@
  *     dependency: it requires Payweave to run and operate backend
  *     infrastructure that every `npx payweave listen` invocation would
  *     depend on for correctness. That directly contradicts the packaging
- *     positioning this CLI ships under (cli.md §7: zod-only runtime deps,
+ *     positioning this CLI ships under (zod-only runtime deps,
  *     every other dependency bundled and self-contained — "no separate
  *     install") and the golden rule that CLI deps must be bundleable,
  *     dependency-free where possible.
  *
  * **Chosen: local-relay (receive-and-forward), zero hosted dependency.**
- * `listen` starts a plain `node:http` server (no bundled dep at all — the
- * spec's own preference, cli.md §8/§7 "prefer node:http to keep it
- * dependency-free") on `--port` that receives provider webhooks DIRECTLY.
+ * `listen` starts a plain `node:http` server (no bundled dep at all — chosen
+ * to keep it dependency-free) on `--port` that receives provider webhooks
+ * DIRECTLY.
  * Making that server reachable from a provider's dashboard over the public
  * internet is the USER'S OWN responsibility — their own tunnel (ngrok,
  * Cloudflare Tunnel, a cloud dev-box's public hostname, etc.). Payweave never
@@ -41,7 +40,7 @@
  * constructEvent` dispatch the SDK's own webhook handlers use (raw bytes,
  * never re-parsed before verification succeeds — golden rule 6), then either
  * forwards the exact bytes (`--forward-to`) or applies the event directly
- * (`event.apply()`, PW-805).
+ * (`event.apply()`).
  *
  * One consequence of this design, called out in the stream output: because
  * there is no provider-side registration step, `--retry <window>` can only
@@ -51,16 +50,15 @@
  * provider's API for events sent before this process started listening).
  * Delivery is at-least-once: a `--forward-to` endpoint may see the same event
  * more than once (retries, or the provider's own retry policy hitting this
- * same endpoint again) — `event.apply()`'s idempotency (PW-805) is what makes
+ * same endpoint again) — `event.apply()`'s idempotency is what makes
  * that safe when forwarding is not used; a forwarded endpoint must be
  * idempotent itself.
  *
- * Live-key refusal (cli.md §8): `listen` is a dev-only tool. If the loaded
+ * Live-key refusal: `listen` is a dev-only tool. If the loaded
  * client's `environment` resolves to `"live"`, it refuses to start unless
  * `--live` is passed, in which case it proceeds with a loud, repeated
  * warning. `environment` is the SAME single, client-wide, key-inferred field
- * `status.ts` already reads (unified-config.md §2 rule 4) — never re-derived
- * from a key regex here.
+ * `status.ts` already reads — never re-derived from a key regex here.
  *
  * ── Exit codes ───────────────────────────────────────────────────────────
  * 0 clean shutdown (SIGINT, or the `-- <cmd>` child exited 0); the child's
@@ -95,7 +93,7 @@ export interface ListenWebhookEventLike {
   readonly dedupeKey: string;
   readonly id?: string | undefined;
   readonly data?: unknown;
-  /** PW-805 — always present; throws `PayweaveConfigError` without a configured database. */
+  /** always present; throws `PayweaveConfigError` without a configured database. */
   apply(): Promise<unknown>;
 }
 
@@ -113,7 +111,7 @@ export interface ListenWebhooksNamespaceLike {
 }
 
 /**
- * The extended client shape `listen` reads from (superset of PW-1002's
+ * The extended client shape `listen` reads from (superset of
  * {@link PayweaveClientLike}, same duck-typing pattern as `status.ts`/
  * `push.ts`). Only `webhooks` is narrowed — `constructEvent` on the base type
  * is deliberately `(...args: never[]) => unknown` (unusable to actually call
@@ -159,7 +157,7 @@ const RETRY_WINDOW_PATTERN = /^(\d+)(ms|s|m|h)$/;
 const RETRY_UNIT_MS: Record<string, number> = { ms: 1, s: 1_000, m: 60_000, h: 3_600_000 };
 
 /**
- * Parse a `--retry` value (cli.md §3: `5m`, `30s`, or `none`). Returns the
+ * Parse a `--retry` value (`5m`, `30s`, or `none`). Returns the
  * window in milliseconds, or `null` for the literal `"none"` (retry
  * explicitly disabled — same effective behavior as omitting the flag).
  * Also accepts `ms`/`h` units and a bare millisecond count for robustness.
@@ -172,7 +170,7 @@ export function parseRetryWindow(raw: string): number | null {
   if (match === null) {
     throw new PayweaveConfigError(
       `--retry "${raw}" is not a valid window — expected a duration like "5m", "30s", "500ms", ` +
-        '"1h", or the literal "none" (cli.md §3).',
+        '"1h", or the literal "none".',
     );
   }
   const amount = Number(match[1]);
@@ -196,8 +194,8 @@ function readRawBody(req: IncomingMessage): Promise<Buffer> {
 /**
  * Hop-by-hop / framing headers stripped before forwarding — every OTHER
  * header (signature headers included) passes through untouched so the dev's
- * own `constructEvent` re-verifies against the identical value (cli.md §8:
- * "never re-serialize, never touch casing/whitespace"). These specific names
+ * own `constructEvent` re-verifies against the identical value (never
+ * re-serialize, never touch casing/whitespace). These specific names
  * are excluded because they describe THIS request's own framing/connection,
  * not the provider's payload, and forwarding them verbatim would either be
  * wrong (a stale `content-length` if the transport re-encodes) or meaningless
@@ -243,9 +241,9 @@ type DeliverFn = (
 
 /**
  * Build the delivery function for this run: forward the EXACT raw bytes +
- * pass-through headers to `forwardTo` (never re-serialize — cli.md §8), or,
+ * pass-through headers to `forwardTo` (never re-serialize), or,
  * without `--forward-to`, apply the event directly via `event.apply()`
- * (PW-805 owns idempotency; a database-less client's `apply()` throws
+ * (idempotent; a database-less client's `apply()` throws
  * `PayweaveConfigError`, surfaced here as a normal delivery failure).
  */
 function makeDeliver(forwardTo: string | undefined, fetchImpl: typeof fetch): DeliverFn {
@@ -437,7 +435,7 @@ const defaultSpawn: SpawnLike = (command, args, options) =>
 
 /** Options accepted by {@link runListenCommand} beyond the CLI flags themselves. */
 export interface ListenCommandOptions {
-  /** Injectable for tests; defaults to the real PW-1002 loader. */
+  /** Injectable for tests; defaults to the real loader. */
   loadConfig?: (options: LoadConfigOptions) => Promise<LoadedConfig>;
   /** Project root `loadConfig` searches from (passed through to it). */
   cwd?: string;
@@ -473,7 +471,7 @@ function isValidPort(value: number): boolean {
 }
 
 /**
- * `payweave listen`'s `run` body (cli.md §3, §8). Parses its own flags:
+ * `payweave listen`'s `run` body. Parses its own flags:
  * `--config <path>`, `--provider <id>`, `--forward-to <url>`, `--retry
  * <window>`, `--port <n>` (default 4242; `0` picks an OS-assigned ephemeral
  * port — useful for tests), `--live` (proceed against a live-environment
@@ -537,12 +535,12 @@ export async function runListenCommand(
   }
   const client = loaded.client as ListenClientLike;
 
-  // ── Phase 3: live-key refusal (cli.md §8 — dev-only tool). ────────────────
+  // ── Phase 3: live-key refusal (dev-only tool). ─────────────────────────────
   if (client.environment === "live") {
     if (args["live"] !== true) {
       io.err(
         "payweave listen: refusing to start — this config resolves to a LIVE environment and " +
-          "`listen` is a dev-only tool. Pass --live to proceed anyway (loud warning, cli.md §8).",
+          "`listen` is a dev-only tool. Pass --live to proceed anyway (loud warning).",
       );
       return 1;
     }
@@ -617,7 +615,7 @@ export async function runListenCommand(
   io.out(
     "  reaching this server from a provider's dashboard over the public internet is your own " +
       "responsibility (point your own tunnel, e.g. ngrok, at this port) — payweave does not operate " +
-      "or depend on a hosted relay (cli.md §8).",
+      "or depend on a hosted relay.",
   );
   if (forwardTo !== undefined) {
     io.out(
@@ -690,7 +688,6 @@ export async function runListenCommand(
 
 export const listenCommand: CliCommand = {
   name: "listen",
-  summary: "Receive, verify, and forward/apply provider webhooks locally (cli.md §3)",
-  ticket: "PW-1006",
+  summary: "Receive, verify, and forward/apply provider webhooks locally",
   run: (argv, io) => runListenCommand(argv, io),
 };

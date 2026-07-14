@@ -1,11 +1,11 @@
 /**
- * The two ATOMIC, single-statement queries `database.md §5` singles out as
- * this ticket's headline: `balances.consume` and `webhookEvents.claim`. Both
+ * The two ATOMIC, single-statement queries this adapter treats as its
+ * headline requirement: `balances.consume` and `webhookEvents.claim`. Both
  * are built here (rather than inline in `./adapter.ts`) because they are, by
  * design, large — see each builder's own doc comment for why every piece of
  * SQL text below exists.
  *
- * KNOWN PERFORMANCE CHARACTERISTIC (flagged, not hidden — agent-playbook §6):
+ * KNOWN PERFORMANCE CHARACTERISTIC (flagged, not hidden):
  * `buildConsumeQuery`'s text is large (tens of KB) because `./period-sql.ts`'s
  * reset-due CASE expression is referenced multiple times (in `used`,
  * `period_start`, `period_end`, `updated_at`, and `applied`) and each
@@ -17,11 +17,11 @@
  * real postgres (no docker here): send it as a NAMED prepared statement
  * (`pool.query({ text, values, name })`) so postgres parses/plans it once per
  * connection and every subsequent call on that connection is a cheap
- * Bind+Execute. Not done in this ticket — `Runner.query` and the mock-pool
+ * Bind+Execute. Not done yet — `Runner.query` and the mock-pool
  * test harness would need to grow a `name` parameter, and prepared-statement
  * behavior under pool connection churn is exactly the kind of thing this
- * environment cannot verify; PW-710's docker leg is the right place to add
- * and prove it.
+ * environment cannot verify; a real docker-backed postgres run is the right
+ * place to add and prove it.
  */
 import { currentPeriod } from "../../products/period";
 import { PW_TABLES } from "../schema";
@@ -39,8 +39,8 @@ const WEBHOOK_EVENTS = PW_TABLES.webhookEvents;
 
 /**
  * `balances.consume` — ONE `INSERT ... ON CONFLICT ... DO UPDATE ... RETURNING`
- * statement (database.md §5's postgres bullet; the PW-704 brief's headline
- * requirement) that atomically: lazy-resets the period if due, applies the
+ * statement (this adapter's headline requirement) that atomically:
+ * lazy-resets the period if due, applies the
  * `conditional` gate, and decrements — all inside a single round trip, using
  * pg's own row locking rather than a read-then-write from the application.
  *
@@ -65,8 +65,8 @@ const WEBHOOK_EVENTS = PW_TABLES.webhookEvents;
  * the row-lock scope is exactly the (customer, feature, group) row this call
  * touches — concurrent calls for OTHER rows are unaffected, and concurrent
  * calls for the SAME row serialize on the lock exactly as
- * `SELECT ... FOR UPDATE` normally does (database.md §5's own sanctioned
- * "pg row locking" mechanism), never a lost update.
+ * `SELECT ... FOR UPDATE` normally does (postgres's own row-locking
+ * mechanism), never a lost update.
  *
  * ── Period math ──────────────────────────────────────────────────────────
  * The FIRST-TOUCH branch needs no SQL calendar math at all — its
@@ -80,7 +80,7 @@ const WEBHOOK_EVENTS = PW_TABLES.webhookEvents;
  * `currentPeriod`, invoked here exactly once via `buildPeriodMathSql("e.anchor",
  * "e.reset_interval", "$5")`.
  *
- * `init` is a creation template only (database.md §3): the `DO UPDATE SET`
+ * `init` is a creation template only: the `DO UPDATE SET`
  * clause never touches `"limit"`/`reset_interval`/`anchor`/`plan_id`/
  * `plan_version` — an existing row's own values for those columns always win.
  */
@@ -159,7 +159,7 @@ RETURNING id, customer_id, feature_id, "group", used, "limit", reset_interval, a
 }
 
 /**
- * `webhookEvents.claim` — one insert-or-steal statement (database.md §3):
+ * `webhookEvents.claim` — one insert-or-steal statement:
  * `INSERT ... ON CONFLICT (dedupe_key) DO UPDATE SET claimed_at = EXCLUDED
  * .claimed_at WHERE applied_at IS NULL AND claimed_at <= <now - stale>
  * RETURNING dedupe_key`. When the `WHERE` condition is false (already applied,

@@ -105,9 +105,7 @@ describe("plan() — default: true requires group (§4, §9)", () => {
   it("throws when default is true and group is missing", () => {
     const err = captureError(() => plan({ id: "free", default: true }));
     expect(err).toBeInstanceOf(PayweaveValidationError);
-    expect((err as Error).message).toBe(
-      'plan "free": default: true requires a group (plans-and-features.md §4)',
-    );
+    expect((err as Error).message).toBe('plan "free": default: true requires a group');
   });
 
   it("does not throw when default is true and group is present", () => {

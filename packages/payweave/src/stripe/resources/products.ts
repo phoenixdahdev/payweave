@@ -5,7 +5,7 @@
  * before the form encoder runs) and passes a loose response schema to the
  * HttpClient (drift is logged, never thrown). Requests go to the wire as
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
- * JSON resources — no envelope (providers.md §3.1).
+ * JSON resources — no envelope.
  *
  * PW-803 syncs Payweave plans onto products (`payweave push`,
  * plans-and-features.md §12): sync flows ARCHIVE a product

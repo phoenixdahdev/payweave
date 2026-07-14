@@ -1,6 +1,6 @@
 /**
- * Webhook route handler renderer, one per detected framework (docs/v1/cli.md
- * §1, PW-1005). Every variant follows golden rule 6 (webhooks are
+ * Webhook route handler renderer, one per detected framework.
+ * Every variant follows golden rule 6 (webhooks are
  * security-critical): the RAW received bytes are passed to
  * `payweave.webhooks.constructEvent` untouched — never re-serialized,
  * never parsed as JSON first.
@@ -15,8 +15,8 @@
 import type { FrameworkId, ScaffoldFile, ScaffoldInput } from "./types";
 
 const WEBHOOK_ROUTE_PATH: Readonly<Record<FrameworkId, string>> = {
-  // App Router only — cli.md §1 names "Next.js App Router" specifically, not
-  // Next.js generically; Pages Router scaffolding is out of v1's scope.
+  // App Router only, not Next.js generically; Pages Router scaffolding is
+  // out of v1's scope.
   next: "app/api/webhooks/payweave/route.ts",
   express: "payweave-webhook.ts",
   fastify: "payweave-webhook-plugin.ts",
@@ -35,7 +35,7 @@ function renderNext(relPath: string): string {
   return [
     `import { payweave } from "${payweaveImport}";`,
     "",
-    "// Next.js App Router Route Handler (docs/v1/cli.md §1). Uses only the Web",
+    "// Next.js App Router Route Handler. Uses only the Web",
     "// Request/Response API — no `next/server` import needed.",
     "export async function POST(request: Request): Promise<Response> {",
     "  // Raw text FIRST — Payweave verifies the EXACT bytes the provider signed",
@@ -118,7 +118,7 @@ function renderNode(relPath: string): string {
     `import { createServer } from "node:http";`,
     `import { payweave } from "${payweaveImport}";`,
     "",
-    "// Plain node:http fallback (docs/v1/cli.md §1) — no framework detected.",
+    "// Plain node:http fallback — no framework detected.",
     "const server = createServer((req, res) => {",
     '  if (req.method !== "POST" || req.url !== "/api/webhooks/payweave") {',
     "    res.writeHead(404).end();",
@@ -154,7 +154,7 @@ function renderNode(relPath: string): string {
   ].join("\n");
 }
 
-/** Render the framework-specific webhook route file (cli.md §1's artifact list). */
+/** Render the framework-specific webhook route file. */
 export function renderWebhookRoute(input: ScaffoldInput): ScaffoldFile {
   const relPath = WEBHOOK_ROUTE_PATH[input.framework];
   switch (input.framework) {

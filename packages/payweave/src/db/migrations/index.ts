@@ -2,7 +2,7 @@
  * Embedded SQL migrations engine for the Payweave database layer
  * (docs/v1/database.md §4, PW-703). Consumed by the SQL adapters
  * (PW-704/705/706) to implement `DatabaseAdapter.migrations.status()/apply()`
- * and by `payweave push` (PW-1004) through those adapters.
+ * and by `payweave push` through those adapters.
  *
  * INTERNAL until PW-505 wires the `payweave/db/*` subpaths into the exports
  * map — nothing here is reachable from a public entry point yet.

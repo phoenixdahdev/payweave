@@ -3,7 +3,7 @@
  * interface core/billing code may touch. No SQL outside adapters.
  *
  * First-party adapters (PW-704+) live under `payweave/db/*` subpaths with
- * their drivers as optional peerDependencies (database.md §7); anything that
+ * their drivers as optional peerDependencies; anything that
  * satisfies this contract — and passes the conformance suite in
  * `test/db/conformance.ts` — can be a community adapter.
  *
@@ -73,11 +73,11 @@ export type {
 export type PwKnownDialect = "postgres" | "mysql" | "sqlite" | "prisma" | "drizzle" | "mongodb";
 
 /**
- * The database contract every adapter implements (database.md §3).
+ * The database contract every adapter implements.
  *
  * Concurrency is part of the contract, not an implementation detail:
  * `balances.consume` and `webhookEvents.claim` MUST be atomic under parallel
- * calls (database.md §5) — the conformance suite races them and requires
+ * calls — the conformance suite races them and requires
  * zero lost updates, zero double-resets, and once-only claims.
  */
 export interface DatabaseAdapter {
@@ -107,7 +107,7 @@ export interface DatabaseAdapter {
     /**
      * Append-only push: no-op returning the active version when its content
      * hash is unchanged; otherwise appends `version + 1`. NEVER mutates or
-     * deletes an existing (`planId`, `version`) row (database.md §2).
+     * deletes an existing (`planId`, `version`) row.
      */
     pushVersion(plan: PwPlanVersionInput): Promise<PwPlanVersion>;
   };
@@ -195,12 +195,12 @@ export interface DatabaseAdapter {
     markApplied(dedupeKey: string): Promise<void>;
   };
 
-  /** Migration ledger + runner (database.md §4). */
+  /** Migration ledger + runner. */
   migrations: {
     status(): Promise<{ pending: string[]; applied: string[] }>;
     /**
      * Prisma/Drizzle adapters never shell out — they return `applied: []`
-     * plus `instructions` telling the user what to run (database.md §4);
+     * plus `instructions` telling the user what to run;
      * SQL/Mongo adapters apply for real and omit `instructions`.
      */
     apply(): Promise<{ applied: string[]; instructions?: string }>;

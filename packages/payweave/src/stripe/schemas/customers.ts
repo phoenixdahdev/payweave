@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Customers module (PW-603). Request fields are
+ * Zod schemas for the Stripe Customers module. Request fields are
  * sourced verbatim from the official API reference (all verified 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/customers/create
  *   - Retrieve: https://docs.stripe.com/api/customers/retrieve
@@ -8,7 +8,7 @@
  *   - List:     https://docs.stripe.com/api/customers/list
  *   - Search:   https://docs.stripe.com/api/customers/search
  *
- * `balance` is an integer in MINOR units (providers.md §3.1) — no conversion
+ * `balance` is an integer in MINOR units — no conversion
  * anywhere. `tax_id_data[].type` is deliberately `z.string()` (the reference
  * lists 100+ country-specific enum values — provider-validated rather than
  * transcribed; conservative per AGENTS.md §8). Response schemas are LOOSE:

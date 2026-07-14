@@ -1,10 +1,9 @@
 /**
  * unified/mappings.ts — the single source of truth for webhook + status
- * normalization (PRD §8.3 unified event names, provider-reference §3 status
- * vocabularies) AND the unified-ops capability matrix (providers.md §3.3,
- * PW-607).
+ * normalization (unified event names, provider status vocabularies) AND the
+ * unified-ops capability matrix.
  *
- * ⚠️ PUBLIC CONTRACT (AGENTS.md §9). The `unifiedType` / `UnifiedStatus`
+ * ⚠️ PUBLIC CONTRACT. The `unifiedType` / `UnifiedStatus`
  * vocabularies, the provider→unified mappings, and the capability matrix below
  * are a stable, public contract. Changing their SEMANTICS (renaming a unified
  * value, remapping an existing native event/status to a different unified
@@ -26,20 +25,20 @@ import { PayweaveValidationError, type PayweaveProvider } from "../core/errors";
 
 /**
  * Provider identifier accepted by the mapping functions AND the capability
- * matrix — the full v1 provider set (providers.md §1). Stripe joined in
- * PW-607; it is identical to {@link PayweaveProvider} but kept as its own
- * alias so this file stays free of a `core/config.ts` dependency.
+ * matrix — the full v1 provider set. Identical to {@link PayweaveProvider}
+ * but kept as its own alias so this file stays free of a `core/config.ts`
+ * dependency.
  */
 export type MappingProvider = PayweaveProvider;
 /** Flutterwave version selector. `undefined` for Paystack and Stripe (unversioned). */
 export type MappingVersion = "v3" | "v4" | undefined;
 
 /**
- * Normalized, provider-agnostic webhook event type (PRD §8.3). `"unknown"` is a
+ * Normalized, provider-agnostic webhook event type. `"unknown"` is a
  * first-class value: unmapped native events are delivered as `"unknown"`, never
  * dropped. `subscription.updated`/`subscription.canceled`/`invoice.paid`/
- * `invoice.payment_failed` joined in PW-607 (providers.md §3.5) — added for ALL
- * providers in that same PR so the vocabulary stays total.
+ * `invoice.payment_failed` are mapped for ALL providers so the vocabulary
+ * stays total.
  */
 export type UnifiedEventType =
   | "payment.succeeded"
@@ -56,7 +55,7 @@ export type UnifiedEventType =
   | "dispute.created"
   | "unknown";
 
-/** Normalized transaction status (provider-reference §3). */
+/** Normalized transaction status. */
 export type UnifiedStatus = "success" | "failed" | "pending" | "abandoned" | "reversed";
 
 // ── Event-name tables ────────────────────────────────────────────────────────
@@ -69,7 +68,7 @@ export type UnifiedStatus = "success" | "failed" | "pending" | "abandoned" | "re
  * `subscription.disable`/`subscription.not_renew`/`invoice.update`/
  * `invoice.payment_failed` verified against
  * https://paystack.com/docs/payments/webhooks/ and
- * https://paystack.com/docs/payments/subscriptions/ (2026-07-12, PW-607):
+ * https://paystack.com/docs/payments/subscriptions/ (verified 2026-07-12):
  * `subscription.disable` fires both on an explicit cancellation and on the
  * final billing cycle completing — either way the subscription is no longer
  * active, so it normalizes to `subscription.canceled`; `subscription.not_renew`
@@ -113,7 +112,7 @@ export const FLUTTERWAVE_STATUS_SPLIT_MAP: Readonly<
 /**
  * Flutterwave native events with a status-independent unified type.
  *
- * Verified 2026-07-12 (PW-607), resolving the standing NOTE(verify):
+ * Verified 2026-07-12, resolving the standing NOTE(verify):
  * `refund.completed` — https://developer.flutterwave.com/reference/refund_completed_webhook
  * (a dedicated "refund completion" webhook, unconditionally a completed
  * refund, unlike `charge.completed`/`transfer.completed` which cover both
@@ -123,7 +122,7 @@ export const FLUTTERWAVE_STATUS_SPLIT_MAP: Readonly<
  * "deactivated"`); no `subscription.created`/`.updated` native event is
  * documented for FLW v3 (the first `charge.completed` on a payment-plan
  * subscription doubles as both the charge AND the creation signal) — left
- * unmapped rather than invented, per AGENTS.md §2.1.
+ * unmapped rather than invented, per AGENTS.md.
  * `chargeback.initiated` — https://developer.flutterwave.com/v3.0/docs/chargebacks
  * (sample payload `"event": "chargeback.initiated"`); `chargeback.accepted` /
  * `.declined` / `.lost` also exist but have no unified equivalent to map to,
@@ -145,7 +144,7 @@ export const FLUTTERWAVE_EVENT_MAP: Readonly<Record<string, UnifiedEventType>> =
 /**
  * Stripe native webhook event → unified type, STATUS-INDEPENDENT rows. Event
  * type names verified against https://docs.stripe.com/api/events/types
- * (2026-07-12, PW-607, providers.md §3.5). Status-DEPENDENT rows
+ * (verified 2026-07-12). Status-DEPENDENT rows
  * (`checkout.session.completed`, `refund.updated`) live in
  * {@link STRIPE_EVENT_STATUS_SPLIT_MAP} — Stripe nests the resource one level
  * down (`data.object`, https://docs.stripe.com/api/events/object), unlike
@@ -153,13 +152,12 @@ export const FLUTTERWAVE_EVENT_MAP: Readonly<Record<string, UnifiedEventType>> =
  * Anything absent from both tables → `"unknown"`.
  *
  * `checkout.session.async_payment_succeeded`/`.async_payment_failed` are
- * ADDITIONS beyond providers.md §3.5's literal row list, added after verifying
+ * ADDITIONS beyond the documented event set, added after verifying
  * https://docs.stripe.com/checkout/fulfillment (2026-07-12): a delayed/async
  * payment method (e.g. a bank debit) can complete a Checkout Session while
  * `payment_status` is still `"unpaid"` — the real success/failure signal
  * arrives later via these two events, so they are mapped flat here to keep
- * `payment.succeeded`/`payment.failed` honest for that flow. Resolution
- * recorded in providers.md §3.5.
+ * `payment.succeeded`/`payment.failed` honest for that flow.
  */
 export const STRIPE_EVENT_MAP: Readonly<Record<string, UnifiedEventType>> = {
   "payment_intent.succeeded": "payment.succeeded",
@@ -185,7 +183,7 @@ export interface StripeEventStatusSplit {
 
 /**
  * Stripe events whose unified type depends on the WRAPPED RESOURCE's status
- * (`data.object.<field>`, verified 2026-07-12, PW-607):
+ * (`data.object.<field>`, verified 2026-07-12):
  *
  * - `checkout.session.completed` fires once the checkout FLOW finishes, which
  *   is not the same as payment succeeding for a delayed/async payment method
@@ -252,12 +250,12 @@ export const FLUTTERWAVE_V4_STATUS_MAP: Readonly<Record<string, UnifiedStatus>> 
  * Stripe status strings → unified status — MERGED across the object types
  * `toUnifiedStatus` normalizes for Stripe (Checkout Session `payment_status` +
  * `status`, PaymentIntent `status`); none of the verified values collide.
- * Verified 2026-07-12 (PW-607), resolving providers.md §3.3's ⚠️ row:
+ * Verified 2026-07-12:
  *
  * - Checkout Session `payment_status` ∈ {paid, unpaid, no_payment_required}
  *   and `status` ∈ {open, complete, expired} —
  *   https://docs.stripe.com/api/checkout/sessions/object. `no_payment_required`
- *   (a genuinely $0 checkout) is an ADDITION beyond §3.3's literal row list —
+ *   (a genuinely $0 checkout) is an ADDITION beyond the documented status set —
  *   treated as `success` (the checkout completed, nothing further to charge).
  *   `open` is an ADDITION (in-progress, not yet an anomaly) → `pending`.
  *   `status: "complete"` is DELIBERATELY OMITTED: it means the checkout FLOW
@@ -273,7 +271,7 @@ export const FLUTTERWAVE_V4_STATUS_MAP: Readonly<Record<string, UnifiedStatus>> 
  *   https://docs.stripe.com/api/payment_intents/object,
  *   https://docs.stripe.com/payments/paymentintents/lifecycle.
  *   `requires_capture` (funds authorized, not yet captured) is an ADDITION
- *   beyond §3.3's literal row list, mapped to `pending` for the same reason as
+ *   beyond the documented status set, mapped to `pending` for the same reason as
  *   the other `requires_*` states — not yet succeeded.
  */
 export const STRIPE_STATUS_MAP: Readonly<Record<string, UnifiedStatus>> = {
@@ -403,7 +401,7 @@ function readStripeObjectField(data: unknown, field: string): string | undefined
   return typeof value === "string" ? value : undefined;
 }
 
-// ── Unified-ops capability matrix (providers.md §3.3, PW-607) ────────────────
+// ── Unified-ops capability matrix ────────────────
 
 /**
  * The six unified ops (Surface B, `src/unified/types.ts`'s
@@ -420,8 +418,7 @@ export type UnifiedOpName =
 
 /**
  * One capability-matrix cell: whether `op` is supported on a given provider,
- * and — only when it is NOT — the exact message the typed guard throws
- * (providers.md §3.3's wording, quoted verbatim for `transfers.create`).
+ * and — only when it is NOT — the exact message the typed guard throws.
  */
 export interface UnifiedOpCapability {
   readonly supported: boolean;
@@ -439,23 +436,23 @@ const ALL_SUPPORTED: Readonly<Record<UnifiedOpName, UnifiedOpCapability>> = {
 };
 
 /**
- * The unified-ops capability matrix (providers.md §3.3): which of the six
+ * The unified-ops capability matrix: which of the six
  * unified ops each provider supports. Data, not prose, so
- * `payweave.capabilities()` (`src/index.ts`, PW-607) and doc generators
- * (PW-1102) can render it directly.
+ * `payweave.capabilities()` (`src/index.ts`) and doc generators
+ * can render it directly.
  *
  * Paystack and Flutterwave support all six. Stripe does NOT map
  * `transfers.create` or `banks.*` in v1 — Stripe payouts/Connect transfers are
  * semantically different from Paystack/FLW bank transfers, and bank-account
- * lookup is NG-specific (providers.md §3.3). `checkout.create`/`verify`/
+ * lookup is NG-specific. `checkout.create`/`verify`/
  * `refunds.create` ARE capability-supported on stripe (mapped to
- * `checkout.sessions`/`paymentIntents`/`refunds` per §3.3) — the runtime
+ * `checkout.sessions`/`paymentIntents`/`refunds`) — the runtime
  * wiring of that mapping (`src/unified/stripe.ts`) is separate follow-up work
  * tracked outside this capability-matrix change; calling those ops today
  * rejects with a distinct "not implemented yet" error rather than the
  * capability-gap error below (see `stripeUnifiedNamespace` in `src/index.ts`).
  *
- * EXTEND ONLY (AGENTS.md §9, same rule as the event/status tables above): a
+ * EXTEND ONLY (same rule as the event/status tables above): a
  * `false` cell may flip to `true` (additive, `minor`) once a provider's
  * mapping lands; flipping `true` → `false` is a breaking change.
  */
@@ -494,9 +491,9 @@ export function isUnifiedOpSupported(provider: MappingProvider, op: UnifiedOpNam
 }
 
 /**
- * Assert that `provider` supports `op` (providers.md §3.3). A no-op when it
- * is; otherwise throws {@link PayweaveValidationError} — the capability-error
- * class §3.3 names — naming the provider and operation (e.g.
+ * Assert that `provider` supports `op`. A no-op when it
+ * is; otherwise throws {@link PayweaveValidationError}, naming the provider
+ * and operation (e.g.
  * `"transfers are not supported on stripe"` for `transfers.create` on
  * stripe). Never throws for a supported op, and never for anything OTHER than
  * a capability gap — config/auth/network failures surface through their own

@@ -1,11 +1,8 @@
 /**
  * Shared test harness for the unified layer (Surface B). Builds the unified
- * ops THROUGH `createPayweave` (PW-502 — the whole suite passing unchanged is
- * the proof that the new client routes identically to the direct per-provider
- * factories), and mocks the network edge with MSW (never stubs
- * HttpClient/fetch). Captures outgoing requests so tests can assert
- * method/path/query/body. `makeLegacyPaystackUnified` keeps one explicit
- * old-factory path covered until PW-504 delegates it.
+ * ops through `createPayweave` and mocks the network edge with MSW (never
+ * stubs HttpClient/fetch). Captures outgoing requests so tests can assert
+ * method/path/query/body.
  *
  * ORDER MATTERS: `server.listen()` must run BEFORE the client is constructed,
  * because HttpClient captures the global `fetch` reference at construction
@@ -13,7 +10,7 @@
  * would capture the un-patched fetch and escape interception.
  */
 import type { SetupServer } from "msw/node";
-import { createPayweave, createPaystack } from "../../src/index";
+import { createPayweave } from "../../src/index";
 import type { UnifiedNamespace } from "../../src/unified/index";
 import { createMswServer, type MockRoute } from "../../src/testing/msw";
 
@@ -108,14 +105,3 @@ export async function makeFlutterwaveUnified(routes: MockRoute[]): Promise<Unifi
   return harness(server, raw, client);
 }
 
-/**
- * Old-factory control: the same Paystack unified surface built through the
- * legacy `createPaystack` facade (`sdk.unified.*`). Kept so at least one
- * unified test exercises the pre-PW-502 construction path until PW-504 turns
- * the old factories into delegating aliases.
- */
-export async function makeLegacyPaystackUnified(routes: MockRoute[]): Promise<UnifiedHarness> {
-  const { server, raw } = await startServer(routes);
-  const sdk = createPaystack({ secretKey: "sk_test_harness", maxRetries: 0 });
-  return harness(server, raw, sdk.unified);
-}

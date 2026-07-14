@@ -5,7 +5,7 @@
  * before the form encoder runs) and passes a loose response schema to the
  * HttpClient (drift is logged, never thrown). Requests go to the wire as
  * `application/x-www-form-urlencoded` bracket notation; responses are bare
- * JSON resources — no envelope (providers.md §3.1). All amounts are integer
+ * JSON resources — no envelope. All amounts are integer
  * minor units.
  *
  * Docs: https://docs.stripe.com/api/payment_intents
@@ -200,7 +200,7 @@ export class PaymentIntents {
 
   /**
    * Async iterator over ALL PaymentIntents matching `query`, transparently
-   * following `has_more` with `starting_after = <last id>` (providers.md §3.1).
+   * following `has_more` with `starting_after = <last id>`.
    *
    * Docs: https://docs.stripe.com/api/payment_intents/list
    *

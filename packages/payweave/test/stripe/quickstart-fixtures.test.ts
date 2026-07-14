@@ -1,5 +1,5 @@
 /**
- * PW-609 — Stripe quickstart fixture contract. These fixtures
+ * Stripe quickstart fixture contract. These fixtures
  * (`test/fixtures/stripe/quickstart/*.json`) are a single coherent chain
  * (same checkout session / payment intent / charge / refund ids threaded
  * through every file) recorded to model the real shapes the CI-only

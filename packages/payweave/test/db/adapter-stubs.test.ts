@@ -1,5 +1,5 @@
 /**
- * PW-505 — three of the six `payweave/db/<adapter>` subpaths are still
+ * three of the six `payweave/db/<adapter>` subpaths are still
  * placeholder entries until their tickets ship the real adapters. Each
  * factory must fail fast with a PayweaveConfigError that names its subpath
  * and the ticket that ships the real implementation, and must not drag any
@@ -9,8 +9,8 @@
  * `better-sqlite3`/`@libsql/client` adapter) — its own coverage lives in
  * `test/db/sqlite.test.ts`. `payweave/db/drizzle` graduated out with PW-708
  * (the real `drizzle-orm` adapter) — its own coverage lives in
- * `test/db/drizzle.test.ts`. `payweave/db/postgres` (PW-704) and
- * `payweave/db/mongodb` (PW-709) also graduated out to real adapters — their
+ * `test/db/drizzle.test.ts`. `payweave/db/postgres` and
+ * `payweave/db/mongodb` also graduated out to real adapters — their
  * coverage lives in `test/db/postgres.test.ts` / `test/db/mongodb.test.ts`.
  */
 import { describe, expect, it } from "vitest";
@@ -19,14 +19,14 @@ import { prismaAdapter } from "../../src/db/prisma/index";
 import { mysqlAdapter } from "../../src/db/mysql/index";
 
 const stubs = [
-  { subpath: "payweave/db/prisma", factory: prismaAdapter, ticket: "PW-707" },
-  { subpath: "payweave/db/mysql", factory: mysqlAdapter, ticket: "PW-705" },
+  { subpath: "payweave/db/prisma", factory: prismaAdapter },
+  { subpath: "payweave/db/mysql", factory: mysqlAdapter },
 ] as const;
 
-describe("db adapter stub subpaths (PW-505)", () => {
-  for (const { subpath, factory, ticket } of stubs) {
+describe("db adapter stub subpaths", () => {
+  for (const { subpath, factory } of stubs) {
     describe(subpath, () => {
-      it(`throws PayweaveConfigError naming ${ticket} and the DatabaseAdapter escape hatch`, () => {
+      it("throws PayweaveConfigError naming the subpath and the DatabaseAdapter escape hatch", () => {
         expect(() => factory()).toThrowError(PayweaveConfigError);
         try {
           factory();
@@ -35,7 +35,6 @@ describe("db adapter stub subpaths (PW-505)", () => {
           const err = error as PayweaveConfigError;
           expect(err.name).toBe("PayweaveConfigError");
           expect(err.message).toContain(subpath);
-          expect(err.message).toContain(ticket);
           expect(err.message).toContain('"payweave/db"');
           expect(err.isRetryable).toBe(false);
         }

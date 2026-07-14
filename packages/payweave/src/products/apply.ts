@@ -1,6 +1,5 @@
 /**
- * `event.apply()` — webhook → billing state (plans-and-features.md §11.3/§11.5,
- * unified-config.md §5, database.md §2–§3, PW-805). Mirrors `subscribe.ts`'s/
+ * `event.apply()` — webhook → billing state. Mirrors `subscribe.ts`'s/
  * `usage.ts`'s "non-generic module, generic facade" split with `src/index.ts`
  * — this file never imports `../index` (avoids a circular import back into
  * the facade) and, like those two, is written ONCE against the
@@ -10,32 +9,29 @@
  * `webhooks/index.ts`'s `constructEvent` attaches `.apply` to every
  * `WebhookEvent` it returns; this module is what that closure calls.
  *
- * ── The idempotency gate (database.md §3, unified-config.md §5) ────────────
+ * ── The idempotency gate ─────────────────────────────────────────────────────
  * `webhookEvents.claim(dedupeKey, …)` IS the entire idempotency mechanism — no
  * second dedupe layer here. `claim` → `false` means an identical
  * (`dedupeKey`) event already applied, or another caller is mid-apply right
  * now: `apply()` returns `{ applied: false, skipped: "already-applied" }`
  * without touching billing state. `claim` + the state mutation + `markApplied`
- * all run inside ONE `database.transaction(fn)` call (database.md §2 design
- * rule 4: "claim + side effects + markApplied run in ONE transaction so a
- * failed apply rolls the claim back") — an adapter with real transactions
- * (the sqlite adapter's `BEGIN IMMEDIATE`/`COMMIT`/`ROLLBACK`, PW-706) makes a
- * thrown error immediately re-claimable, never waiting out
- * `staleClaimAfterMs`; an adapter without one falls back to exactly the
- * stale-claim story database.md §2 documents. This also gives "local"
- * idempotency for free (§ AC "calling it twice on the same event object in
- * one process applies once"): the second call's `claim()` sees the
- * already-applied row and returns `false` — no separate in-process latch
- * needed.
+ * all run inside ONE `database.transaction(fn)` call ("claim + side effects +
+ * markApplied run in ONE transaction so a failed apply rolls the claim back")
+ * — an adapter with real transactions (the sqlite adapter's `BEGIN
+ * IMMEDIATE`/`COMMIT`/`ROLLBACK`) makes a thrown error immediately
+ * re-claimable, never waiting out `staleClaimAfterMs`; an adapter without one
+ * falls back to exactly the stale-claim story. This also gives "local"
+ * idempotency for free ("calling it twice on the same event object in one
+ * process applies once"): the second call's `claim()` sees the already-applied
+ * row and returns `false` — no separate in-process latch needed.
  *
  * ── Correlating an event back to a `pw_subscriptions` row ───────────────────
  * The `DatabaseAdapter` contract exposes exactly two subscription reads:
  * `getActive(customerId, group)` (the active-SET statuses only —
  * `active`/`past_due`/`trialing`) and nothing keyed by id or by provider
- * reference (database.md §3; adding one is out of this ticket's file scope —
- * `../db/index` is forbidden territory here). Every correlation this module
- * does rides data the EVENT ITSELF carries, per `subscribe.ts`'s own "seams
- * left for PW-805" doc comment:
+ * reference. Every correlation this module does rides data the EVENT ITSELF
+ * carries, per `subscribe.ts`'s own "seams left for the webhook handler" doc
+ * comment:
  *
  * - Stripe: `data.object.client_reference_id` and/or `data.object.metadata.
  *   pwv_reference` name the local row id directly (set on the Checkout
@@ -49,11 +45,10 @@
  *   #initialize) and/or `data.metadata.pwv_reference`/`pwv_customer`/
  *   `pwv_plan` (same echo).
  *
- * KNOWN LIMITATION (flagged per AGENTS.md §8, not fixed here —
- * `subscribe.ts` is this ticket's forbidden/read-only territory): Stripe
- * session-level `metadata` is NOT copied onto the Subscription object Stripe
- * creates from that checkout (only an explicit `subscription_data.metadata`
- * at session-creation time would be — a `subscribe.ts` change, out of scope).
+ * KNOWN LIMITATION (flagged, not fixed here): Stripe session-level `metadata`
+ * is NOT copied onto the Subscription object Stripe creates from that
+ * checkout (only an explicit `subscription_data.metadata` at
+ * session-creation time would be — a `subscribe.ts` change, out of scope).
  * So today, a bare `customer.subscription.updated`/`.deleted` event for
  * STRIPE that carries no `pwv_*` metadata of its own cannot be correlated to a
  * row by metadata; this module still resolves it via the (`pwv_customer`,
@@ -61,10 +56,9 @@
  * present (Paystack already echoes it; a future `subscribe.ts` revision that
  * adds `subscription_data.metadata` would make Stripe's lifecycle events
  * resolvable the same way) and otherwise treats the event as `"unresolved"` —
- * a safe no-op, never a guess at the wrong row (the conservative reading,
- * AGENTS.md §8).
+ * a safe no-op, never a guess at the wrong row.
  *
- * ── Out-of-order guard (backlog PW-805 AC) ──────────────────────────────────
+ * ── Out-of-order guard ───────────────────────────────────────────────────────
  * `subscription.*`/`invoice.*` events can arrive out of send order (provider
  * redelivery, network reordering). Two protections, both keyed off the
  * CURRENTLY STORED row (read via `getActive` before writing — the FIRST
@@ -80,17 +74,17 @@
  *    fields are not touched either, so a late event never partially regresses
  *    a row a newer event already advanced.
  *
- * ── PW-903 seam: plan-change balance reset ──────────────────────────────────
+ * ── Plan-change balance reset ────────────────────────────────────────────────
  * `subscription.updated` events tell us the row's *current* plan via the same
  * `pwv_plan` metadata used for correlation. When it differs from the stored
  * row's `planId`, that's a genuine plan change (`pw_subscriptions.planId` is
- * patchable — `database.md §3`'s patch schema explicitly allows it): this
- * module patches `planId`/`planVersion` on the row AND calls
+ * patchable — the patch schema explicitly allows it): this module patches
+ * `planId`/`planVersion` on the row AND calls
  * {@link resetBalancesForPlanChange} for every METERED feature the new plan
  * includes, zeroing `used` and re-seeding `limit`/`resetInterval`/`anchor`
- * from the new plan (`balances.resetTo`, database.md §3). PW-903 owns the
- * conformance scenario for this; {@link resetBalancesForPlanChange} is
- * exported standalone so it can also be called/wired directly there.
+ * from the new plan (`balances.resetTo`). {@link resetBalancesForPlanChange}
+ * is exported standalone so a conformance scenario can also call/wire it
+ * directly.
  */
 import { PayweaveConfigError } from "../core/errors";
 import type { Logger } from "../core/logger";
@@ -104,7 +98,7 @@ import type { WebhookProvider } from "../webhooks/index";
  * resolved config — a slice of {@link BillingContext} (only `database` +
  * `products` are ever touched; `subscribe`/`check`/`report`'s wider context
  * carries provider clients this module never calls). `src/index.ts` passes
- * the SAME `billingContext` object it already builds for PW-804/PW-902 —
+ * the SAME `billingContext` object it already builds for the billing surface —
  * structurally compatible, so no new object is constructed there.
  */
 export type BillingApplyContext = Pick<BillingContext, "database" | "products">;
@@ -329,7 +323,7 @@ function isStalePeriod(period: ExtractedPeriod | undefined, currentRow: PwSubscr
   return period !== undefined && period.end.getTime() < currentRow.currentPeriodEnd.getTime();
 }
 
-// ── Status/flag mapping (spec-silent — providers.md §3.5 names the unified event, not every native status string) ──
+// ── Status/flag mapping (spec-silent — the unified event is named, not every native status string) ──
 
 /**
  * Stripe Subscription `status` → `pw_subscriptions.status`
@@ -376,8 +370,8 @@ function mapNativeStatus(event: WebhookEventForApply): PwSubscriptionPatch["stat
     return PAYSTACK_SUBSCRIPTION_STATUS_MAP[stringField(flatData(event), "status") ?? ""];
   }
   // `unified/mappings.ts`'s FLUTTERWAVE_EVENT_MAP maps nothing to
-  // `subscription.created`/`.updated` (only `.cancelled`, PW-607's own doc
-  // comment) — this function is only ever called for those two unified
+  // `subscription.created`/`.updated` (only `.cancelled`) — this function
+  // is only ever called for those two unified
   // types, so a Flutterwave event never reaches it in practice today.
   /* istanbul ignore next -- defensive: unreachable given the current unified mapping tables. */
   return undefined;
@@ -390,14 +384,13 @@ function extractCancelAtPeriodEnd(event: WebhookEventForApply): boolean | undefi
   return undefined;
 }
 
-// ── PW-903 seam ──────────────────────────────────────────────────────────────
+// ── Plan-change balance reset ─────────────────────────────────────────────────
 
 /**
  * Reset every METERED feature `plan` includes for `customerId`/`group` to the
- * plan's own limits (database.md §3 `balances.resetTo` — "plan changes").
+ * plan's own limits (`balances.resetTo` — "plan changes").
  * Exported standalone (not just called from {@link applyWebhookEvent}) so
- * PW-903's conformance scenario can wire/call it directly too — the hook this
- * ticket is asked to provide.
+ * a conformance scenario can also wire/call it directly.
  */
 export async function resetBalancesForPlanChange(
   database: DatabaseAdapter,
@@ -424,7 +417,7 @@ export async function resetBalancesForPlanChange(
 
 // ── The three state-mutating branches ───────────────────────────────────────
 
-/** `payment.succeeded` / `invoice.paid` (§11.3): flip an `incomplete` row to `active`, or refresh an already-active row's real period on renewal. */
+/** `payment.succeeded` / `invoice.paid`: flip an `incomplete` row to `active`, or refresh an already-active row's real period on renewal. */
 async function applyActivation(
   tx: DatabaseAdapter,
   ctx: BillingApplyContext,
@@ -451,7 +444,7 @@ async function applyActivation(
 
   // No active-set row found for this correlation — the expected shape for the
   // FIRST activation of the `incomplete` row `subscribe()` created (`incomplete`
-  // is outside the active set by design, database.md §2). Resolve it via the
+  // is outside the active set by design). Resolve it via the
   // row id `subscribe()` left on the event (module doc comment). No guard: an
   // `incomplete` row's period is only ever `subscribe()`'s nominal placeholder
   // (`subscribe.ts`'s `nominalPeriod`), so there is no "real" prior state to
@@ -469,7 +462,7 @@ async function applyActivation(
 
 /**
  * `subscription.created`/`subscription.updated`/`subscription.canceled`/
- * `invoice.payment_failed` (§11.3/§11.5): update an already-active row.
+ * `invoice.payment_failed`: update an already-active row.
  * `forcedStatus` pins the target status for the events whose UNIFIED TYPE
  * alone is authoritative (`canceled`, `payment_failed`) regardless of
  * whatever native `status` string the payload carries; `undefined` (plain
@@ -512,7 +505,7 @@ async function applyLifecycleUpdate(
   const cancelAtPeriodEnd = extractCancelAtPeriodEnd(event);
   if (cancelAtPeriodEnd !== undefined) patch.cancelAtPeriodEnd = cancelAtPeriodEnd;
 
-  // PW-903 seam — a genuine plan change (module doc comment).
+  // A genuine plan change (module doc comment).
   if (allowPlanChange && correlation.planId && correlation.planId !== row.planId) {
     const newPlan = resolveGroupForPlanId(ctx, correlation.planId);
     if (newPlan) {
@@ -538,11 +531,10 @@ async function applyLifecycleUpdate(
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 /**
- * Idempotently apply one webhook event's billing-state transition
- * (unified-config.md §5). Throws {@link PayweaveConfigError} when no
+ * Idempotently apply one webhook event's billing-state transition.
+ * Throws {@link PayweaveConfigError} when no
  * `database` is configured — mirrors `subscribe`/`check`/`report`'s "the
- * method always exists, calling it without a database always throws" pattern
- * (`unified-config.md §3`).
+ * method always exists, calling it without a database always throws" pattern.
  */
 export async function applyWebhookEvent(
   ctx: BillingApplyContext,
@@ -552,15 +544,14 @@ export async function applyWebhookEvent(
   const database = ctx.database;
   if (!database) {
     throw new PayweaveConfigError(
-      "event.apply() needs a database — pass a payweave/db/* adapter to createPayweave() " +
-        "(unified-config.md §5).",
+      "event.apply() needs a database — pass a payweave/db/* adapter to createPayweave().",
     );
   }
   const now = options.now ?? new Date();
   const logger = options.logger;
 
   // Module doc comment: claim + side effects + markApplied run in ONE
-  // transaction (database.md §2 design rule 4).
+  // transaction (see the design rule in the module doc comment).
   return database.transaction(async (tx): Promise<ApplyResult> => {
     const claimed = await tx.webhookEvents.claim(event.dedupeKey, {
       provider: event.provider,
@@ -587,14 +578,13 @@ export async function applyWebhookEvent(
         break;
       default:
         // Unmapped/irrelevant (transfers, refunds, disputes, "unknown", …) —
-        // ALWAYS a safe no-op; never throw on an unmapped type (backlog
-        // PW-805 AC, mirroring `unified/mappings.ts`'s own "never drop, never
-        // throw on unmapped" rule).
+        // ALWAYS a safe no-op; never throw on an unmapped type, mirroring
+        // `unified/mappings.ts`'s own "never drop, never throw on unmapped" rule.
         result = { applied: false, skipped: "unmapped" };
     }
 
-    // `"unresolved"` is deliberately NOT marked applied (spec-silent decision,
-    // AGENTS.md §8): the correlation data an event carries can never change on
+    // `"unresolved"` is deliberately NOT marked applied (spec-silent decision
+    // — the conservative reading): the correlation data an event carries can never change on
     // redelivery of that SAME event, so retrying it is only useful if a LATER
     // apply (e.g. a subsequent event, or `subscribe()` finishing a slightly
     // delayed row write) makes it resolvable — leaving the claim un-applied

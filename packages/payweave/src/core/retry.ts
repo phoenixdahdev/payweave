@@ -15,7 +15,7 @@ export interface RetryPolicy {
   capMs: number;
 }
 
-/** Default retry policy (TDD §6.2). */
+/** Default retry policy. */
 export const DEFAULT_RETRY_POLICY: RetryPolicy = {
   maxRetries: 2,
   baseMs: 250,
@@ -25,7 +25,7 @@ export const DEFAULT_RETRY_POLICY: RetryPolicy = {
 /** HTTP statuses that are retryable (transient) per TDD §6.2. */
 export const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([429, 500, 502, 503, 504]);
 
-/** `Retry-After` is honored but capped at this ceiling (TDD §6.2). */
+/** `Retry-After` is honored but capped at this ceiling. */
 export const RETRY_AFTER_CAP_MS = 30_000;
 
 /** True when `status` is one we may retry (given eligibility + attempts left). */
@@ -34,7 +34,7 @@ export function isRetryableStatus(status: number): boolean {
 }
 
 /**
- * Retry eligibility by method + idempotency (TDD §6.2). GET is always eligible;
+ * Retry eligibility by method + idempotency. GET is always eligible;
  * any other method is eligible ONLY when the caller supplied an idempotency key.
  * This is what guarantees a bare POST charge is never silently re-sent.
  */
@@ -43,7 +43,7 @@ export function isRetryableRequest(method: string, idempotencyKey?: string): boo
 }
 
 /**
- * Full-jitter backoff: `random(0, min(cap, base * 2^attempt))` (TDD §6.2).
+ * Full-jitter backoff: `random(0, min(cap, base * 2^attempt))`.
  * `attempt` is 0-based (0 = first retry). `rng` is injectable for deterministic
  * tests.
  */

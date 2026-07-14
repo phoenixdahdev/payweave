@@ -1,2 +1,2 @@
-// adapters/next — framework adapter (PW-401). Placeholder.
+// adapters/next — framework adapter. Placeholder.
 export {};

@@ -1,10 +1,10 @@
 /**
- * PW-1003 — `payweave status` (docs/v1/cli.md §4).
+ * `payweave status` (docs/v1/cli.md §4).
  *
  * Three layers of coverage:
  *   1. `runStatusChecks` against hand-built {@link StatusClientLike} objects —
  *      every check's pass/fail/skip branch, including a real in-memory sqlite
- *      adapter (PW-706) for the database/migration checks.
+ *      adapter for the database/migration checks.
  *   2. `runStatusCommand` (flag parsing, exit codes, `--throw` semantics) with
  *      an injected loader — no real config file needed.
  *   3. An end-to-end pass through the REAL PW-1002 `loadConfig` against the
@@ -251,13 +251,13 @@ describe("runStatusChecks (PW-1003 — cli.md §4)", () => {
       expect(checks.find((c) => c.name === "sync")).toMatchObject({ status: "skip" });
     });
 
-    it("skips (pending PW-803) even once database+products ARE configured", async () => {
+    it("skips even once database+products ARE configured (no read-only introspection yet)", async () => {
       const adapter = sqliteAdapter({ url: ":memory:" });
       const client = baseClient({ database: adapter, products: [{ id: "pro" }] });
       const { checks } = await runStatusChecks(client);
       const sync = checks.find((c) => c.name === "sync")!;
       expect(sync.status).toBe("skip");
-      expect(sync.message).toContain("PW-803");
+      expect(sync.message).toContain("payweave push");
     });
   });
 
@@ -343,9 +343,8 @@ describe("runStatusCommand (flags, exit codes, --throw)", () => {
     expect(seen?.configPath).toBe("/some/path.ts");
   });
 
-  it("statusCommand registers as \"status\" (PW-1003) — no longer the PW-1001 placeholder", () => {
+  it('statusCommand registers as "status"', () => {
     expect(statusCommand.name).toBe("status");
-    expect(statusCommand.ticket).toBe("PW-1003");
   });
 });
 

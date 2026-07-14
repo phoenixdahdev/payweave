@@ -1,18 +1,14 @@
 /**
- * Config schema, environment inference, and base-URL resolution (TDD §6.5,
- * PRD §6.1, docs/v1/unified-config.md §2).
+ * Config schema, environment inference, and base-URL resolution.
  *
- * Two roots live here during the v1 pivot:
+ * Two roots live here:
  *
- * 1. **Provider-KEYED root** (`payweaveConfigSchema` + `resolvePayweaveConfig`,
- *    PW-501) — the v1 primary. Providers are optional top-level keys
- *    (`stripe` / `paystack` / `flutterwave`); resolution rules 1–6 of
- *    unified-config.md §2 are enforced here. `createPayweave` mounts on this
- *    in PW-502.
- * 2. **Legacy discriminated root** (`sdkConfigSchema` + `resolveConfig`) — a
- *    thin survivor consumed by the old facade (`createPaystack` /
- *    `createFlutterwave` / `PaymentSDK`) until PW-502 delegates it and PW-504
- *    retires it. Do not extend it.
+ * 1. **Provider-KEYED root** (`payweaveConfigSchema` + `resolvePayweaveConfig`)
+ *    — the primary entry point. Providers are optional top-level keys
+ *    (`stripe` / `paystack` / `flutterwave`); `createPayweave` mounts on this.
+ * 2. **Discriminated root** (`sdkConfigSchema` + `resolveConfig`) — internal
+ *    per-provider resolution that the keyed root delegates to for the actual
+ *    paystack/flutterwave environment-inference and base-URL logic.
  *
  * Invalid config throws {@link PayweaveConfigError} synchronously — we never
  * send a request with a key we cannot classify.
@@ -43,12 +39,12 @@ export const FLW_V4_SANDBOX_URL = "https://api.flutterwave.cloud/developersandbo
  */
 export const FLW_V4_TOKEN_URL =
   "https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token";
-/** Stripe REST base — one host for test AND live; env is key-derived (providers.md §3.1). */
+/** Stripe REST base — one host for test AND live; env is key-derived. */
 export const STRIPE_BASE_URL = "https://api.stripe.com";
 /**
  * The Stripe API version this SDK was built against, pinned via the
  * `Stripe-Version` header on EVERY request so provider-side version drift
- * cannot change payload shapes under us (providers.md §2). Overridable per
+ * cannot change payload shapes under us. Overridable per
  * client through `stripe.apiVersion`. Current version confirmed at
  * https://docs.stripe.com/api/versioning (verified 2026-07-12): monthly
  * releases are `YYYY-MM-DD.<major-release-name>`.
@@ -143,7 +139,7 @@ export interface ResolvedConfig {
   tokenUrl: string | undefined;
 }
 
-/** Defaults (PRD §6.1 CommonConfig). */
+/** Defaults. */
 export const DEFAULT_TIMEOUT_MS = 30_000;
 export const DEFAULT_MAX_RETRIES = 2;
 
@@ -167,7 +163,7 @@ export function inferEnvironment(
   }
   if (provider === "stripe") {
     // Standard keys (sk_) and restricted keys (rk_) both carry the env in the
-    // prefix — providers.md §3. A bare "rk_" without test/live is unclassifiable.
+    // prefix. A bare "rk_" without test/live is unclassifiable.
     if (secretKey.startsWith("sk_test_") || secretKey.startsWith("rk_test_")) return "test";
     if (secretKey.startsWith("sk_live_") || secretKey.startsWith("rk_live_")) return "live";
     throw new PayweaveConfigError(
@@ -323,13 +319,13 @@ function resolveKeyedEnvironment(
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Provider-KEYED root — the v1 primary (unified-config.md §2, PW-501).
-// `createPayweave` mounts on this in PW-502. The plumbing above (base URLs,
-// commonFields, per-provider sub-schemas, inferEnvironment, guards) is shared
-// with the legacy `sdkConfigSchema`/`resolveConfig` root and outlives it.
+// Provider-KEYED root — the primary entry point that `createPayweave` mounts
+// on. The plumbing above (base URLs, commonFields, per-provider sub-schemas,
+// inferEnvironment, guards) is shared with the `sdkConfigSchema`/`resolveConfig`
+// root below.
 // ═════════════════════════════════════════════════════════════════════════════
 
-/** Canonical provider-key order (§2 declaration order) — also the iteration order of resolution. */
+/** Canonical provider-key order — also the iteration order of resolution. */
 export const PAYWEAVE_PROVIDER_KEYS = ["stripe", "paystack", "flutterwave"] as const;
 
 const providerKeySchema = z.enum(PAYWEAVE_PROVIDER_KEYS);
@@ -338,7 +334,7 @@ const providerKeySchema = z.enum(PAYWEAVE_PROVIDER_KEYS);
 export type PayweaveProviderKey = z.infer<typeof providerKeySchema>;
 
 /**
- * Stripe per-provider config — the full providers.md §2 surface (PW-601).
+ * Stripe per-provider config.
  * `secretKey` accepts standard (`sk_*`) and restricted (`rk_*`) keys
  * (https://docs.stripe.com/api/authentication — verified 2026-07-12); env is
  * inferred from the prefix by {@link inferEnvironment}. Auth headers and the
@@ -387,11 +383,11 @@ const storeHasMethod = (store: unknown, method: string): boolean =>
   isPlainObject(store) && typeof store[method] === "function";
 
 /**
- * Cheap structural check for the real `DatabaseAdapter` contract (PW-701,
- * docs/v1/database.md §3): the six stores must be present with one
- * spot-checked method each, plus `dialect` + `transaction`. Deliberately NOT
+ * Cheap structural check for the real `DatabaseAdapter` contract: the six
+ * stores must be present with one spot-checked method each, plus `dialect` +
+ * `transaction`. Deliberately NOT
  * a deep validation — adapters are `payweave/db/*` factory outputs that
- * validate their own input eagerly (database.md §1); this guard exists to
+ * validate their own input eagerly; this guard exists to
  * catch handing us a raw driver/ORM client (e.g. a `PrismaClient`) instead of
  * `prismaAdapter(prisma)`.
  */
@@ -412,7 +408,7 @@ const databaseAdapterSchema = z.custom<DatabaseAdapter>(
 );
 
 /**
- * Cheap structural check for a real `plan()` output (PW-801, PW-802): a spot
+ * Cheap structural check for a real `plan()` output: a spot
  * check on `id`/`default`/`includes`, mirroring {@link isDatabaseAdapter}'s
  * philosophy — deliberately NOT a deep validation (`plan()` already validated
  * the definition eagerly at definition time; this guard exists to catch a
@@ -430,7 +426,7 @@ const planSchema = z.custom<Plan>(
 );
 
 /**
- * The provider-keyed root config schema (unified-config.md §2). STRICT: unknown
+ * The provider-keyed root config schema. STRICT: unknown
  * top-level keys are rejected (rule 1 — catches typos like `stipe`). Rules 2–5
  * are cross-field and enforced by {@link resolvePayweaveConfig}.
  */
@@ -449,7 +445,7 @@ export const payweaveConfigSchema = z.strictObject({
   /** ISO 4217 — used by plan prices without an explicit currency. */
   defaultCurrency: z.string().min(1).optional(),
 
-  // ── Common transport options (TDD §6.1 semantics, shared across providers) ──
+  // ── Common transport options (shared across providers) ──
   timeoutMs: commonFields.timeoutMs,
   maxRetries: commonFields.maxRetries,
   fetch: commonFields.fetch,
@@ -468,7 +464,7 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K>
 export type FlutterwaveProviderConfig = DistributiveOmit<FlutterwaveConfig, "provider">;
 
 /**
- * Input type for `createPayweave` (unified-config.md §2). Assembled from
+ * Input type for `createPayweave`. Assembled from
  * z.input-derived pieces rather than `z.input<typeof payweaveConfigSchema>`
  * because the `flutterwave` key's preprocess erases its input type (same
  * reason the legacy root hand-assembles `SDKConfig`), and `products` accepts
@@ -479,9 +475,9 @@ export type PayweaveConfig = {
   paystack?: PaystackProviderConfig | undefined;
   flutterwave?: FlutterwaveProviderConfig | undefined;
   defaultProvider?: PayweaveProviderKey | undefined;
-  /** The `payweave/db/*` adapter powering the billing surface (database.md §1). */
+  /** The `payweave/db/*` adapter powering the billing surface. */
   database?: DatabaseAdapter | undefined;
-  /** `plan()` outputs (plans-and-features.md §7) — plan/feature ids become type-safe (PW-802, §10). */
+  /** `plan()` outputs — plan/feature ids become type-safe. */
   products?: readonly Plan[] | undefined;
   defaultCurrency?: string | undefined;
   timeoutMs?: number | undefined;
@@ -493,26 +489,26 @@ export type PayweaveConfig = {
 
 /**
  * One provider's fully-resolved config — shaped like the legacy
- * {@link ResolvedConfig} (so PW-502 builds one `HttpClient` per provider via
- * the same wiring) plus the Stripe-only `apiVersion` passthrough.
+ * {@link ResolvedConfig} (so `createPayweave` builds one `HttpClient` per
+ * provider via the same wiring) plus the Stripe-only `apiVersion` passthrough.
  */
 export interface ResolvedProviderConfig extends Omit<ResolvedConfig, "provider"> {
   provider: PayweaveProviderKey;
-  /** Stripe only — pins the `Stripe-Version` header (wired in PW-601). */
+  /** Stripe only — pins the `Stripe-Version` header. */
   apiVersion: string | undefined;
   /** Stripe only — Connect `Stripe-Account` header (`acct_*`), absent for other providers. */
   accountId?: string | undefined;
 }
 
 /**
- * One plan AFTER config-parse-time price resolution (§9, §6, PW-802): `price`
- * is already integer minor units (or `undefined` for a free plan) — no float
- * ever crosses the config boundary (AGENTS.md golden rule 7). Every other
- * field is exactly what `plan()` returned.
+ * One plan AFTER config-parse-time price resolution: `price` is already
+ * integer minor units (or `undefined` for a free plan) — no float ever
+ * crosses the config boundary. Every other field is exactly what `plan()`
+ * returned.
  */
 export type ResolvedProduct = Omit<Plan, "price"> & { readonly price: ResolvedPlanPrice | undefined };
 
-/** Fully-resolved keyed root: what `createPayweave` consumes in PW-502. */
+/** Fully-resolved keyed root: what `createPayweave` consumes. */
 export interface ResolvedPayweaveConfig {
   /** Configured provider keys in canonical order ({@link PAYWEAVE_PROVIDER_KEYS}). */
   providers: readonly PayweaveProviderKey[];
@@ -522,7 +518,7 @@ export interface ResolvedPayweaveConfig {
   /** Per-provider resolved configs keyed by provider. */
   providerConfigs: Readonly<Partial<Record<PayweaveProviderKey, ResolvedProviderConfig>>>;
   database: DatabaseAdapter | undefined;
-  /** Cross-plan-validated, minor-units-resolved products (§9, PW-802). */
+  /** Cross-plan-validated, minor-units-resolved products. */
   products: readonly ResolvedProduct[] | undefined;
   defaultCurrency: string | undefined;
   timeoutMs: number;
@@ -531,7 +527,7 @@ export interface ResolvedPayweaveConfig {
   logger: Logger | undefined;
 }
 
-/** Rule 2's exact message (unified-config.md §2). */
+/** Rule 2's exact message. */
 const AT_LEAST_ONE_PROVIDER =
   "configure at least one provider — e.g. createPayweave({ stripe: { secretKey } })";
 
@@ -607,30 +603,29 @@ function resolveLegacyEntry(
   return { ...resolveConfig(merged), apiVersion: undefined };
 }
 
-// ── Cross-plan validation + price resolution (plans-and-features.md §9, §6,
-// PW-802) — these rules need the WHOLE `products` array, unlike `plan()`'s
-// own per-plan checks (agent-playbook contract notes: "cross-plan rules...
-// belong to config parse, not here"). Every violation here is a
-// {@link PayweaveConfigError} (config-parse failure — unified-config.md §2
-// precedent); the one exception is the money conversion below, whose
+// ── Cross-plan validation + price resolution ────────────────────────────────
+// These rules need the WHOLE `products` array, unlike `plan()`'s own
+// per-plan checks (cross-plan rules belong to config parse, not there).
+// Every violation here is a {@link PayweaveConfigError} (a config-parse
+// failure); the one exception is the money conversion below, whose
 // decimal-guard/amount-bound failures are the spec-fixed
-// {@link PayweaveValidationError} from `resolvePlanPricing` (§9), propagated
+// {@link PayweaveValidationError} from `resolvePlanPricing`, propagated
 // unchanged.
 
-/** Rule: plan ids are unique across the whole `products` array (§9). */
+/** Rule: plan ids are unique across the whole `products` array. */
 function assertUniquePlanIds(products: readonly Plan[]): void {
   const seen = new Set<string>();
   for (const p of products) {
     if (seen.has(p.id)) {
       throw new PayweaveConfigError(
-        `duplicate plan id "${p.id}" — plan ids must be unique across products (plans-and-features.md §9).`,
+        `duplicate plan id "${p.id}" — plan ids must be unique across products.`,
       );
     }
     seen.add(p.id);
   }
 }
 
-/** Rule: at most one `default: true` plan per group (§4, §9). */
+/** Rule: at most one `default: true` plan per group. */
 function assertOneDefaultPerGroup(products: readonly Plan[]): void {
   const defaultPlanIdByGroup = new Map<string, string>();
   for (const p of products) {
@@ -639,14 +634,14 @@ function assertOneDefaultPerGroup(products: readonly Plan[]): void {
     if (existing !== undefined) {
       throw new PayweaveConfigError(
         `group "${p.group}" has more than one default plan ("${existing}" and "${p.id}") — only one ` +
-          "plan per group can be default: true (plans-and-features.md §4).",
+          "plan per group can be default: true.",
       );
     }
     defaultPlanIdByGroup.set(p.group, p.id);
   }
 }
 
-/** Rule: a feature id is never used with conflicting `type`s across plans (§9). */
+/** Rule: a feature id is never used with conflicting `type`s across plans. */
 function assertNoConflictingFeatureTypes(products: readonly Plan[]): void {
   const typeByFeatureId = new Map<string, { type: string; planId: string }>();
   for (const p of products) {
@@ -659,8 +654,7 @@ function assertNoConflictingFeatureTypes(products: readonly Plan[]): void {
       if (existing.type !== inclusion.type) {
         throw new PayweaveConfigError(
           `feature "${inclusion.featureId}" is used as both "${existing.type}" (plan "${existing.planId}") ` +
-            `and "${inclusion.type}" (plan "${p.id}") — a feature must have the same type everywhere ` +
-            "(plans-and-features.md §9).",
+            `and "${inclusion.type}" (plan "${p.id}") — a feature must have the same type everywhere.`,
         );
       }
     }
@@ -668,9 +662,9 @@ function assertNoConflictingFeatureTypes(products: readonly Plan[]): void {
 }
 
 /**
- * Cross-plan validation + price resolution over the WHOLE `products` array
- * (§9, §6) — runs once at config parse, after rule 5 (`products` require
- * `database`) has already passed. In order:
+ * Cross-plan validation + price resolution over the WHOLE `products` array —
+ * runs once at config parse, after rule 5 (`products` require `database`)
+ * has already passed. In order:
  *
  * 1. plan ids are unique across the array;
  * 2. at most one `default: true` plan per group;
@@ -679,7 +673,7 @@ function assertNoConflictingFeatureTypes(products: readonly Plan[]): void {
  *    converts to integer minor units via {@link resolvePlanPricing} — "neither
  *    present" is this function's own {@link PayweaveConfigError}; the
  *    decimal-guard/amount-bound failures from `resolvePlanPricing` itself are
- *    {@link PayweaveValidationError} (§9's fixed class), propagated unchanged.
+ *    {@link PayweaveValidationError}, propagated unchanged.
  *
  * Returns `undefined` when `products` was not configured.
  */
@@ -700,8 +694,7 @@ function resolveProducts(
     const currency = p.price.currency ?? defaultCurrency;
     if (currency === undefined) {
       throw new PayweaveConfigError(
-        `plan "${p.id}": price has no currency — set price.currency or configure defaultCurrency ` +
-          "(plans-and-features.md §6).",
+        `plan "${p.id}": price has no currency — set price.currency or configure defaultCurrency.`,
       );
     }
     return { ...p, price: resolvePlanPricing(p, currency) };
@@ -710,7 +703,7 @@ function resolveProducts(
 
 /**
  * Parse + fully resolve a provider-keyed `createPayweave` config, enforcing
- * the six resolution rules of unified-config.md §2 in order:
+ * six resolution rules in order:
  *
  * 1. strict parse — unknown top-level keys throw (typos like `stipe`);
  * 2. at least one provider key;
@@ -809,9 +802,8 @@ export function resolvePayweaveConfig(input: unknown): ResolvedPayweaveConfig {
     throw new PayweaveConfigError("plans need a database — pass a payweave/db/* adapter");
   }
 
-  // Cross-plan validation + price resolution (§9, §6, PW-802) — needs the
-  // whole array, so it happens here rather than inside `plan()` (PW-801
-  // module docs, agent-playbook contract notes).
+  // Cross-plan validation + price resolution needs the whole array, so it
+  // happens here rather than inside `plan()`.
   const products = resolveProducts(parsed.products, parsed.defaultCurrency);
 
   return {

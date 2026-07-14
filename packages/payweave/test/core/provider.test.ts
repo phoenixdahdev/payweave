@@ -8,7 +8,7 @@ const toyConfigSchema = z.object({ apiKey: z.string().min(1) });
 
 const toyAdapter: ProviderAdapter = {
   id: "toy",
-  // v2 (PW-608): the root config key + schema this adapter registers under —
+  // v2: the root config key + schema this adapter registers under —
   // see `test/core/adapter-v2.test.ts` for the full extension-point proof.
   configKey: "toy",
   configSchema: toyConfigSchema,

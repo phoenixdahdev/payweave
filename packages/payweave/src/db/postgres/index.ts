@@ -1,7 +1,6 @@
 /**
- * `payweave/db/postgres` — PostgreSQL adapter (docs/v1/database.md §1/§4,
- * PW-704). Wraps `pg` (`node-postgres`) behind the shared
- * {@link DatabaseAdapter} contract.
+ * `payweave/db/postgres` — PostgreSQL adapter. Wraps `pg` (`node-postgres`)
+ * behind the shared {@link DatabaseAdapter} contract.
  *
  * `postgresAdapter(...)` accepts EITHER:
  * - `{ connectionString }` — a `postgres://`/`postgresql://` URL, validated
@@ -9,19 +8,18 @@
  *   constructed LAZILY, on the first store method call, via a dynamic
  *   `import("pg")` — so importing this subpath (or `payweave` core) never
  *   pulls `pg` into the module graph unless a query actually runs
- *   (database.md §7).
  * - An existing `pg` `Pool` instance (accepted structurally — no `pg` import
  *   needed to recognize it) — used directly, and never closed by this
  *   adapter (the caller owns its lifecycle, matching how the sqlite/drizzle
  *   adapters treat a caller-supplied driver instance).
  *
- * Construction is synchronous and side-effect-free (database.md §1): the
+ * Construction is synchronous and side-effect-free: the
  * input is validated (and, for a connection string, its scheme classified)
  * eagerly, but no socket opens and no query runs until the first store call.
  *
  * `balances.consume` and `webhookEvents.claim` are each ONE SQL statement
  * relying on pg's own row locking (`./sql.ts`) — this is the adapter's
- * headline requirement (database.md §5's postgres bullet): NOT a
+ * headline requirement: NOT a
  * read-then-write from the application, unlike the sqlite/drizzle adapters'
  * transaction-based approach to the same operations (see `./sql.ts`'s and
  * `./period-sql.ts`'s doc comments for why postgres can do this atomically in

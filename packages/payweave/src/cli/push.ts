@@ -1,31 +1,28 @@
 /**
  * `payweave push` — apply pending database migrations, then sync plan
- * definitions to the database and every configured billing-capable provider
- * (docs/v1/cli.md §2, §8; PW-1004).
+ * definitions to the database and every configured billing-capable provider.
  *
- * ── Pipeline order (this module's reading of cli.md §8) ─────────────────────
- * §8 states the pipeline as: load config → `database.migrations.status()` →
- * apply (SQL adapters) / idempotently ensure (MongoDB) / print instructions
+ * ── Pipeline order ───────────────────────────────────────────────────────────
+ * The pipeline: load config → `database.migrations.status()` → apply (SQL
+ * adapters) / idempotently ensure (MongoDB) / print instructions
  * (Prisma/Drizzle) → compute content hash per plan → diff vs `pw_plans`
- * active versions → confirm → provider sync → write `pw_plans` versions. Read
- * together with the PW-1004 brief's own contract note — "migrations apply
- * pre-prompt per §8 order; only the sync/version-write phase is prompted" —
- * this resolves any ambiguity: migrations are applied UNCONDITIONALLY and
- * automatically, with no confirmation gate of their own (there is nothing to
- * "undo" about running a forward-only, checksum-verified migration — database.md
- * §4). The confirm/`-y` gate protects exactly one thing: the call into
- * `client.sync()`, which is the only phase that talks to provider APIs and
- * writes `pw_plans` version rows. This command's phases, in order:
+ * active versions → confirm → provider sync → write `pw_plans` versions.
+ * Migrations apply pre-prompt; only the sync/version-write phase is prompted:
+ * migrations are applied UNCONDITIONALLY and automatically, with no
+ * confirmation gate of their own (there is nothing to "undo" about running a
+ * forward-only, checksum-verified migration). The confirm/`-y` gate protects
+ * exactly one thing: the call into `client.sync()`, which is the only phase
+ * that talks to provider APIs and writes `pw_plans` version rows. This
+ * command's phases, in order:
  *
- *   1. Load config (PW-1002).
+ *   1. Load config.
  *   2. `database.migrations.status()` — announce what's pending (read-only,
- *      printed BEFORE anything is written, per cli.md §2's diff-summary
- *      requirement) — then `database.migrations.apply()` unconditionally.
- *      Both calls go straight through the `DatabaseAdapter.migrations`
- *      contract (database.md §3/§4): this command never branches on dialect
- *      itself — SQL adapters apply for real, MongoDB idempotently ensures
- *      collections/indexes, and Prisma/Drizzle return `instructions` instead
- *      of attempting DDL. No confirmation gate here.
+ *      printed BEFORE anything is written) — then `database.migrations.apply()`
+ *      unconditionally. Both calls go straight through the
+ *      `DatabaseAdapter.migrations` contract: this command never branches on
+ *      dialect itself — SQL adapters apply for real, MongoDB idempotently
+ *      ensures collections/indexes, and Prisma/Drizzle return `instructions`
+ *      instead of attempting DDL. No confirmation gate here.
  *   3. If no `products` are configured, there is nothing to sync — report
  *      that and exit 0 (a database-migrations-only project is a valid use of
  *      `push`; degrade-gracefully precedent: `src/cli/status.ts`).
@@ -35,47 +32,45 @@
  *      but its name, price, or features differ) / `unchanged`. This is a
  *      GENERIC content comparison against the stored `pw_plans` row —
  *      deliberately NOT a re-implementation of `BillingSync`'s per-provider
- *      hashing (`src/products/sync.ts`'s `planPriceHash`/`planPaystackHash`,
- *      out of this ticket's file scope, plans-and-features.md §12): this
- *      command orchestrates and renders, it does not re-map plans to Stripe
- *      Prices or Paystack Plans. The tradeoff is explicit: this diff can tell
- *      you a plan's content changed (and DB version will bump) and which
- *      configured billing-capable providers are in scope for a paid plan, but
- *      it CANNOT predict whether `sync()` will ultimately report `created`,
- *      `adopted`, or (for a display-name-only Stripe change) `unchanged` —
- *      only `BillingSync` itself decides that, and this command prints its
- *      real, authoritative result after the fact (phase 6).
+ *      hashing (`src/products/sync.ts`'s `planPriceHash`/`planPaystackHash`):
+ *      this command orchestrates and renders, it does not re-map plans to
+ *      Stripe Prices or Paystack Plans. The tradeoff is explicit: this diff
+ *      can tell you a plan's content changed (and DB version will bump) and
+ *      which configured billing-capable providers are in scope for a paid
+ *      plan, but it CANNOT predict whether `sync()` will ultimately report
+ *      `created`, `adopted`, or (for a display-name-only Stripe change)
+ *      `unchanged` — only `BillingSync` itself decides that, and this command
+ *      prints its real, authoritative result after the fact (phase 6).
  *   5. Confirmation gate: `-y`/`--yes` skips it. Otherwise, refuse to prompt
- *      in a non-interactive session (never hang waiting on a closed stdin —
- *      cli.md §8) and tell the user to pass `-y`. In an interactive session,
- *      ask via the injectable {@link PushCommandOptions.confirm} seam
- *      (default: one `node:readline/promises` question over real
- *      stdin/stdout). A declined confirmation aborts BEFORE any provider call
- *      or version write — exit code 1 (spec-silent decision: a declined
- *      confirmation means the push did not happen, so a caller chaining
- *      `payweave push -y && next build`-style commands must see non-zero,
- *      not a silent success).
- *   6. `client.sync()` — PW-803's `BillingSync`. This command does not
- *      reimplement ANY of its idempotency, adoption, or write semantics; it
- *      only decides WHEN to call it and renders the real, authoritative
- *      result afterward (per-plan version + per-provider `created`/`adopted`/
- *      `unchanged`, plus any `skippedProviders`). A crash mid-`sync()` is
- *      resumable by re-running `payweave push` — PW-803's `pwv_`-tagged
+ *      in a non-interactive session (never hang waiting on a closed stdin)
+ *      and tell the user to pass `-y`. In an interactive session, ask via the
+ *      injectable {@link PushCommandOptions.confirm} seam (default: one
+ *      `node:readline/promises` question over real stdin/stdout). A declined
+ *      confirmation aborts BEFORE any provider call or version write — exit
+ *      code 1 (spec-silent decision: a declined confirmation means the push
+ *      did not happen, so a caller chaining `payweave push -y && next
+ *      build`-style commands must see non-zero, not a silent success).
+ *   6. `client.sync()` — `BillingSync`. This command does not reimplement ANY
+ *      of its idempotency, adoption, or write semantics; it only decides
+ *      WHEN to call it and renders the real, authoritative result afterward
+ *      (per-plan version + per-provider `created`/`adopted`/`unchanged`, plus
+ *      any `skippedProviders`). A crash mid-`sync()` is resumable by
+ *      re-running `payweave push` — `BillingSync`'s `pwv_`-tagged
  *      adopt-or-create is what makes that safe, not anything in this file.
  *
  * ── Duck-typed client surface ────────────────────────────────────────────────
  * Mirrors `status.ts`'s approach exactly: this file declares its OWN minimal
  * structural types ({@link PushClientLike}, {@link PushDatabaseLike}, …)
  * rather than importing `PayweaveClient`/`DatabaseAdapter`/`ResolvedProduct`/
- * `SyncResult` from `src/index.ts` / `src/db/*` / `src/products/*` — all out
- * of this ticket's file scope. `test/cli/push.test.ts` exercises the real
- * types end-to-end (real `createPayweave`, real `sqliteAdapter`, real MSW).
+ * `SyncResult` from `src/index.ts` / `src/db/*` / `src/products/*`.
+ * `test/cli/push.test.ts` exercises the real types end-to-end (real
+ * `createPayweave`, real `sqliteAdapter`, real MSW).
  *
  * ── Secrets discipline ───────────────────────────────────────────────────────
  * Every printed line passes through the SDK's one redaction path
  * (`../core/redact`) before being written — belt-and-braces, since database/
  * provider error text is the most likely place secret material could leak
- * into this command's output (cli.md §7/§8).
+ * into this command's output.
  */
 import { createInterface } from "node:readline/promises";
 
@@ -92,13 +87,13 @@ import { redact } from "../core/redact";
 
 // ── The client/database/product surface this command reads ─────────────────
 
-/** The read-only migration surface this command drives (database.md §3/§4). */
+/** The read-only migration surface this command drives. */
 export interface PushMigrationsLike {
   status(): Promise<{ pending: readonly string[]; applied: readonly string[] }>;
   apply(): Promise<{ applied: readonly string[]; instructions?: string | undefined }>;
 }
 
-/** The `pw_plans` row shape this command reads to compute the diff (database.md §2). */
+/** The `pw_plans` row shape this command reads to compute the diff. */
 export interface PushPlanVersionLike {
   readonly version: number;
   readonly name: string | null;
@@ -108,7 +103,7 @@ export interface PushPlanVersionLike {
   readonly features: Readonly<Record<string, unknown>>;
 }
 
-/** The minimal database surface `push` needs — a slice of `DatabaseAdapter` (database.md §3). */
+/** The minimal database surface `push` needs — a slice of `DatabaseAdapter`. */
 export interface PushDatabaseLike {
   readonly dialect?: string | undefined;
   readonly migrations: PushMigrationsLike;
@@ -117,7 +112,7 @@ export interface PushDatabaseLike {
   };
 }
 
-/** One `plan()`'s resolved `includes` entry (plans-and-features.md §9) — just enough to diff. */
+/** One `plan()`'s resolved `includes` entry — just enough to diff. */
 export interface PushFeatureInclusionLike {
   readonly featureId: string;
   readonly type: "boolean" | "metered";
@@ -125,7 +120,7 @@ export interface PushFeatureInclusionLike {
   readonly reset?: string | undefined;
 }
 
-/** One configured, resolved product/plan (plans-and-features.md §9) — `price` already minor units. */
+/** One configured, resolved product/plan — `price` already minor units. */
 export interface PushProductLike {
   readonly id: string;
   readonly name?: string | undefined;
@@ -151,7 +146,7 @@ export interface PushSyncResult {
 }
 
 /**
- * The extended client shape `push` reads from (superset of PW-1002's
+ * The extended client shape `push` reads from (superset of
  * {@link PayweaveClientLike}, same pattern as `status.ts`'s `StatusClientLike`).
  */
 export interface PushClientLike extends PayweaveClientLike {
@@ -181,7 +176,7 @@ function errorName(err: unknown): string | undefined {
   return undefined;
 }
 
-/** Route a string through the SDK's one redaction path (cli.md §7/§8) before it is ever printed. */
+/** Route a string through the SDK's one redaction path before it is ever printed. */
 function redactLine(line: string): string {
   const scrubbed = redact(line);
   return typeof scrubbed === "string" ? scrubbed : line;
@@ -208,7 +203,7 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
-/** A resolved product's `includes`, shaped like the `pw_plans.features` column (database.md §2). */
+/** A resolved product's `includes`, shaped like the `pw_plans.features` column. */
 function featuresRecordFor(product: PushProductLike): Record<string, { type: string; limit?: number; reset?: string }> {
   const out: Record<string, { type: string; limit?: number; reset?: string }> = {};
   for (const inclusion of product.includes) {
@@ -227,20 +222,19 @@ export type PushPlanDiffAction = "create" | "update" | "unchanged";
 export interface PushPlanDiffEntry {
   readonly planId: string;
   readonly action: PushPlanDiffAction;
-  /** `false` for a free/default plan — never touches a provider (plans-and-features.md §12). */
+  /** `false` for a free/default plan — never touches a provider. */
   readonly paid: boolean;
   /** Configured, billing-capable providers this plan is in scope for; always `[]` when `paid` is `false`. */
   readonly providers: readonly string[];
 }
 
 /**
- * Providers with a working plan-sync mapping in `BillingSync` today
- * (plans-and-features.md §12). Re-declared here (mirrors the same
- * re-declaration `src/products/sync.ts` itself does for its private
- * `isBillingCapableProvider`) rather than imported from
- * `src/products/subscribe.ts` — out of this ticket's file scope. Used ONLY to
- * render which providers a paid plan is in scope for; the real outcome always
- * comes from `client.sync()` itself (see this module's doc comment).
+ * Providers with a working plan-sync mapping in `BillingSync` today.
+ * Re-declared here (mirrors the same re-declaration `src/products/sync.ts`
+ * itself does for its private `isBillingCapableProvider`) rather than
+ * imported from `src/products/subscribe.ts`. Used ONLY to render which
+ * providers a paid plan is in scope for; the real outcome always comes from
+ * `client.sync()` itself (see this module's doc comment).
  */
 const BILLING_CAPABLE_PROVIDERS = ["stripe", "paystack"] as const;
 
@@ -300,7 +294,7 @@ const DIFF_ACTION_LABEL: Record<PushPlanDiffAction, string> = {
 /** Render one {@link PushPlanDiffEntry} as a terminal line. Exported so tests assert exact formatting. */
 export function formatPlanDiffLine(entry: PushPlanDiffEntry): string {
   const target = !entry.paid
-    ? "free plan — database only, no provider sync (plans-and-features.md §12)"
+    ? "free plan — database only, no provider sync"
     : entry.providers.length > 0
       ? `providers: ${entry.providers.join(", ")}`
       : "no billing-capable provider configured";
@@ -345,10 +339,9 @@ export function formatSyncResultLine(plan: PushSyncPlanResult): string {
 
 /**
  * Default interactive confirm: one `node:readline/promises` question over
- * REAL stdin/stdout. Deliberately not `@clack/prompts` — cli.md §7 reserves
- * that bundled devDependency for PW-1005 (`init`) to be the first importer; a
- * plain y/n line prompt needs nothing beyond Node's own `readline`, so `push`
- * doesn't need to pull it in a ticket early.
+ * REAL stdin/stdout. Deliberately not `@clack/prompts` — that bundled
+ * devDependency belongs to `init`; a plain y/n line prompt needs nothing
+ * beyond Node's own `readline`, so `push` doesn't need to pull it in early.
  */
 async function defaultConfirm(message: string): Promise<boolean> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -364,7 +357,7 @@ async function defaultConfirm(message: string): Promise<boolean> {
 
 /** Options accepted by {@link runPushCommand} beyond the CLI flags themselves. */
 export interface PushCommandOptions {
-  /** Injectable for tests; defaults to the real PW-1002 loader. */
+  /** Injectable for tests; defaults to the real config loader. */
   loadConfig?: (options: LoadConfigOptions) => Promise<LoadedConfig>;
   /** Project root `loadConfig` searches from (passed through to it). */
   cwd?: string;
@@ -375,8 +368,8 @@ export interface PushCommandOptions {
 }
 
 /**
- * `payweave push`'s `run` body (cli.md §2, §8 — see this module's doc comment
- * for the full pipeline-order + confirm-gate reasoning). Parses its own flags:
+ * `payweave push`'s `run` body (see this module's doc comment for the full
+ * pipeline-order + confirm-gate reasoning). Parses its own flags:
  * `--config <path>` (discovery override) and `-y`/`--yes` (skip confirmation).
  *
  * Exit codes: 0 success (including the "nothing configured to sync" no-op);
@@ -410,14 +403,14 @@ export async function runPushCommand(
   if (database === undefined) {
     io.err(
       "payweave push: no database configured — push has nothing to migrate or sync. Add a " +
-        "`database` adapter to your payweave.ts (docs/v1/database.md §1).",
+        "`database` adapter to your payweave.ts.",
     );
     return 1;
   }
   io.out(redactLine(`Database: ${database.dialect ?? "configured"}`));
 
   // ── Phase 2: migrations — announce pending, then apply unconditionally.
-  // No confirmation gate (this module's doc comment / cli.md §8 reading). ──
+  // No confirmation gate (see this module's doc comment). ──
   let statusResult: { pending: readonly string[]; applied: readonly string[] };
   try {
     statusResult = await database.migrations.status();
@@ -446,7 +439,7 @@ export async function runPushCommand(
   if (products === undefined || products.length === 0) {
     io.out(
       "Plans: no products configured — nothing to sync (add `products` to payweave.ts, " +
-        "plans-and-features.md §7).",
+        "run `payweave push` after adding one).",
     );
     return 0;
   }
@@ -473,7 +466,7 @@ export async function runPushCommand(
     if (!interactive) {
       io.err(
         "payweave push: refusing to prompt in a non-interactive session — re-run with -y/--yes to " +
-          "confirm and proceed (cli.md §2, §8).",
+          "confirm and proceed.",
       );
       return 1;
     }
@@ -487,7 +480,7 @@ export async function runPushCommand(
     }
   }
 
-  // ── Phase 6: the actual, mutating call — entirely PW-803's job. ──
+  // ── Phase 6: the actual, mutating call — entirely BillingSync's job. ──
   let result: PushSyncResult;
   try {
     result = await client.sync();
@@ -495,7 +488,7 @@ export async function runPushCommand(
     io.err(`payweave push: sync failed — ${describeFailure(err)}`);
     io.err(
       "no partial pw_plans row was written for any plan not yet reported below — re-running " +
-        "`payweave push` is safe (crash-resume adoption, plans-and-features.md §12).",
+        "`payweave push` is safe (crash-resume adoption).",
     );
     return 1;
   }
@@ -516,7 +509,6 @@ export async function runPushCommand(
 
 export const pushCommand: CliCommand = {
   name: "push",
-  summary: "Apply pending database migrations and sync plans to your provider(s) (cli.md §2)",
-  ticket: "PW-1004",
+  summary: "Apply pending database migrations and sync plans to your provider(s)",
   run: (argv, io) => runPushCommand(argv, io),
 };

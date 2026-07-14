@@ -1,7 +1,7 @@
 /**
  * `payweave/db/drizzle` — the Drizzle ORM adapter (docs/v1/database.md, PW-708).
  *
- * Conformance (database.md §6): the ONLY dialect this suite runs live, in
+ * Conformance: the ONLY dialect this suite runs live, in
  * this environment, is sqlite — `runDatabaseConformance` against
  * `drizzle-orm/libsql` over an in-memory `@libsql/client` (a fully in-process
  * sqlite dialect, no docker needed, mirroring PW-706's own in-memory
@@ -298,7 +298,7 @@ describe("first-use table verification", () => {
   });
 });
 
-// ── migrations.apply() — instructions only, never DDL (database.md §4) ─────
+// ── migrations.apply() — instructions only, never DDL ─────
 
 describe("migrations.apply() — Prisma-style instructions, never shells out", () => {
   it("returns instructions naming drizzle-kit and applies nothing", async () => {

@@ -1,5 +1,5 @@
 // flutterwave/ — Surface A client shell + v3 resources.
-// Public subpath: `payweave/flutterwave`. Version-isolated (TDD §11): only the
+// Public subpath: `payweave/flutterwave`. Version-isolated: only the
 // v3 surface is exported here; v4 lands in a later wave and never shares schemas.
 
 export { FlutterwaveClient } from "./client";

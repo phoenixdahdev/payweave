@@ -1,6 +1,6 @@
 /**
- * PW-803 — `BillingSync` (plans-and-features.md §12, §13). End-to-end against
- * a REAL in-memory sqlite `DatabaseAdapter` (PW-706) and a REAL `createPayweave`
+ * `BillingSync` (plans-and-features.md §12, §13). End-to-end against
+ * a REAL in-memory sqlite `DatabaseAdapter` and a REAL `createPayweave`
  * client, with MSW mocking only the network edge (never HttpClient/fetch,
  * AGENTS.md §7). `onUnhandledRequest: "error"` doubles as the zero-write proof
  * throughout: an empty (or narrowly-scoped) route set means ANY unexpected
@@ -227,7 +227,7 @@ describe("sync() — first push (§12)", () => {
     expect(pushedPro?.providerRefs.stripe).toMatchObject({ productId: PROD_ID, priceId: PRICE_ID_V1 });
     expect(pushedPro?.providerRefs.paystack).toMatchObject({ planCode: PLAN_CODE_V1 });
 
-    // Free/default plan: DB only, zero provider objects (§12).
+    // Free/default plan: DB only, zero provider objects.
     const pushedFree = await db.plans.getActiveVersion("free");
     expect(pushedFree?.providerRefs).toEqual({});
   });

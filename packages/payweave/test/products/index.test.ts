@@ -1,5 +1,5 @@
 /**
- * PW-505 — `payweave/products` becomes a public subpath. Smoke-check the
+ * `payweave/products` becomes a public subpath. Smoke-check the
  * entry module's surface (PW-901's period math; `plan()`/`feature()` join in
  * PW-801). Behavior itself is covered in test/products/period.test.ts.
  */

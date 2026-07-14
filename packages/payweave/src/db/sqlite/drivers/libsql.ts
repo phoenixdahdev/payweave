@@ -3,7 +3,7 @@
  * PW-706). This module is the ONLY place that touches an `@libsql/client`
  * `Client` instance; `../index.ts` dynamically imports the driver package and
  * passes the resulting instance in here, so core/`payweave` never pulls
- * `@libsql/client` into its module graph (database.md §7).
+ * `@libsql/client` into its module graph.
  */
 import type { RawDriver, RawResult } from "../runner";
 import type { LibsqlClientLike } from "../url";

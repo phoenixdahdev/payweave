@@ -1,11 +1,11 @@
 /**
- * `payweave status` — validate the whole setup, read-only (docs/v1/cli.md §4,
- * PW-1003). Loads the user's config through PW-1002's loader, then runs the
- * five checks §4 documents, in order:
+ * `payweave status` — validate the whole setup, read-only. Loads the user's
+ * config through the config loader, then runs five checks, in order:
  *
  *   1. Configuration file validity (providers, products, database) — reported
  *      from the already-constructed client (loading it is itself proof it's
- *      valid; PW-1002 owns that validation, this command never re-validates).
+ *      valid; the loader owns that validation, this command never
+ *      re-validates).
  *   2. Database connection.
  *   3. Migration status ("does `push` need to run?").
  *   4. Provider API connectivity — one harmless, read-only call per configured
@@ -14,41 +14,32 @@
  *   5. Sync status between config, database, and provider(s).
  *
  * Every check ALWAYS runs, even after an earlier one fails — a diagnostic
- * that stops at the first failure is useless (cli.md §4 contract notes).
- * Checks 2/3/5 need a configured database (and, for #5, products too); when
- * that section is absent they are SKIPPED, not failed — `status` on a
- * payments-only project must still pass.
+ * that stops at the first failure is useless. Checks 2/3/5 need a configured
+ * database (and, for #5, products too); when that section is absent they are
+ * SKIPPED, not failed — `status` on a payments-only project must still pass.
  *
- * `--throw` turns a failed check into a non-zero exit for CI use (contract.yml
- * gates the e2e suites behind it); the default mode always exits 0 — it's a
- * diagnostic, not an assertion (cli.md §4).
+ * `--throw` turns a failed check into a non-zero exit for CI use (a nightly
+ * contract-test workflow gates the e2e suites behind it); the default mode
+ * always exits 0 — it's a diagnostic, not an assertion.
  *
- * Secrets discipline (cli.md §7/§8): every printed message that could carry
- * secret material — provider error text, database connection failures — is
- * routed through the SAME `redact()` the SDK uses. This command never prints
- * a raw secret key: the constructed `PayweaveClient` doesn't expose one in the
+ * Secrets discipline: every printed message that could carry secret
+ * material — provider error text, database connection failures — is routed
+ * through the SAME `redact()` the SDK uses. This command never prints a raw
+ * secret key: the constructed `PayweaveClient` doesn't expose one in the
  * first place (it's closed over inside each provider's `HttpClient` auth
  * strategy), so there is nothing here TO leak by construction; `redact()` is
  * the belt-and-braces second layer for whatever provider/database error text
  * echoes back.
  *
- * NOTE for whoever lands PW-609 (`contract.yml`): cli.md §8/§9 asks for
- * `payweave status --throw` to run before the e2e suites. That workflow file
- * is PW-609's to create — this ticket does not touch `.github/workflows/*`.
- * Wire it as: `node dist/cli/index.js status --throw` (or the packed bin)
- * against a real fixture project.
- *
- * Two SDK surfaces this command depends on for its full check set are still
- * in flight: PW-802 (products config) and PW-803 (billing sync) have not yet
- * wired `database`/`products` onto the object `createPayweave` returns in
- * `src/index.ts` (today they're validated by `resolvePayweaveConfig` but
- * never attached to the client — see `core/config.ts`). This command is
- * written to *degrade gracefully* rather than assume that shape: it duck-types
- * optional `database`/`products` fields on the loaded client
- * ({@link StatusClientLike}) and reports "not configured" whenever they're
- * absent — exactly the same code path a real payments-only project takes.
- * Once PW-802/803 attach those fields, this command picks them up with no
- * changes needed here.
+ * Two SDK surfaces this command depends on for its full check set landed
+ * separately: products config and billing sync wire `database`/`products`
+ * onto the object `createPayweave` returns in `src/index.ts` (they're
+ * validated by `resolvePayweaveConfig`, then attached to the client — see
+ * `core/config.ts`). This command is written to *degrade gracefully* rather
+ * than assume that shape: it duck-types optional `database`/`products`
+ * fields on the loaded client ({@link StatusClientLike}) and reports "not
+ * configured" whenever they're absent — exactly the same code path a real
+ * payments-only project takes.
  */
 import mri from "mri";
 
@@ -89,7 +80,7 @@ export interface StatusResult {
  * a configured database adapter — deliberately NOT the full
  * `payweave/db` `DatabaseAdapter` contract (this command is forbidden from
  * touching `src/db/*` internals; it only ever calls the one read-only method
- * every adapter implements, database.md §3/§4).
+ * every adapter implements.
  */
 export interface StatusDatabaseLike {
   readonly dialect?: string | undefined;
@@ -110,10 +101,10 @@ export interface StatusFlutterwaveLike {
 }
 
 /**
- * The extended client shape `status` reads from (superset of PW-1002's
- * {@link PayweaveClientLike}). Every added field is OPTIONAL and duck-typed —
- * see the module doc comment on why `database`/`products` don't exist on
- * today's real client yet, and why that's fine.
+ * The extended client shape `status` reads from (superset of
+ * {@link PayweaveClientLike}). Every added field is OPTIONAL and duck-typed
+ * so a payments-only client (no `database`/`products` configured) degrades
+ * gracefully instead of throwing.
  */
 export interface StatusClientLike extends PayweaveClientLike {
   readonly stripe?: StatusStripeLike | undefined;
@@ -155,7 +146,7 @@ function errorName(err: unknown): string | undefined {
 }
 
 /**
- * Route a string through the SDK's one redaction path (cli.md §7/§8). Every
+ * Route a string through the SDK's one redaction path. Every
  * message this module prints that could have come from a provider/database
  * error passes through here first.
  */
@@ -164,7 +155,7 @@ function redactMessage(message: string): string {
   return typeof scrubbed === "string" ? scrubbed : message;
 }
 
-/** Actionable fix per error-taxonomy class (cli.md §8's format). `undefined` = no specific fix known. */
+/** Actionable fix per error-taxonomy class. `undefined` = no specific fix known. */
 function actionableFix(name: string): string | undefined {
   switch (name) {
     case "PayweaveAuthError":
@@ -182,7 +173,7 @@ function actionableFix(name: string): string | undefined {
   }
 }
 
-/** Build a `<ErrorClass>: <message> — <fix>` line per cli.md §8's taxonomy-mapped format. */
+/** Build a `<ErrorClass>: <message> — <fix>` line. */
 function describeFailure(err: unknown): string {
   const name = errorName(err);
   const message = redactMessage(errorMessage(err));
@@ -266,7 +257,7 @@ async function checkProviderConnectivity(
   try {
     if (provider === "stripe") {
       if (client.stripe === undefined) return skip(name, "stripe namespace not mounted on this client");
-      // Products.list — a plain, always-available read (providers.md §3.2).
+      // Products.list — a plain, always-available read.
       await client.stripe.products.list({ limit: 1 });
     } else if (provider === "paystack") {
       if (client.paystack === undefined) return skip(name, "paystack namespace not mounted on this client");
@@ -294,19 +285,16 @@ function checkSyncStatus(client: StatusClientLike): StatusCheck {
   if (client.database === undefined || client.products === undefined) {
     return skip("sync", "no database/products configured — nothing to sync");
   }
-  // PW-803 (billing sync) hasn't landed a sync-state read surface on the
-  // client yet — see the module doc comment. Once it does, this branch reads
-  // it instead of always skipping.
-  return skip(
-    "sync",
-    "sync-state introspection requires PW-803 (billing sync) — not available on this client yet",
-  );
+  // `BillingSync` exposes a push action (`payweave.sync()` / `payweave push`)
+  // but no separate read-only "are we currently in sync" introspection — if
+  // that lands, this branch reads it instead of always skipping.
+  return skip("sync", "sync-state introspection is not available on this client yet — run `payweave push`");
 }
 
 // ── Orchestration ─────────────────────────────────────────────────────────────
 
 /**
- * Run every §4 check once, in doc order, against an already-loaded client.
+ * Run every check once, in doc order, against an already-loaded client.
  * Never throws — check failures are reported as `"fail"` entries, not thrown
  * errors; only a bug in this function itself would throw.
  */
@@ -338,22 +326,22 @@ export function formatCheckLine(check: StatusCheck): string {
 
 /** Options accepted by {@link runStatusCommand} beyond the CLI flags themselves. */
 export interface StatusCommandOptions {
-  /** Injectable for tests; defaults to the real PW-1002 loader. */
+  /** Injectable for tests; defaults to the real config loader. */
   loadConfig?: (options: LoadConfigOptions) => Promise<LoadedConfig>;
   /** Project root `loadConfig` searches from (passed through to it). */
   cwd?: string;
 }
 
 /**
- * `payweave status`'s `run` body (cli.md §4). Parses its own flags (per
+ * `payweave status`'s `run` body. Parses its own flags (per
  * `./run`'s dispatch contract — the global dispatcher hands subcommands their
  * raw argv): `--config <path>` (config discovery override) and `--throw`
  * (CI gate).
  *
  * Exit codes: config failed to load → 1, unconditionally (nothing to
  * diagnose without a client). Otherwise: `--throw` → 1 iff any check failed,
- * 0 if all passed/skipped; without `--throw` → always 0 (cli.md §4: default
- * mode is a diagnostic, never a gate).
+ * 0 if all passed/skipped; without `--throw` → always 0 (default mode is a
+ * diagnostic, never a gate).
  */
 export async function runStatusCommand(
   argv: readonly string[],
@@ -396,7 +384,6 @@ export async function runStatusCommand(
 
 export const statusCommand: CliCommand = {
   name: "status",
-  summary: "Validate config, database, migrations, and provider connectivity (cli.md §4)",
-  ticket: "PW-1003",
+  summary: "Validate config, database, migrations, and provider connectivity",
   run: (argv, io) => runStatusCommand(argv, io),
 };

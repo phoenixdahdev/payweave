@@ -2,26 +2,26 @@
  * Shared types for the embedded SQL migrations engine (docs/v1/database.md §4,
  * PW-703). The engine is pure TypeScript: it emits SQL text through an
  * injected {@link MigrationExecutor} and never imports a driver
- * (database.md §7) or reads files at runtime (database.md §4 — migrations are
+ * or reads files at runtime (database.md §4 — migrations are
  * embedded string constants, so `dist` is self-contained).
  *
  * INTERNAL until PW-505 wires the `payweave/db` subpaths into the exports map.
  */
 
-/** SQL dialects with Payweave-owned migrations (database.md §4). */
+/** SQL dialects with Payweave-owned migrations. */
 export const PW_SQL_DIALECTS = ["postgres", "mysql", "sqlite"] as const;
 
 /**
  * A dialect the SQL migrations engine can emit DDL for. Deliberately narrower
  * than `DatabaseAdapter["dialect"]`: prisma/drizzle users own their migrations
- * (database.md §4) and mongodb has NO SQL migrations — its adapter ensures
+ * and mongodb has NO SQL migrations — its adapter ensures
  * collections + indexes itself.
  */
 export type PwSqlDialect = (typeof PW_SQL_DIALECTS)[number];
 
 /**
  * One embedded, ordered migration. `id` is the ledger key recorded in the
- * `pw_migrations.name` column (database.md §2) and defines execution order
+ * `pw_migrations.name` column and defines execution order
  * (lexicographic — zero-padded numeric prefix, e.g. `0001_init`); `name` is a
  * short human-readable label. A migration that has ever been applied anywhere
  * is IMMUTABLE — changes ship as a new id (`0002_...`), never as an edit

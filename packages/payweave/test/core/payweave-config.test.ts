@@ -306,7 +306,7 @@ describe("resolvePayweaveConfig — cross-plan validation + price resolution (§
     );
     expect(err).toBeInstanceOf(PayweaveConfigError);
     expect((err as Error).message).toBe(
-      'duplicate plan id "pro" — plan ids must be unique across products (plans-and-features.md §9).',
+      'duplicate plan id "pro" — plan ids must be unique across products.',
     );
   });
 
@@ -324,7 +324,7 @@ describe("resolvePayweaveConfig — cross-plan validation + price resolution (§
     expect(err).toBeInstanceOf(PayweaveConfigError);
     expect((err as Error).message).toBe(
       'group "base" has more than one default plan ("free" and "starter") — only one plan per ' +
-        "group can be default: true (plans-and-features.md §4).",
+        "group can be default: true.",
     );
   });
 
@@ -356,7 +356,7 @@ describe("resolvePayweaveConfig — cross-plan validation + price resolution (§
     expect(err).toBeInstanceOf(PayweaveConfigError);
     expect((err as Error).message).toBe(
       'feature "messages" is used as both "metered" (plan "pro") and "boolean" (plan "ultra") — a ' +
-        "feature must have the same type everywhere (plans-and-features.md §9).",
+        "feature must have the same type everywhere.",
     );
   });
 
@@ -383,8 +383,7 @@ describe("resolvePayweaveConfig — cross-plan validation + price resolution (§
     );
     expect(err).toBeInstanceOf(PayweaveConfigError);
     expect((err as Error).message).toBe(
-      'plan "pro": price has no currency — set price.currency or configure defaultCurrency ' +
-        "(plans-and-features.md §6).",
+      'plan "pro": price has no currency — set price.currency or configure defaultCurrency.',
     );
   });
 

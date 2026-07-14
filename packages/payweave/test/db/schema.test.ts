@@ -1,5 +1,5 @@
 /**
- * Row-schema parsing tests (PW-701): every table's schema accepts a valid
+ * Row-schema parsing tests: every table's schema accepts a valid
  * logical row and rejects the spec-relevant invalid shapes (database.md §2 —
  * integer money/counters, nullable-vs-required columns, `pwv_<ulid>` ids,
  * UTC Date timestamps).

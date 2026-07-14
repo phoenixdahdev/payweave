@@ -1,5 +1,5 @@
 /**
- * Zod schemas for the Stripe Products module (PW-603). Request fields are
+ * Zod schemas for the Stripe Products module. Request fields are
  * sourced verbatim from the official API reference (all verified 2026-07-12):
  *   - Create:   https://docs.stripe.com/api/products/create
  *   - Retrieve: https://docs.stripe.com/api/products/retrieve
@@ -134,7 +134,7 @@ export type ProductCreateReq = z.input<typeof productCreateReq>;
  * POST /v1/products/{id} — request
  * (https://docs.stripe.com/api/products/update — verified 2026-07-12).
  * Fields not provided remain unchanged. `active: false` ARCHIVES the product
- * — the sync-flow alternative to deletion (PW-803).
+ * — the sync-flow alternative to deletion.
  */
 export const productUpdateReq = z.object({
   ...productSharedFields,

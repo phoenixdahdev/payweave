@@ -1,39 +1,39 @@
 /**
- * `payweave init` — interactive setup wizard (docs/v1/cli.md §1, PW-1005).
+ * `payweave init` — interactive setup wizard.
  *
  * ── Flow ──────────────────────────────────────────────────────────────────
  *   1. Ask which provider(s) are configured (multiselect, ≥1 required).
  *   2. Ask which database is in use (select — includes "none" for a
- *      payments-only project, unified-config.md §2 rule 5).
+ *      payments-only project).
  *   3. Detect the framework from the project's own `package.json` (+ a
- *      filesystem marker for Next.js) — never prompted; cli.md §1 says
- *      "framework detected," not "framework chosen."
+ *      filesystem marker for Next.js) — never prompted; detected, not
+ *      chosen.
  *   4. Plan the scaffold (`./templates`): `payweave.ts`, `products.ts`,
  *      `.env.example`, a framework-specific webhook route, an optional
  *      frontend client file, and (Prisma/Drizzle only) a schema fragment.
- *   5. Write each file, prompting per-file before clobbering an existing one
- *      (cli.md §1); `--force` skips every such prompt and always overwrites.
+ *   5. Write each file, prompting per-file before clobbering an existing one;
+ *      `--force` skips every such prompt and always overwrites.
  *
  * ── Prompt seam ───────────────────────────────────────────────────────────
  * Every interactive decision goes through {@link InitPrompts} — mirrors
  * `push.ts`'s injectable `confirm` seam. `test/cli/init.test.ts` drives the
  * wizard non-interactively by supplying its own `InitPrompts`; the real CLI
- * uses {@link defaultPrompts} (`@clack/prompts` — cli.md §7's bundled prompt
+ * uses {@link defaultPrompts} (`@clack/prompts` — the bundled prompt
  * library, `tsup.cli.config.ts`'s `noExternal` list).
  *
  * ── Env var names, not values (spec-silent simplification) ───────────────
- * cli.md §1 says the wizard "collects the env var names." Read literally
+ * The wizard "collects the env var names." Read literally
  * that could mean prompting for a CUSTOM name per secret; this implementation
  * instead uses fixed, documented conventional names (`STRIPE_SECRET_KEY`,
  * ...) — "collects" as in "gathers the set of names this project needs,"
  * not "asks the user to type each one." A fixed-names scaffold is what most
  * comparable CLIs (create-next-app, create-t3-app) do, and prompting for
  * every provider's every var would multiply the wizard's prompt count and
- * this ticket's test matrix without proportionate value. Flagged here per
+ * test matrix without proportionate value. Flagged here per
  * the agent playbook's "record spec-silent decisions" instruction.
  *
- * ── Overwrite semantics (reconciling cli.md §1 with this ticket's own ask) ─
- * cli.md §1: "It never overwrites an existing file without a confirmation
+ * ── Overwrite semantics ─────────────────────────────────────────────────
+ * "It never overwrites an existing file without a confirmation
  * prompt (--force to skip)." This implementation prompts PER FILE via
  * {@link InitPrompts.confirmOverwrite} when interactive, and `--force` skips
  * every prompt and overwrites unconditionally. Additionally: if ANY existing
@@ -44,15 +44,15 @@
  * declined confirmation is a failed run.
  *
  * ── Framework detection ───────────────────────────────────────────────────
- * cli.md §1 names four targets: "Next.js App Router, Express, Fastify" plus a
- * plain-`http` fallback. Detection is dependency-based (package.json
- * `dependencies`/`devDependencies`), with one filesystem-marker fallback for
- * Next.js (`next.config.{js,mjs,ts}`) for the case where a project has a next
- * config committed before `next` itself lands in package.json (e.g. a very
- * fresh scaffold) — cli.md §1's own wording is "package.json deps +
- * filesystem markers." Precedence: Next.js > Express > Fastify > plain http,
- * checked in that order since a Next.js API project is far more likely to
- * co-depend on Express (e.g. a custom server) than the reverse.
+ * Targets four frameworks: Next.js App Router, Express, Fastify, plus a
+ * plain-`http` fallback. Detection is dependency-based (package.json deps +
+ * filesystem markers): `dependencies`/`devDependencies`, with one
+ * filesystem-marker fallback for Next.js (`next.config.{js,mjs,ts}`) for the
+ * case where a project has a next config committed before `next` itself
+ * lands in package.json (e.g. a very fresh scaffold). Precedence: Next.js >
+ * Express > Fastify > plain http, checked in that order since a Next.js API
+ * project is far more likely to co-depend on Express (e.g. a custom server)
+ * than the reverse.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -121,7 +121,7 @@ function readMergedDependencies(cwd: string): Record<string, string> {
   }
 }
 
-/** Detect the project's framework (cli.md §1 — see this module's doc comment). */
+/** Detect the project's framework (see this module's doc comment). */
 export function detectFramework(cwd: string): FrameworkId {
   const deps = readMergedDependencies(cwd);
   if ("next" in deps || NEXT_CONFIG_FILES.some((file) => existsSync(join(cwd, file)))) return "next";
@@ -188,7 +188,7 @@ async function confirmOverwritePrompt(relPath: string): Promise<boolean> {
   return result;
 }
 
-/** Real interactive prompts (`@clack/prompts`, cli.md §7's bundled devDependency). */
+/** Real interactive prompts (`@clack/prompts`, a bundled devDependency). */
 export const defaultPrompts: InitPrompts = {
   selectProviders: selectProvidersPrompt,
   selectDatabase: selectDatabasePrompt,
@@ -223,7 +223,7 @@ function errorMessage(err: unknown): string {
   }
 }
 
-/** Route a string through the SDK's one redaction path (cli.md §7/§8) before it is ever printed. */
+/** Route a string through the SDK's one redaction path before it is ever printed. */
 function redactLine(line: string): string {
   const scrubbed = redact(line);
   return typeof scrubbed === "string" ? scrubbed : line;
@@ -242,7 +242,7 @@ export interface InitCommandOptions {
 }
 
 /**
- * `payweave init`'s `run` body (cli.md §1 — see this module's doc comment for
+ * `payweave init`'s `run` body (see this module's doc comment for
  * the full flow, prompt-seam, overwrite-semantics, and framework-detection
  * reasoning). Parses its own flag: `--force`/`-f` (skip every overwrite
  * prompt, always write).
@@ -267,14 +267,14 @@ export async function runInitCommand(
     if (!interactive) {
       io.err(
         "payweave init: needs an interactive terminal to run the setup wizard — run `npx payweave " +
-          "init` directly in a terminal (cli.md §1).",
+          "init` directly in a terminal.",
       );
       return 1;
     }
   }
   const prompts = options.prompts ?? defaultPrompts;
 
-  io.out("Payweave init — interactive setup wizard (cli.md §1)");
+  io.out("Payweave init — interactive setup wizard");
   io.out("");
 
   let providers: readonly ProviderId[];
@@ -290,7 +290,7 @@ export async function runInitCommand(
   // Defensive — the real prompt enforces `required: true`, but an injected
   // test seam (or a future prompt-less flag mode) could still hand back [].
   if (providers.length === 0) {
-    io.err("payweave init: at least one provider is required (cli.md §1).");
+    io.err("payweave init: at least one provider is required.");
     return 1;
   }
 
@@ -334,7 +334,7 @@ export async function runInitCommand(
     io.err(
       redactLine(
         `payweave init: ${skipped.length} file(s) already existed and were not overwritten: ` +
-          `${skipped.join(", ")} — re-run with --force to overwrite, or remove them first (cli.md §1).`,
+          `${skipped.join(", ")} — re-run with --force to overwrite, or remove them first.`,
       ),
     );
     return 1;
@@ -349,7 +349,6 @@ export async function runInitCommand(
 
 export const initCommand: CliCommand = {
   name: "init",
-  summary: "Interactive setup wizard: scaffold config, products, and a webhook route (cli.md §1)",
-  ticket: "PW-1005",
+  summary: "Interactive setup wizard: scaffold config, products, and a webhook route",
   run: (argv, io) => runInitCommand(argv, io),
 };

@@ -1,5 +1,5 @@
 /**
- * PW-502 — `createPayweave` + `PayweaveClient` runtime behavior
+ * `createPayweave` + `PayweaveClient` runtime behavior
  * (unified-config.md §3, §9 criterion 1). Network calls are mocked at the edge
  * with MSW (never stubbing HttpClient/fetch); webhook vectors come from
  * `signWebhook`.
@@ -224,32 +224,10 @@ describe("createPayweave — unified ops on the client root (§3)", () => {
     ).toThrow(/not configured on this client/);
   });
 
-  it("`payweave.unified` is a deprecated alias for the SAME root functions", async () => {
-    const client = createPayweave({ paystack: { secretKey: "sk_test_x", maxRetries: 0 } });
-    expect(client.unified.checkout).toBe(client.checkout);
-    expect(client.unified.verify).toBe(client.verify);
-    expect(client.unified.refunds).toBe(client.refunds);
-    expect(client.unified.transfers).toBe(client.transfers);
-    expect(client.unified.banks).toBe(client.banks);
-
-    edge = await startEdge([
-      {
-        method: "get",
-        url: "https://api.paystack.co/bank",
-        json: loadFixture("paystack", "misc", "banks.success"),
-      },
-    ]);
-    // Alias behaves identically because it IS the same function… but prove the
-    // call path works end-to-end through a fresh client that saw MSW's fetch.
-    const fresh = createPayweave({ paystack: { secretKey: "sk_test_x", maxRetries: 0 } });
-    const banks = await fresh.unified.banks.list({ country: "nigeria" });
-    expect(banks).toHaveLength(2);
-  });
-
   it("unified ops routed to stripe: capability-supported-but-unimplemented ops reject (PW-607)", async () => {
     const client = createPayweave({ stripe: { secretKey: "sk_test_x" } });
     // checkout.create/verify/refunds.create ARE capability-supported on stripe
-    // (providers.md §3.3) but `src/unified/stripe.ts` hasn't landed yet — an
+    // but `src/unified/stripe.ts` hasn't landed yet — an
     // honest "not implemented" rejection, distinct from a capability gap.
     const err = await client.verify({ reference: "ref_1" }).then(
       () => undefined,
@@ -292,14 +270,6 @@ describe("createPayweave — unified ops on the client root (§3)", () => {
     expect(() =>
       client.banks.resolveAccount({ accountNumber: "000123456", bankCode: "001" }),
     ).toThrow(/banks\.resolveAccount is not supported on stripe/);
-    // `payweave.unified` is the SAME functions (§3) — the guard applies there too.
-    expect(() =>
-      client.unified.transfers.create({
-        amount: 1000,
-        currency: "USD",
-        recipient: { accountNumber: "000123456", bankCode: "001" },
-      }),
-    ).toThrow(/transfers are not supported on stripe/);
   });
 
   it("`payweave.capabilities()` returns the matrix for configured providers only", () => {

@@ -3,7 +3,7 @@
  * PW-706). This module is the ONLY place that touches a `better-sqlite3`
  * `Database` instance; `../index.ts` dynamically imports the driver package
  * and passes the resulting instance in here, so core/`payweave` never pulls
- * `better-sqlite3` into its module graph (database.md §7).
+ * `better-sqlite3` into its module graph.
  *
  * `better-sqlite3` executes synchronously — `exec` wraps it in an `async`
  * function so it satisfies the {@link RawDriver} surface, but never `await`s

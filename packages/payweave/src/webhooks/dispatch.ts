@@ -1,13 +1,13 @@
 /**
  * webhooks/dispatch.ts — multi-provider header dispatch for `createPayweave`
- * clients (PW-503, unified-config.md §5). One endpoint serves every configured
+ * clients. One endpoint serves every configured
  * provider: the provider is detected from the signature header NAME ONLY (the
  * body is NEVER parsed before verification succeeds), then the request is
  * handed to that provider's existing timing-safe verifier and the untouched
  * verify→parse→normalize pipeline in `webhooks/index.ts`.
  *
  * Fail-closed rejections, all {@link PayweaveWebhookVerificationError}, never
- * falling through to another provider's verifier (§5):
+ * falling through to another provider's verifier:
  *
  * - a signature header for a provider NOT configured on this client;
  * - more than one known signature header on one request (ambiguous, likely
@@ -31,7 +31,7 @@ import { verifyFlutterwaveV4 } from "./flutterwave-v4";
 import { verifyStripe } from "./stripe";
 import { constructEvent, type WebhookEvent } from "./index";
 
-/** Raw-body + headers input accepted by every dispatch operation (TDD §10). */
+/** Raw-body + headers input accepted by every dispatch operation. */
 export interface WebhookDispatchInput {
   /** Exact received bytes — never a re-serialized object. */
   rawBody: string | Uint8Array;
@@ -41,7 +41,7 @@ export interface WebhookDispatchInput {
 
 /**
  * The multi-provider `payweave.webhooks` surface. `verify` returns the
- * signature verdict as a boolean but still THROWS for the §5 detection
+ * signature verdict as a boolean but still THROWS for the detection
  * rejections above (they are structural failures, not signature mismatches)
  * and for missing-secret config errors — matching the single-provider
  * namespace, whose `verify` also throws {@link PayweaveConfigError}.
@@ -56,7 +56,7 @@ export interface WebhookDispatchNamespace {
 }
 
 /**
- * One row of the §5 header→provider table. Flutterwave rows carry the version
+ * One row of the header→provider table below. Flutterwave rows carry the version
  * their header belongs to (v3/v4 never share a scheme — AGENTS.md rule 11).
  * `headerName` is canonical lower-case and matched case-insensitively.
  */
@@ -69,7 +69,7 @@ type SignatureHeaderSpec =
     };
 
 /**
- * The §5 header→provider table. Detection is on header NAMES only; the two
+ * The header→provider table. Detection is on header NAMES only; the two
  * Flutterwave rows are distinct because the version is decided by which header
  * arrives — and must then match the configured version.
  */
@@ -89,8 +89,8 @@ interface DetectedSignature {
 }
 
 /**
- * Detect the provider from the signature-header NAMES present on the request
- * (§5). Exactly one known header must be present: zero and more-than-one both
+ * Detect the provider from the signature-header NAMES present on the request.
+ * Exactly one known header must be present: zero and more-than-one both
  * throw {@link PayweaveWebhookVerificationError} — an ambiguous request is
  * rejected even when one of its signatures would verify.
  */
@@ -119,7 +119,7 @@ function detectSignatureHeader(headers: HeaderLookup): DetectedSignature {
 
 /**
  * Resolve the detected provider's config entry, failing closed when the header
- * belongs to a provider this client does not have configured (§5) or to the
+ * belongs to a provider this client does not have configured or to the
  * wrong Flutterwave version (AGENTS.md rule 11) — never falling through to
  * another provider's verifier.
  */
@@ -204,17 +204,16 @@ function verifyDetected(
 
 /**
  * Build the multi-provider `payweave.webhooks` namespace for a resolved keyed
- * config (unified-config.md §5). Detection runs IN FRONT of the existing
+ * config. Detection runs IN FRONT of the existing
  * verifiers on header names only; verification and normalization are the
  * pre-existing pipeline, unchanged — a single-provider client behaves
- * byte-identically for its own header, with the §5 rejection rules on top.
+ * byte-identically for its own header, with the same rejection rules on top.
  *
- * `billing` (PW-805) is the `database`/`products` slice every constructed
+ * `billing` is the `database`/`products` slice every constructed
  * event's `.apply()` runs against — `src/index.ts` passes the SAME
- * `billingContext` object it already builds for PW-804's `subscribe`/PW-902's
+ * `billingContext` object it already builds for `subscribe`/
  * `check`/`report`. Omitted (or database-less), `.apply()` still exists on
- * every returned event but throws `PayweaveConfigError` when called
- * (unified-config.md §5).
+ * every returned event but throws `PayweaveConfigError` when called.
  */
 export function createWebhookDispatch(
   resolved: ResolvedPayweaveConfig,

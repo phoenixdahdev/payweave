@@ -1,5 +1,5 @@
 /**
- * PW-1001 — `payweave` CLI dispatch (docs/v1/cli.md §7; replaces the PW-505
+ * `payweave` CLI dispatch (docs/v1/cli.md §7; replaces the PW-505
  * stub test). The bin entry itself (src/cli/index.ts, shebang + process
  * wiring) is exercised end-to-end by scripts/test-cli-tarball.mjs; these tests
  * cover the dispatch table via the injectable io.
@@ -50,7 +50,7 @@ describe("payweave CLI dispatch (PW-1001)", () => {
     it("marks unshipped commands with their owning ticket", async () => {
       const c = capture();
       await run(["--help"], c.io);
-      // `status` (PW-1003), `push` (PW-1004), `init` (PW-1005), and `listen`
+      // `status`, `push`, `init`, and `listen`
       // (PW-1006, this ticket) shipped — none are "coming with" anymore.
       expect(c.out()).not.toContain("coming with PW-1003");
       expect(c.out()).not.toContain("coming with PW-1004");

@@ -1,7 +1,7 @@
 /**
- * CLI config discovery + loader (docs/v1/cli.md §5; PW-1002).
+ * CLI config discovery + loader.
  *
- * Resolution order (first hit wins, cli.md §5):
+ * Resolution order (first hit wins):
  *   1. `--config <path>` — explicit override; a missing path is an error, it
  *      never falls back to discovery.
  *   2. `payweave.ts` OR `payweave.config.ts` at the project root. Exactly one
@@ -11,21 +11,19 @@
  *
  * The resolved file is loaded with **jiti** (`jiti/static` — the bundler-safe
  * entry that STATICALLY imports its babel transform so tsup's `noExternal`
- * bundling inlines the whole transform into `dist/cli`, cli.md §7's
- * self-containment rule: no `esbuild`/`typescript`/`tsx` may be assumed
- * present in the user's project). Its default export, or a named `payweave`
- * export, must be the client returned by `createPayweave(...)`
- * (unified-config.md §1).
+ * bundling inlines the whole transform into `dist/cli` — no
+ * `esbuild`/`typescript`/`tsx` may be assumed present in the user's
+ * project). Its default export, or a named `payweave`
+ * export, must be the client returned by `createPayweave(...)`.
  *
  * Export-shape detection is structural, not `instanceof`: the config file
  * resolves its OWN copy of the `payweave` package from the user's project
  * `node_modules`, which — once this loader ships inside the bundled
- * `dist/cli/index.js` (cli.md §7) — is a different module instantiation than
+ * `dist/cli/index.js` — is a different module instantiation than
  * anything this file could statically import, so class identity is not
  * guaranteed to line up (the classic dual-package hazard). `src/index.ts` is
- * out of scope for this ticket (forbidden file, PW-1002 brief), so there is
- * no exported runtime brand to check instead; this duck-types over the
- * always-present `PayweaveClientBase` members (unified-config.md §3). The
+ * out of scope here, so there is no exported runtime brand to check instead;
+ * this duck-types over the always-present `PayweaveClientBase` members. The
  * same reasoning applies to recognizing a `PayweaveError` thrown out of the
  * user's `createPayweave(...)` call: matched by `.name`, never `instanceof`.
  */
@@ -37,9 +35,9 @@ import { createJiti } from "jiti/static";
 
 import { PayweaveConfigError } from "../core/errors";
 
-/** Root-level candidate filenames, checked in this order (cli.md §5). */
+/** Root-level candidate filenames, checked in this order. */
 const ROOT_CANDIDATES = ["payweave.ts", "payweave.config.ts"] as const;
-/** `src/` fallback (cli.md §5; unified-config.md §1's "(or `src/payweave.ts`)"). */
+/** `src/` fallback. */
 const SRC_CANDIDATE = "src/payweave.ts";
 
 /** Options for {@link resolveConfigPath} / {@link loadConfig}. */
@@ -51,7 +49,7 @@ export interface LoadConfigOptions {
 }
 
 /**
- * Minimal structural shape of a `PayweaveClient` (unified-config.md §3) — the
+ * Minimal structural shape of a `PayweaveClient` — the
  * always-present root members, regardless of which providers are configured.
  * Used to recognize a loaded module's export as a real client; see the module
  * doc comment for why this is duck-typed rather than `instanceof`-checked.
@@ -68,11 +66,11 @@ export interface PayweaveClientLike {
   readonly capabilities: (...args: never[]) => unknown;
 }
 
-/** What {@link loadConfig} hands back to command implementations (PW-1003+). */
+/** What {@link loadConfig} hands back to command implementations. */
 export interface LoadedConfig {
   /** Absolute path to the config file that was loaded. */
   readonly path: string;
-  /** The `createPayweave` client extracted from the module's export (§5). */
+  /** The `createPayweave` client extracted from the module's export. */
   readonly client: PayweaveClientLike;
 }
 
@@ -81,7 +79,7 @@ function isFunction(value: unknown): value is (...args: never[]) => unknown {
 }
 
 /**
- * Structural check for a `PayweaveClient` (unified-config.md §3): the root
+ * Structural check for a `PayweaveClient`: the root
  * props + namespaces every client has regardless of configured providers.
  * Deliberately NOT `instanceof` — see the module doc comment.
  */
@@ -114,7 +112,7 @@ function srcCandidate(cwd: string): Candidate {
 }
 
 /**
- * Resolve the config file path per cli.md §5, WITHOUT loading it. Exported
+ * Resolve the config file path, WITHOUT loading it. Exported
  * separately from {@link loadConfig} so callers (and tests) can distinguish
  * "which file would be used" from "load and construct the client" — the
  * latter executes arbitrary user code (`createPayweave(...)` side effects).
@@ -134,7 +132,7 @@ export function resolveConfigPath(options: LoadConfigOptions = {}): string {
     if (!existsSync(resolved)) {
       throw new PayweaveConfigError(
         `--config ${options.configPath} does not exist (resolved to ${resolved}). Pass a path to an ` +
-          "existing Payweave config file, or omit --config to use discovery (cli.md §5: payweave.ts / " +
+          "existing Payweave config file, or omit --config to use discovery (payweave.ts / " +
           "payweave.config.ts at the project root, then src/payweave.ts).",
       );
     }
@@ -147,8 +145,8 @@ export function resolveConfigPath(options: LoadConfigOptions = {}): string {
   if (rootHits.length > 1) {
     throw new PayweaveConfigError(
       "multiple Payweave config files found at the project root: " +
-        `${rootHits.map((c) => c.label).join(", ")}. cli.md §5 resolves at most one of ` +
-        "payweave.ts / payweave.config.ts — keep only one, or pass --config <path> to disambiguate.",
+        `${rootHits.map((c) => c.label).join(", ")}. Only one of ` +
+        "payweave.ts / payweave.config.ts may exist — keep only one, or pass --config <path> to disambiguate.",
     );
   }
   const rootHit = rootHits[0];
@@ -165,7 +163,7 @@ export function resolveConfigPath(options: LoadConfigOptions = {}): string {
   throw new PayweaveConfigError(
     "no Payweave config found. Searched, in order:\n" +
       searched.map((c) => `  - ${c.path}`).join("\n") +
-      "\nCreate one of these files (unified-config.md §1: export the result of createPayweave(...) " +
+      "\nCreate one of these files (export the result of createPayweave(...) " +
       'as the default export or a named "payweave" export), or pass --config <path>.',
   );
 }
@@ -185,7 +183,7 @@ function isNamedError(err: unknown): err is { name: string; message: string; sta
  * {@link PayweaveConfigError}:
  *
  * - A `Payweave*Error` thrown while the config file ran `createPayweave(...)`
- *   (construction-time validation, unified-config.md §2) is a CONFIG problem,
+ *   (construction-time validation) is a CONFIG problem,
  *   not a loader problem — its message is surfaced verbatim, prefixed with
  *   the file path. Matched by `.name` (see module doc comment), never
  *   `instanceof`.
@@ -228,8 +226,8 @@ function describeExportShape(mod: Record<string, unknown>): string {
 }
 
 /**
- * Resolve (cli.md §5) + load the user's Payweave config, returning the file
- * path actually used and the extracted client (§3's export contract:
+ * Resolve + load the user's Payweave config, returning the file
+ * path actually used and the extracted client (export contract:
  * default export, falling back to a named `payweave` export).
  *
  * Loading is import-with-side-effects: the config file's own top-level code
@@ -266,7 +264,7 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Loade
   if (!isPayweaveClientLike(exported)) {
     throw new PayweaveConfigError(
       `${path} does not export a Payweave client. Expected a default export or a named "payweave" ` +
-        `export that is the return value of createPayweave(...) (unified-config.md §1). Found: ` +
+        `export that is the return value of createPayweave(...). Found: ` +
         `${describeExportShape(mod)}.`,
     );
   }

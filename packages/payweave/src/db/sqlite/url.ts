@@ -99,7 +99,7 @@ function looksLikeLibsqlClient(value: object): value is LibsqlClientLike {
 
 /**
  * Resolve `sqliteAdapter`'s single argument into a {@link SqliteConnectTarget}.
- * Synchronous and side-effect-free (database.md §1) — no driver import, no
+ * Synchronous and side-effect-free — no driver import, no
  * connection opened.
  */
 export function resolveSqliteInput(input: unknown): SqliteConnectTarget {

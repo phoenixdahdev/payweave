@@ -1,2 +1,2 @@
-// adapters/fastify — framework adapter (PW-401). Placeholder.
+// adapters/fastify — framework adapter. Placeholder.
 export {};

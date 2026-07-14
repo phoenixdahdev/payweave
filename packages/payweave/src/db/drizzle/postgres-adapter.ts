@@ -1,19 +1,19 @@
 /**
- * PostgreSQL store implementation for the Drizzle adapter (docs/v1/database.md
- * §2/§3/§5, PW-708). Built against the published `./schema/pg.ts` tables.
+ * PostgreSQL store implementation for the Drizzle adapter. Built against the
+ * published `./schema/pg.ts` tables.
  *
  * This is the dialect the shared conformance suite runs against in CI
- * (database.md §6: dockerized `postgres:16` + `drizzle-kit push`, PW-710's
- * matrix) — unavailable in this sandbox (no docker), so it is NOT exercised
+ * (dockerized `postgres:16` + `drizzle-kit push`)
+ * — unavailable in this sandbox (no docker), so it is NOT exercised
  * by a live conformance run here (`test/db/drizzle.test.ts` documents the
- * gate). The code below follows database.md §5's Postgres/Drizzle bullet
+ * gate). The code below follows the Postgres/Drizzle approach
  * exactly: `db.transaction()` (a REAL row-locked transaction on a dedicated
  * pooled connection — unlike the sqlite dialect, `drizzle-orm`'s postgres
  * `.transaction()` supports concurrent async callbacks correctly) plus raw
  * `FOR UPDATE` (via the query builder's `.for("update")`, not a raw `sql`
  * fragment — pg-core exposes it natively) for the one read `balances.consume`
  * needs to recompute the current billing window via `src/products/period.ts`
- * (same reasoning as the sqlite/PW-706 adapters: no portable single
+ * (same reasoning as the sqlite adapter: no portable single
  * statement can replicate that calendar arithmetic safely).
  */
 import { and, eq, sql } from "drizzle-orm";
@@ -46,7 +46,7 @@ import { createVerifier, findMissingTablesForStatus, makeSqlTableProbe } from ".
 export type PostgresDrizzleDb = PgDatabase<PgQueryResultHKT>;
 
 const DRIZZLE_KIT_INSTRUCTIONS =
-  "payweave/db/drizzle never runs migrations for you (database.md §4). Merge " +
+  "payweave/db/drizzle never runs migrations for you. Merge " +
   '"payweave/db/drizzle"\'s published schema (see `./schema/pg.ts`) into your own Drizzle schema, ' +
   "then run `drizzle-kit push` (dev) or `drizzle-kit generate` + `drizzle-kit migrate` (tracked " +
   "migrations) yourself.";

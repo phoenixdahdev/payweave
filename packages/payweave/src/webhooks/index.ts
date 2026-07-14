@@ -1,5 +1,5 @@
 // webhooks/ — signature-verification primitives + the `constructEvent`
-// normalizer the SDK facade delegates to (TDD §10). The four pure, timing-safe
+// normalizer the SDK facade delegates to. The four pure, timing-safe
 // verify functions stay the security boundary; `constructEvent` reuses the
 // facade's already-wired verify dispatch (never re-implements verification),
 // then parses the RAW bytes and normalizes via `unified/mappings.ts`. The
@@ -22,7 +22,7 @@ import {
   type BillingApplyContext,
 } from "../products/apply";
 
-/** A `database`-less billing context — `event.apply()` always exists (mirrors `subscribe`/`check`/`report`), but calling it without a database throws `PayweaveConfigError` (unified-config.md §5, §3). */
+/** A `database`-less billing context — `event.apply()` always exists (mirrors `subscribe`/`check`/`report`), but calling it without a database throws `PayweaveConfigError`. */
 const NO_DATABASE_CONTEXT: BillingApplyContext = { database: undefined, products: undefined };
 
 export { verifyPaystack } from "./paystack";
@@ -31,11 +31,10 @@ export { verifyFlutterwaveV4 } from "./flutterwave-v4";
 export { verifyStripe } from "./stripe";
 
 /**
- * Providers whose webhooks `constructEvent` can normalize. Stripe joined the
- * {@link MappingProvider} set via the PW-503 dispatcher; since PW-608 its
+ * Providers whose webhooks `constructEvent` can normalize. Stripe's
  * events are normalized through the SAME `STRIPE_EVENT_MAP`/
- * `STRIPE_EVENT_STATUS_SPLIT_MAP` tables (`unified/mappings.ts`, landed by
- * PW-607) that `toUnifiedEventType` already used for every other provider —
+ * `STRIPE_EVENT_STATUS_SPLIT_MAP` tables (`unified/mappings.ts`) that
+ * `toUnifiedEventType` already used for every other provider —
  * unmapped Stripe events still fall through to `unifiedType: "unknown"`,
  * exactly like an unmapped Paystack/Flutterwave event.
  */
@@ -54,8 +53,7 @@ export interface WebhookEvent extends UnifiedEvent {
   /** Always populated — the idempotency key consumers should dedupe on. */
   dedupeKey: string;
   /**
-   * Idempotently apply this event's billing-state transition
-   * (unified-config.md §5, database.md §2–§3, PW-805) — subscription
+   * Idempotently apply this event's billing-state transition — subscription
    * status/period flips, driven by `webhookEvents.claim`'s once-only gate.
    * ALWAYS present (mirrors `payweave.subscribe`/`check`/`report`: the method
    * exists on every client; without a `database` configured, CALLING it
@@ -83,10 +81,10 @@ export interface ConstructEventParams {
   /** Optional injected logger for status drift. */
   logger?: Logger | undefined;
   /**
-   * The `database`/`products` slice `event.apply()` runs against (PW-805).
+   * The `database`/`products` slice `event.apply()` runs against.
    * `undefined` when the webhooks namespace was built without a database —
    * `apply()` still exists on the returned event but throws
-   * {@link PayweaveConfigError} when called (unified-config.md §5).
+   * {@link PayweaveConfigError} when called.
    */
   billing?: BillingApplyContext | undefined;
 }
@@ -118,7 +116,7 @@ function extractWebhookId(root: Record<string, unknown>): string | undefined {
 }
 
 /**
- * Idempotency key (PRD §8.4):
+ * Idempotency key:
  * - Flutterwave: the webhook `id` when present, else `data.id + ':' + status`.
  * - Paystack (no webhook id): `sha256(event + ':' + data.id + ':' + data.status)`.
  * - Stripe: the globally-unique event `id` (`evt_*`); Paystack-style hash as a
@@ -187,10 +185,10 @@ export function constructEvent(params: ConstructEventParams): WebhookEvent {
   const root = asRecord(parsed) ?? {};
   const data = root.data;
   const nativeType = extractNativeType(root, provider);
-  // PW-608: every provider — Stripe included — normalizes through the SAME
+  // Every provider — Stripe included — normalizes through the SAME
   // `unified/mappings.ts` tables. Stripe's own event-name rows (flat
-  // `STRIPE_EVENT_MAP` + nested-resource `STRIPE_EVENT_STATUS_SPLIT_MAP`,
-  // landed by PW-607) live inside `toUnifiedEventType` itself; an unmapped
+  // `STRIPE_EVENT_MAP` + nested-resource `STRIPE_EVENT_STATUS_SPLIT_MAP`)
+  // live inside `toUnifiedEventType` itself; an unmapped
   // Stripe event falls through to `"unknown"` exactly like an unmapped
   // Paystack/Flutterwave event — never a special case here.
   const unifiedType = toUnifiedEventType(provider, version, nativeType, data);
@@ -226,7 +224,7 @@ export function constructEvent(params: ConstructEventParams): WebhookEvent {
 
   return {
     ...base,
-    // PW-805 — always present (see the `WebhookEvent.apply` doc comment);
+    // always present (see the `WebhookEvent.apply` doc comment);
     // `billing` is `undefined` for a database-less client, in which case
     // `applyWebhookEvent` itself throws `PayweaveConfigError` when called.
     apply: (options) => applyWebhookEvent(billing ?? NO_DATABASE_CONTEXT, base, { logger, ...options }),

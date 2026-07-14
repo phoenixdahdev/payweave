@@ -1,6 +1,6 @@
 /**
  * Fixture module for the §10 "cross-module import survival" assertion
- * (plans-and-features.md §10, PW-802): plans/features MUST be defined in a
+ * : plans/features MUST be defined in a
  * SEPARATE module from the type test that imports them and passes them to
  * `createPayweave` — otherwise a same-file definition could accidentally pass
  * only because the literal types never left the file. This is deliberately
@@ -55,7 +55,7 @@ export const products = [free, pro, ultra] as const;
  * type — both leak into both `FeatureIdsOf<C,"metered">` and
  * `FeatureIdsOf<C,"boolean">`. This matches §10's own hedge ("`report` is a
  * compile-time error WHERE THE PRODUCTS ARRAY MAKES THE TYPE KNOWN") — the
- * runtime `PayweaveValidationError` guard (PW-902) is the unconditional
+ * runtime `PayweaveValidationError` guard is the unconditional
  * backstop regardless of what the compiler can prove. Fixing this at the
  * type level would mean widening `Plan.includes` to a correlated tuple in
  * `src/products/plan.ts`, which is out of PW-802's scope (forbidden file).

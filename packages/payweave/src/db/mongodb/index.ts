@@ -1,7 +1,7 @@
 /**
- * `payweave/db/mongodb` — MongoDB adapter (docs/v1/database.md §1/§4, PW-709).
- * FIRST-PARTY v1: MongoDB is not a bolted-on community adapter, it ships with
- * Payweave (epic-07-database.md's PW-709 owner-priority note).
+ * `payweave/db/mongodb` — MongoDB adapter.
+ * FIRST-PARTY v1: MongoDB is not a bolted-on community adapter — it ships
+ * with Payweave itself.
  *
  * `mongodbAdapter(...)` accepts EITHER:
  * - `{ url, dbName }` — a `mongodb://`/`mongodb+srv://` connection string,
@@ -10,7 +10,7 @@
  * - `{ client, dbName }` — an already-constructed `MongoClient` you own; this
  *   adapter never calls `.close()` on it.
  *
- * `mongodb` is an OPTIONAL peerDependency (database.md §7) — this module
+ * `mongodb` is an OPTIONAL peerDependency — this module
  * NEVER imports it at the top level, only dynamically inside `connect()`
  * (mirrors `src/db/sqlite/index.ts`'s `openBetterSqlite3Driver`/
  * `openLibsqlDriver` pattern), and `mongodbAdapter`'s public parameter/return
@@ -19,12 +19,12 @@
  * — so importing `payweave/db/mongodb` (or `payweave` core, which never
  * references this subpath at all) never requires `mongodb` to be installed
  * OR its types to be resolvable, exactly mirroring the sqlite adapter's
- * `BetterSqlite3DatabaseLike`/`LibsqlClientLike` precedent (database.md §7).
+ * `BetterSqlite3DatabaseLike`/`LibsqlClientLike` precedent.
  * The ONE place this module bridges to the real driver is `connect()` below,
  * via an explicit, localized cast — never structural inference across the
  * whole codebase.
  *
- * Construction is synchronous and side-effect-free (database.md §1): input
+ * Construction is synchronous and side-effect-free: input
  * is validated eagerly; the driver import + connection happen lazily and are
  * memoized (a `:memory:`-style "hold exactly one connection" invariant isn't
  * needed here — MongoDB is never in-process — but memoizing avoids opening a
@@ -71,8 +71,8 @@ async function connect(target: ReturnType<typeof resolveMongoInput>): Promise<Co
 }
 
 /**
- * Wrap {@link buildAdapter} behind lazy, memoized connect-on-first-use
- * (database.md §1). Every `DatabaseAdapter` method awaits the SAME
+ * Wrap {@link buildAdapter} behind lazy, memoized connect-on-first-use.
+ * Every `DatabaseAdapter` method awaits the SAME
  * connection/adapter-build promise, so `mongodb`'s driver connects exactly
  * once regardless of how many store methods are called.
  */

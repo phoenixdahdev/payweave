@@ -1,5 +1,5 @@
 /**
- * Paystack webhook verification (TDD §10). HMAC-SHA512 over the RAW request
+ * Paystack webhook verification. HMAC-SHA512 over the RAW request
  * body, hex digest, keyed with the API secret key. Timing-safe with a
  * length-guard; fails closed on a missing/short header.
  *

@@ -1,21 +1,19 @@
 /**
- * `check()` + `report()` — the metered-usage surface (metered-usage.md §1–§7,
- * PW-902). Mirrors `subscribe.ts`'s structure/seams on purpose (same
- * {@link BillingContext}, same "non-generic module, generic facade" split with
- * `src/index.ts`) — this file never imports `../index` (avoids a circular
- * import back into the facade).
+ * `check()` + `report()` — the metered-usage surface. Mirrors `subscribe.ts`'s
+ * structure/seams on purpose (same {@link BillingContext}, same "non-generic
+ * module, generic facade" split with `src/index.ts`) — this file never
+ * imports `../index` (avoids a circular import back into the facade).
  *
  * Both `check` and `report` bottom out in EXACTLY ONE
- * `database.balances.consume` call (metered-usage.md §4/§6): the SDK layer
- * adds zero atomicity of its own — no read-modify-write, no retry, no
- * rollback machinery. `check` is `consume(amount: 0)` (a peek that still
- * performs the lazy reset — "amount: 0 must still trigger row creation +
- * reset"); `report` is `consume(amount: n, conditional: false)` (unconditional
- * — never throws for "over limit"); `check({ consume: true })` is
- * `consume(amount: 1, conditional: true)` — the documented atomic gate
- * (metered-usage.md §6).
+ * `database.balances.consume` call: the SDK layer adds zero atomicity of its
+ * own — no read-modify-write, no retry, no rollback machinery. `check` is
+ * `consume(amount: 0)` (a peek that still performs the lazy reset — "amount:
+ * 0 must still trigger row creation + reset"); `report` is `consume(amount:
+ * n, conditional: false)` (unconditional — never throws for "over limit");
+ * `check({ consume: true })` is `consume(amount: 1, conditional: true)` — the
+ * documented atomic gate.
  *
- * ── Resolution order (§4) ────────────────────────────────────────────────────
+ * ── Resolution order ────────────────────────────────────────────────────
  * 1. Find the feature across `ctx.products` to learn its `type` and its
  *    "home" group (`resolvePlanGroup` of the first plan that includes it —
  *    spec-silent: a config where the SAME feature id appears under more than
@@ -26,14 +24,14 @@
  *    `database.plans.getActiveVersion` round trip — see the spec-silent note
  *    below) and read that plan's inclusion of the feature.
  * 3. No active subscription → the group's default plan's inclusion (no rows
- *    required, plans-and-features.md §5).
+ *    required).
  * 4. Feature not included in whichever plan answered → `allowed: false` /
  *    `balance: null` / `limit: null` / `resetsAt: null` for metered, and
  *    `allowed: false` for boolean — a normal "upsell" answer, never an error.
  *
  * ── Spec-silent decision: resolving limits from `ctx.products`, not `pw_plans` ─
- * §4 says the active-subscription path resolves "that plan version's
- * inclusion of the feature," which could be read as a `database.plans.
+ * The active-subscription path resolves "that plan version's inclusion of the
+ * feature," which could be read as a `database.plans.
  * getActiveVersion(planId)` round trip against the persisted, pushed
  * `features` JSON. This module resolves the feature's `limit`/`reset` from the
  * in-memory `ctx.products` (keyed by `subscription.planId`) instead, for two
@@ -53,16 +51,16 @@
  * active subscription (the default-plan path) — see {@link buildMeteredInit}.
  *
  * ── Spec-silent decision: a group with no default plan, no active subscription ─
- * §5 says "no subscription → the group's default plan inclusion (no rows
- * required)" — it assumes a default plan exists. A group that legitimately has
- * none (e.g. an opt-in-only `addons` group, see `subscribe.ts`'s own
- * `teamAddonPlan` fixture) has no plan to answer from when nobody has
- * subscribed. Conservative reading: this is a configuration gap, not a normal
- * "no access" answer (which is what `allowed: false` already means for a
+ * "No subscription → the group's default plan inclusion (no rows required)"
+ * assumes a default plan exists. A group that legitimately has none (e.g. an
+ * opt-in-only `addons` group, see `subscribe.ts`'s own `teamAddonPlan`
+ * fixture) has no plan to answer from when nobody has subscribed.
+ * Conservative reading: this is a configuration gap, not a normal "no access"
+ * answer (which is what `allowed: false` already means for a
  * plan-that-lacks-the-feature) — `check`/`report` throw
  * {@link PayweaveConfigError} naming the group, rather than silently guessing.
  *
- * ── Spec-silent decision: anchor seeding, paid vs free (§5) ─────────────────
+ * ── Spec-silent decision: anchor seeding, paid vs free ─────────────────
  * "Paid subscriptions seed [the anchor] from the subscription's
  * `current_period_start`; default-plan (and free-plan) balances seed it at
  * first use." Read literally: the split is on the RESOLVED PLAN'S price, not
@@ -75,7 +73,7 @@
  * plan with an actual `price` anchors from `subscription.currentPeriodStart`.
  *
  * ── Spec-silent decision: `report()` on a feature the current plan excludes ──
- * `report`'s public shape (§3) has no `allowed` field to express "not
+ * `report`'s public shape has no `allowed` field to express "not
  * included" the way `check` does — there is also no `limit`/`reset` to build
  * an `init` template from. `report()` throws {@link PayweaveValidationError}
  * pointing the caller at `check()` (whose `allowed: false` IS the documented
@@ -94,7 +92,7 @@ import type { BillingContext } from "./subscribe";
 import { resolvePlanGroup } from "./subscribe";
 
 /**
- * `check()`'s input (metered-usage.md §3). Mirrors `CheckInput<C>` in
+ * `check()`'s input. Mirrors `CheckInput<C>` in
  * `src/index.ts` field-for-field, but non-generic — the compile-time
  * `FeatureIds<C>` narrowing is the client facade's job (it widens back to
  * this plain type before calling in here).
@@ -102,15 +100,15 @@ import { resolvePlanGroup } from "./subscribe";
 export interface CheckInput {
   customerId: string;
   featureId: string;
-  /** Atomic gate: consume 1 unit iff allowed, in the SAME operation (§6). */
+  /** Atomic gate: consume 1 unit iff allowed, in the SAME operation. */
   consume?: boolean;
 }
 
 /**
- * `check()`'s result (metered-usage.md §3, matched verbatim — this shape
- * becomes the docs page). `balance`/`limit`/`resetsAt` are `null` for boolean
- * features (no usage to track) and for a metered feature the resolved plan
- * doesn't include (the normal "upsell" answer, §4).
+ * `check()`'s result (matched verbatim — this shape becomes the docs page).
+ * `balance`/`limit`/`resetsAt` are `null` for boolean features (no usage to
+ * track) and for a metered feature the resolved plan doesn't include (the
+ * normal "upsell" answer).
  */
 export interface CheckResult {
   /** Boolean feature: plan includes it. Metered: remaining balance > 0. */
@@ -121,12 +119,12 @@ export interface CheckResult {
   limit: number | null;
   /** End of the current billing period; `null` alongside `balance`. */
   resetsAt: Date | null;
-  /** The plan that answered — may be the group's default plan id (§4). */
+  /** The plan that answered — may be the group's default plan id. */
   planId: string;
 }
 
 /**
- * `report()`'s input (metered-usage.md §3). Mirrors `ReportInput<C>` in
+ * `report()`'s input. Mirrors `ReportInput<C>` in
  * `src/index.ts`, non-generic. `amount` defaults to `1` when omitted.
  */
 export interface ReportInput {
@@ -135,7 +133,7 @@ export interface ReportInput {
   amount?: number;
 }
 
-/** `report()`'s result — the post-decrement balance snapshot (metered-usage.md §3). */
+/** `report()`'s result — the post-decrement balance snapshot. */
 export interface ReportResult {
   balance: number;
   resetsAt: Date;
@@ -144,8 +142,7 @@ export interface ReportResult {
 function requireDatabase(ctx: BillingContext, method: "check" | "report"): DatabaseAdapter {
   if (!ctx.database) {
     throw new PayweaveConfigError(
-      `payweave.${method}() needs a database — pass a payweave/db/* adapter to createPayweave() ` +
-        "(metered-usage.md §3, unified-config.md §3).",
+      `payweave.${method}() needs a database — pass a payweave/db/* adapter to createPayweave().`,
     );
   }
   return ctx.database;
@@ -157,20 +154,20 @@ function assertPositiveSafeInteger(value: number, name: string): void {
   }
 }
 
-/** Resolved answer to "which plan/group/subscription governs this (customer, feature) pair" (§4). */
+/** Resolved answer to "which plan/group/subscription governs this (customer, feature) pair". */
 interface FeatureContext {
   group: string;
   type: FeatureType;
   /** The plan that answered — the active subscription's plan, or the group's default. */
   plan: ResolvedProduct;
-  /** `undefined` when the resolved plan doesn't include this feature (§4 bullet 3). */
+  /** `undefined` when the resolved plan doesn't include this feature. */
   inclusion: FeatureInclusion | undefined;
   /** The active subscription row, or `null` on the default-plan path. */
   subscription: PwSubscription | null;
   customerRow: PwCustomer;
 }
 
-/** Resolution order §4 — shared by `check` and `report`. */
+/** Resolution order — shared by `check` and `report`. */
 async function resolveFeatureContext(
   ctx: BillingContext,
   database: DatabaseAdapter,
@@ -191,11 +188,11 @@ async function resolveFeatureContext(
   }
   if (type === undefined || group === undefined) {
     throw new PayweaveValidationError(
-      `unknown feature "${featureId}" — configure it in \`products\` (plans-and-features.md §1).`,
+      `unknown feature "${featureId}" — configure it in \`products\`.`,
     );
   }
 
-  // §4/§11.1 — resolve the customer's internal `pwv_` id (every store keys
+  // Resolve the customer's internal `pwv_` id (every store keys
   // balances on it). Read first and upsert only when the customer is absent, so
   // the metering hot path avoids a write on the common (already-exists) case;
   // the read→upsert gap is safe because `upsert` is idempotent.
@@ -210,7 +207,7 @@ async function resolveFeatureContext(
     if (!plan) {
       throw new PayweaveValidationError(
         `customer's active subscription references plan "${subscription.planId}", which is no longer in ` +
-          "`products` — was it renamed or removed (plans-and-features.md §9)?",
+          "`products` — was it renamed or removed?",
       );
     }
     const inclusion = plan.includes.find((i) => i.featureId === featureId);
@@ -221,14 +218,14 @@ async function resolveFeatureContext(
   if (!defaultPlan) {
     throw new PayweaveConfigError(
       `group "${group}" has no default plan — check()/report() need one to answer for a customer with no ` +
-        "active subscription in that group (plans-and-features.md §5).",
+        "active subscription in that group.",
     );
   }
   const inclusion = defaultPlan.includes.find((i) => i.featureId === featureId);
   return { group, type, plan: defaultPlan, inclusion, subscription: null, customerRow };
 }
 
-/** Builds `balances.consume`'s creation-time `init` template (§5) — ignored when the row already exists. */
+/** Builds `balances.consume`'s creation-time `init` template — ignored when the row already exists. */
 async function buildMeteredInit(
   database: DatabaseAdapter,
   resolved: FeatureContext,
@@ -251,8 +248,8 @@ async function buildMeteredInit(
 }
 
 /**
- * `check()` — metered-usage.md §1/§3/§4. Never mutates the balance except the
- * lazy reset (§3); `consume: true` makes it the atomic gate (§6).
+ * `check()`. Never mutates the balance except the
+ * lazy reset; `consume: true` makes it the atomic gate.
  */
 export async function check(ctx: BillingContext, input: CheckInput): Promise<CheckResult> {
   const database = requireDatabase(ctx, "check");
@@ -269,7 +266,7 @@ export async function check(ctx: BillingContext, input: CheckInput): Promise<Che
   }
 
   if (!resolved.inclusion) {
-    // §4 bullet 3 — feature not included in the resolved plan. Normal answer.
+    // Feature not included in the resolved plan. Normal answer.
     return { allowed: false, balance: null, limit: null, resetsAt: null, planId: resolved.plan.id };
   }
 
@@ -300,8 +297,8 @@ export async function check(ctx: BillingContext, input: CheckInput): Promise<Che
 }
 
 /**
- * `report()` — metered-usage.md §1/§3/§4. Unconditional decrement — never
- * throws for "over limit"; `check` is the hard-blocking gate (§3, §6).
+ * `report()`. Unconditional decrement — never throws for "over limit";
+ * `check` is the hard-blocking gate.
  */
 export async function report(ctx: BillingContext, input: ReportInput): Promise<ReportResult> {
   const database = requireDatabase(ctx, "report");
@@ -313,8 +310,7 @@ export async function report(ctx: BillingContext, input: ReportInput): Promise<R
 
   if (resolved.type === "boolean") {
     throw new PayweaveValidationError(
-      `report() only accepts metered features — "${input.featureId}" is a boolean feature ` +
-        "(plans-and-features.md §10, metered-usage.md §3).",
+      `report() only accepts metered features — "${input.featureId}" is a boolean feature.`,
     );
   }
 
@@ -322,7 +318,7 @@ export async function report(ctx: BillingContext, input: ReportInput): Promise<R
     throw new PayweaveValidationError(
       `report(): feature "${input.featureId}" is not included in customer "${input.customerId}"'s current ` +
         `plan "${resolved.plan.id}" — call check() first, which answers { allowed: false } for a plan ` +
-        "lacking a feature (metered-usage.md §4).",
+        "lacking a feature.",
     );
   }
 

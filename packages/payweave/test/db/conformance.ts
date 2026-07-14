@@ -1,5 +1,5 @@
 /**
- * The `DatabaseAdapter` conformance suite (database.md §6, PW-702) — the
+ * The `DatabaseAdapter` conformance suite — the
  * contract's EXECUTABLE spec. Every first-party adapter (PW-704+) runs it in
  * CI via {@link runDatabaseConformance}; community adapters are expected to
  * run it too. It covers, per database.md §6:
@@ -23,7 +23,7 @@
  * failing CI. `conformance.smoke.test.ts` dry-runs the registration through
  * {@link collectConformanceTestPlan} so a broken suite still breaks the build.
  *
- * EXTENSIBILITY (PW-903): the suite is a flat list of named scenarios
+ * EXTENSIBILITY: the suite is a flat list of named scenarios
  * ({@link coreConformanceScenarios}); metering scenarios are appended via
  * `options.scenarios` (or by extending the core list) without reshaping the
  * `runDatabaseConformance(name, makeAdapter, options?)` signature.
@@ -83,7 +83,7 @@ export interface DatabaseConformanceOptions {
    * false = the adapter's documented non-transactional fallback mode (e.g.
    * MongoDB standalone, database.md §4) — the rollback-on-throw test is
    * replaced by an error-propagation test. Default true. Adapters that
-   * support both modes run the suite twice (database.md §6).
+   * support both modes run the suite twice.
    */
   atomicTransactions?: boolean;
   /** Extra scenarios appended AFTER the core list (PW-903 metering scenarios). */
@@ -812,7 +812,7 @@ const migrationsScenario: DatabaseConformanceScenario = {
       expect(Array.isArray(first.applied)).toBe(true);
       if (first.instructions !== undefined) {
         // Prisma/Drizzle style: never shells out, tells the user what to run
-        // (database.md §4) — applied stays empty and the instructions are stable.
+        // — applied stays empty and the instructions are stable.
         expect(first.instructions.length).toBeGreaterThan(0);
         expect(first.applied).toEqual([]);
         const second = await db.migrations.apply();
@@ -893,7 +893,7 @@ const meteredWalkthroughScenario: DatabaseConformanceScenario = {
         }
 
         // A `check`-style peek (amount: 0) at the limit — `allowed` would be
-        // `balance > 0`, i.e. false; the peek itself must not mutate (§3).
+        // `balance > 0`, i.e. false; the peek itself must not mutate.
         const atLimit = await db.balances.consume(consumeArgs(customer.id, { amount: 0, init }));
         expect(atLimit.used).toBe(100);
         expect(atLimit.limit - atLimit.used).toBe(0);
@@ -1114,7 +1114,7 @@ const planChangeResetScenario: DatabaseConformanceScenario = {
 /**
  * The core §6 scenario list, in registration order, PLUS PW-903's metering +
  * plan-change-reset scenarios APPENDED at the end (additive-only extension of
- * this list — see the file header's "EXTENSIBILITY (PW-903)" note; adapters
+ * this list — see the file header's "EXTENSIBILITY" note; adapters
  * calling {@link runDatabaseConformance} need no changes of their own to pick
  * these up, since they already spread this exported list).
  */
@@ -1186,7 +1186,7 @@ export function registerDatabaseConformance(
 
 /**
  * THE entry point adapters call from their own `*.test.ts` files
- * (database.md §6): registers the suite on the real vitest API.
+ * : registers the suite on the real vitest API.
  */
 export function runDatabaseConformance(
   name: string,
