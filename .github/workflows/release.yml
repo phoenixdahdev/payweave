@@ -1,33 +1,16 @@
 name: Release
 
-# ⚠️ DISABLED FOR NOW — automatic publishing to npm is intentionally OFF.
-#
-# This workflow is committed so the release path is ready, but it will NOT
-# publish anything yet. Two independent safeguards keep it off:
-#   1. It only runs on manual `workflow_dispatch` — the automatic
-#      `push: branches: [main]` trigger below is commented out.
-#   2. The job is gated on the repo variable `PUBLISH_ENABLED == 'true'`, so
-#      even a manual run is a no-op until that variable is set.
-#
-# TO ENABLE (when ready to publish `payweave` to npm):
-#   1. Configure npm Trusted Publishing (OIDC) for the `payweave` package
-#      (preferred, tokenless), OR add an `NPM_TOKEN` repo secret and uncomment
-#      the `NODE_AUTH_TOKEN` env line below.
-#   2. Create the repository variable `PUBLISH_ENABLED` = `true`.
-#   3. Uncomment the `push: branches: [main]` trigger.
-# The Changesets action then opens a "Version Packages" PR from accumulated
-# changesets; merging it publishes `payweave` (the only publishable package)
-# with npm provenance.
-
 on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/payweave/**"
   workflow_dispatch:
-  # push:
-  #   branches: [main]
 
 permissions:
-  contents: write # Changesets opens/updates the version PR and tags releases
+  contents: write
   pull-requests: write
-  id-token: write # npm provenance via OIDC trusted publishing
+  id-token: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -36,8 +19,6 @@ concurrency:
 jobs:
   release:
     name: Changesets — version & publish (payweave)
-    # Guard: no-op until publishing is explicitly enabled (see header).
-    if: ${{ vars.PUBLISH_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -67,8 +48,4 @@ jobs:
           title: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Provenance is emitted via OIDC (id-token: write above); no token needed
-          # for npm Trusted Publishing. If using a classic token instead, set the
-          # NPM_TOKEN secret and uncomment the next line:
-          # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
