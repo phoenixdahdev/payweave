@@ -43,7 +43,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-docs
 
 # tsup dts temp
 .tsup
+
+# local-only mirror of ../copy's planning docs, not part of the public repo
+/docs
