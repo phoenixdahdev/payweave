@@ -143,6 +143,14 @@ function fakePrompts(
  * resolved via the symlink above) — proves the scaffolded files not only
  * parse but that every import resolves and every call typechecks.
  */
+// Explicit, not left to TypeScript's implicit directory-walking discovery —
+// that walk's starting point depends on the host's cwd/rootNames in ways
+// that don't reliably agree between environments (a scaffolded fixture
+// under test/fixtures/cli/init/tmp-* is well outside this package's own
+// node_modules). Pointing typeRoots directly at this package's own
+// node_modules/@types removes that ambiguity.
+const PACKAGE_TYPE_ROOTS = [fileURLToPath(new URL("../../node_modules/@types", import.meta.url))];
+
 function typecheckFiles(absPaths: readonly string[], options: { dom?: boolean } = {}): string[] {
   const lib = options.dom ? ["lib.es2022.d.ts", "lib.dom.d.ts"] : ["lib.es2022.d.ts"];
   const program = ts.createProgram({
@@ -156,6 +164,8 @@ function typecheckFiles(absPaths: readonly string[], options: { dom?: boolean } 
       esModuleInterop: true,
       noEmit: true,
       lib,
+      types: ["node"],
+      typeRoots: PACKAGE_TYPE_ROOTS,
     },
   });
   return ts.getPreEmitDiagnostics(program).map((d) => {
