@@ -1,0 +1,23 @@
+{
+  "name": "payweave-example-express",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "build": "tsc",
+    "start": "node --env-file-if-exists=.env dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "payweave": "workspace:*",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@payweave/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1"
+  }
+}

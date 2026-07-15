@@ -1,0 +1,28 @@
+{
+  "name": "payweave-example-nestjs",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main",
+    "dev": "nest start --watch --env-file .env",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "payweave": "workspace:*",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@payweave/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.1.1",
+    "ts-node": "^10.9.2"
+  }
+}

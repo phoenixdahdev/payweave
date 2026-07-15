@@ -118,7 +118,7 @@ export function CodeBlock({
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto p-4 text-[13px] leading-relaxed">
+      <pre className="no-scrollbar overflow-x-auto p-4 text-[13px] leading-relaxed">
         <code className={`language-${language} font-mono`}>
           {lines.map((line, i) => (
             <span key={i} className="block min-h-[1.4em]">

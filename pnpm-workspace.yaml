@@ -7,7 +7,4 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   msw: false
-  # better-sqlite3 needs its postinstall to run prebuild-install (fetches the
-  # prebuilt native binding for this platform/Node ABI, PW-706); it is a
-  # devDependency + optional peerDependency of packages/payweave only.
   better-sqlite3: true
