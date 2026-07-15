@@ -1,10 +1,10 @@
 ---
 title: Webhooks
-description: Verify and normalize provider webhooks correctly — raw bytes, the right signature scheme per provider, constant-time comparison, fail-closed.
+description: One endpoint verifies and normalizes webhooks from every configured provider — the right signature scheme per provider, raw bytes, constant-time comparison, fail-closed.
 icon: Webhook
 ---
 
-Webhooks are a **security-critical, first-class citizen** in Payweave. One API verifies and parses webhooks for either provider, using each provider's correct signature scheme, and returns a typed, normalized event.
+Webhooks are a **security-critical, first-class citizen** in Payweave. One API verifies and parses webhooks for any provider you've configured on the client, using each provider's correct signature scheme, and returns a typed, normalized event.
 
 ## Verify on the raw bytes
 
@@ -19,7 +19,7 @@ const app = express()
 app.post("/webhooks/payments", express.raw({ type: "*/*" }), (req, res) => {
   let event
   try {
-    event = sdk.webhooks.constructEvent({ rawBody: req.body, headers: req.headers })
+    event = payweave.webhooks.constructEvent({ rawBody: req.body, headers: req.headers })
   } catch (err) {
     return res.sendStatus(400) // bad signature → PayweaveWebhookVerificationError
   }
@@ -29,7 +29,7 @@ app.post("/webhooks/payments", express.raw({ type: "*/*" }), (req, res) => {
   switch (event.unifiedType) {
     case "payment.succeeded":
       // Never grant value from the webhook alone — re-verify first:
-      // await sdk.unified.verify({ reference }) and check amount + currency + status.
+      // await payweave.verify({ reference }) and check amount + currency + status.
       break
   }
 })
@@ -37,31 +37,47 @@ app.post("/webhooks/payments", express.raw({ type: "*/*" }), (req, res) => {
 
 Capture the raw body per framework: `express.raw()` in Express, `await req.text()` in the Next.js App Router, the `rawBody` hook in Fastify, or buffering the stream in bare `http`.
 
+## One endpoint, every provider
+
+`payweave.webhooks` serves every provider configured on that client from a single route — it detects which one sent the request from the signature **header name present**, before the body is ever parsed:
+
+| Header | Provider |
+| --- | --- |
+| `stripe-signature` | Stripe |
+| `x-paystack-signature` | Paystack |
+| `verif-hash` | Flutterwave v3 |
+| `flutterwave-signature` | Flutterwave v4 |
+
+It rejects (always `PayweaveWebhookVerificationError`, fail-closed, never falling through to another verifier) when: no known header is present; **more than one** known header is present (ambiguous or forged — rejected even if one of them would verify); the header names a provider that isn't configured on this client; or a Flutterwave header doesn't match the version this client is configured for.
+
 ## Signature schemes (handled for you)
 
 | | Header | Scheme |
 | --- | --- | --- |
+| Stripe | `stripe-signature` | HMAC-SHA256 of `{timestamp}.{rawBody}` (hex), format `t=...,v1=...`; ±300s tolerance |
 | Paystack | `x-paystack-signature` | HMAC-SHA512 of the raw body (hex), keyed with your **secret key** |
 | Flutterwave v3 | `verif-hash` | Plain equality against the dashboard **secret hash** |
 | Flutterwave v4 | `flutterwave-signature` | HMAC-SHA256 of the raw body (base64), keyed with the dashboard secret hash |
 
 Comparison is always constant-time (`crypto.timingSafeEqual`) and fails closed.
 
-The Flutterwave dashboard **secret hash** is *not* your API key. Pass it as `webhookSecret`:
+The Flutterwave dashboard **secret hash** is *not* your API key. Pass it as `webhookSecret`; Stripe likewise needs its own dashboard-issued signing secret:
 
 ```ts
-const sdk = createFlutterwave({
-  secretKey: process.env.FLW_SECRET_KEY!,
-  webhookSecret: process.env.FLW_WEBHOOK_SECRET!, // dashboard secret hash
+const payweave = createPayweave({
+  flutterwave: {
+    secretKey: process.env.FLW_SECRET_KEY!,
+    webhookSecret: process.env.FLW_WEBHOOK_SECRET!, // dashboard secret hash
+  },
 })
 ```
 
-Paystack defaults `webhookSecret` to your `secretKey`; Flutterwave throws `PayweaveConfigError` if you call `webhooks.*` without one — never a silent pass.
+Paystack defaults `webhookSecret` to your `secretKey`; Stripe and Flutterwave throw `PayweaveConfigError` if you call `webhooks.*` for them without an explicit `webhookSecret` — never a silent pass.
 
 ## The normalized event
 
 ```ts
-const event = sdk.webhooks.constructEvent({ rawBody, headers })
+const event = payweave.webhooks.constructEvent({ rawBody, headers })
 // event: {
 //   provider: "paystack",
 //   type: "charge.success",           // provider-native name
@@ -72,21 +88,33 @@ const event = sdk.webhooks.constructEvent({ rawBody, headers })
 // }
 ```
 
+`event.apply()` is also attached to every event — see [Plans & features](/docs/plans-and-features#event-apply) for how it drives subscription/billing state.
+
 Unified event names map across providers (extend, never break):
 
-| unifiedType | Paystack | Flutterwave |
-| --- | --- | --- |
-| `payment.succeeded` | `charge.success` | `charge.completed` (successful) |
-| `payment.failed` | inspect charge status | `charge.completed` (failed) |
-| `transfer.succeeded` | `transfer.success` | `transfer.completed` (successful) |
-| `refund.processed` | `refund.processed` | refund events per docs |
-| `unknown` | anything unmapped | anything unmapped |
+| `unifiedType` | Paystack | Flutterwave | Stripe |
+| --- | --- | --- | --- |
+| `payment.succeeded` | `charge.success` | `charge.completed` (successful) | `payment_intent.succeeded`, `checkout.session.completed`\*, `checkout.session.async_payment_succeeded` |
+| `payment.failed` | — | `charge.completed` (failed) | `payment_intent.payment_failed`, `checkout.session.async_payment_failed` |
+| `transfer.succeeded` | `transfer.success` | `transfer.completed` (successful) | — |
+| `transfer.failed` | `transfer.failed` | `transfer.completed` (failed) | — |
+| `transfer.reversed` | `transfer.reversed` | — | — |
+| `refund.processed` | `refund.processed` | `refund.completed` | `charge.refunded`, `refund.updated`\* |
+| `subscription.created` | `subscription.create` | — | `customer.subscription.created` |
+| `subscription.updated` | `subscription.not_renew` | — | `customer.subscription.updated` |
+| `subscription.canceled` | `subscription.disable` | `subscription.cancelled` | `customer.subscription.deleted` |
+| `invoice.paid` | `invoice.update` | — | `invoice.paid`, `invoice.payment_succeeded` |
+| `invoice.payment_failed` | `invoice.payment_failed` | — | `invoice.payment_failed` |
+| `dispute.created` | `charge.dispute.create` | `chargeback.initiated` | `charge.dispute.created` |
+| `unknown` | anything unmapped | anything unmapped | anything unmapped |
+
+\* `checkout.session.completed` only normalizes to `payment.succeeded` when the session's `payment_status` is `paid` or `no_payment_required` — otherwise it's delivered as `unknown` (the real signal arrives later via `checkout.session.async_payment_succeeded`, for delayed payment methods). `refund.updated` only normalizes to `refund.processed` when its `status` is `succeeded`; every other transition is `unknown`.
 
 Unmapped events are still delivered as `unifiedType: "unknown"` with `type` preserved — an event is never dropped.
 
 ## Consumer checklist
 
 1. Always return `200` fast; process asynchronously.
-2. Never grant value from the webhook alone — re-verify via `sdk.unified.verify({ reference })` and check amount + currency + status.
-3. Be idempotent: providers redeliver. Dedupe on `event.dedupeKey`.
+2. Never grant value from the webhook alone — re-verify via `payweave.verify({ reference })` and check amount + currency + status.
+3. Be idempotent: providers redeliver. Dedupe on `event.dedupeKey` (or call `event.apply()`, which does this for you against your database).
 4. Exempt the webhook route from CSRF.

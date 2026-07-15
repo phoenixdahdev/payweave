@@ -1,13 +1,17 @@
 ---
 title: Unified layer
-description: Surface B — normalized, provider-agnostic operations with minor-unit Money, so your business logic never branches on provider.
+description: Surface B — normalized, provider-agnostic operations with minor-unit Money, plus the capability matrix that tells you what each provider actually supports.
 icon: Exchange
 ---
 
-The **unified layer** (Surface B) gives a smaller set of high-traffic operations identical signatures across providers. Write your integration once; swap the provider factory and it keeps working.
+The **unified layer** (Surface B) gives a smaller set of high-traffic operations identical signatures across the providers that support them. Write your integration once against `defaultProvider`; pass `{ provider }` per call to target another configured one.
 
 ```ts
-const checkout = await sdk.unified.checkout.create({
+const payweave = createPayweave({
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+})
+
+const checkout = await payweave.checkout.create({
   amount: { value: 500_000, currency: "NGN" }, // ALWAYS minor units
   customer: { email: "ada@example.com" },
   reference: "order_8123",
@@ -15,12 +19,12 @@ const checkout = await sdk.unified.checkout.create({
 })
 // → { checkoutUrl, reference, providerRef, raw }
 
-const result = await sdk.unified.verify({ reference: "order_8123" })
+const result = await payweave.verify({ reference: "order_8123" })
 // → { status, amount: { value, currency }, customer, paidAt, channel, raw }
 
-await sdk.unified.refunds.create({ reference })
-await sdk.unified.banks.list({ country: "NG" })
-await sdk.unified.banks.resolveAccount({ accountNumber: "0123456789", bankCode: "058" })
+await payweave.refunds.create({ reference })
+await payweave.banks.list({ country: "NG" })
+await payweave.banks.resolveAccount({ accountNumber: "0123456789", bankCode: "058" })
 ```
 
 ## Amounts are always minor units
@@ -29,6 +33,7 @@ Every amount is `{ value: number, currency: string }` where `value` is in **inte
 
 - **Paystack** already uses kobo → passed through.
 - **Flutterwave v3** uses major units → divided/multiplied by the currency's subunit factor (100 for NGN/GHS/KES/ZAR/USD; unknown currencies default to 100 with a logged warning).
+- **Stripe** already uses cents-style minor units → passed through, where implemented (see [capabilities](#capabilities)).
 
 ```ts
 // amount: { value: 500000, currency: "NGN" }
@@ -53,6 +58,51 @@ Your `reference` maps to Paystack `reference` and Flutterwave `tx_ref`. Omit it 
 | `reversed` | funds returned |
 
 Unknown statuses map to `pending` plus a logged warning — the SDK never throws on an unrecognized status.
+
+## Capabilities
+
+Not every provider supports every unified operation, and the SDK never silently drops a call onto the wrong endpoint — it gates each one against a capability matrix and throws before making a request.
+
+| Operation | Stripe | Paystack | Flutterwave |
+| --- | --- | --- | --- |
+| `checkout.create` | ✅ | ✅ | ✅ |
+| `verify` | ✅ | ✅ | ✅ |
+| `refunds.create` | ✅ | ✅ | ✅ |
+| `transfers.create` | ❌ | ✅ | ✅ |
+| `banks.list` | ❌ | ✅ | ✅ |
+| `banks.resolveAccount` | ❌ | ✅ | ✅ |
+
+Stripe doesn't map `transfers.create` or `banks.*` — Stripe Connect payouts are semantically different from Paystack/Flutterwave bank transfers, and bank-account lookup is Nigeria-specific.
+
+```ts
+const payweave = createPayweave({
+  stripe: { secretKey: process.env.STRIPE_SECRET_KEY! },
+})
+
+await payweave.transfers.create({ /* ... */ })
+// throws PayweaveValidationError: "transfers are not supported on stripe" — zero HTTP calls made
+```
+
+Introspect the matrix at runtime instead of hardcoding it:
+
+```ts
+payweave.capabilities("stripe")
+// → { "checkout.create": { supported: true }, verify: { supported: true },
+//     "refunds.create": { supported: true },
+//     "transfers.create": { supported: false, reason: "transfers are not supported on stripe" },
+//     "banks.list": { supported: false, reason: "banks.list is not supported on stripe" },
+//     "banks.resolveAccount": { supported: false, reason: "banks.resolveAccount is not supported on stripe" } }
+
+payweave.capabilities() // the full matrix, keyed by every configured provider
+```
+
+<Callout type="warn">
+  `checkout.create`, `verify`, and `refunds.create` show `supported: true` for
+  Stripe in the matrix above, but the runtime mapping hasn't shipped yet —
+  calling them today on a Stripe-only client throws a plain "not implemented
+  yet" error, not a capability error. Use [Surface A](/docs/providers)
+  (`payweave.stripe.*`) for Stripe until that lands.
+</Callout>
 
 ## The `raw` escape hatch
 

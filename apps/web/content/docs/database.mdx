@@ -1,0 +1,92 @@
+---
+title: Database
+description: Bring your own database to persist customers, subscriptions, feature balances, and webhook dedupe state — sqlite, Postgres, MongoDB, and Drizzle today; MySQL and Prisma next.
+icon: Database
+---
+
+Anything stateful in Payweave — [plans & features](/docs/plans-and-features), [metered usage](/docs/metered-usage), idempotent webhook processing — needs a database. You bring your own; Payweave ships adapters rather than owning your schema.
+
+```ts
+import { createPayweave } from "payweave"
+import { sqliteAdapter } from "payweave/db/sqlite"
+
+const payweave = createPayweave({
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+  database: sqliteAdapter({ url: "file:./payweave.db" }),
+})
+```
+
+## The contract
+
+Every adapter implements the same `DatabaseAdapter` shape, so switching adapters never changes your application code:
+
+- **`customers`** — `getByExternalId`, `upsert` (idempotent by your own external id), `linkProviderRef` (attach a Stripe/Paystack customer id).
+- **`plans`** — `getActiveVersion`, `listActive`, `pushVersion` (append-only version history, written by [`payweave.sync()`](/docs/plans-and-features#sync)).
+- **`subscriptions`** — `getActive`, `create`, `update` (one active subscription per customer per plan group).
+- **`balances`** — `get`, `consume` (the atomic, lazy-reset-aware hot path behind [`check()`/`report()`](/docs/metered-usage)), `resetTo`.
+- **`webhookEvents`** — `claim`, `markApplied` — the idempotency gate behind `event.apply()`.
+- **`migrations`** — `status()`, `apply()`.
+- **`transaction(fn)`**.
+
+## Choosing an adapter
+
+| Adapter | Import | Status |
+| --- | --- | --- |
+| sqlite / libSQL | `payweave/db/sqlite` | Ready |
+| Postgres | `payweave/db/postgres` | Ready |
+| Drizzle (Postgres, MySQL, or sqlite) | `payweave/db/drizzle` | Ready |
+| MongoDB | `payweave/db/mongodb` | Ready |
+| MySQL (`mysql2`) | `payweave/db/mysql` | Not implemented yet |
+| Prisma | `payweave/db/prisma` | Not implemented yet |
+
+The MySQL and Prisma subpaths already exist (so your imports won't need to change later) but currently throw a `PayweaveConfigError` naming the ticket that will implement them.
+
+## Configuring each adapter
+
+```ts
+import { sqliteAdapter } from "payweave/db/sqlite"
+
+// better-sqlite3 (file or in-memory)
+sqliteAdapter({ url: "file:./payweave.db" })
+sqliteAdapter({ url: ":memory:" })
+// libSQL / Turso
+sqliteAdapter({ url: "libsql://your-db.turso.io" })
+// or bring an already-constructed Database/Client instance
+```
+
+```ts
+import { postgresAdapter } from "payweave/db/postgres"
+
+postgresAdapter({ connectionString: process.env.DATABASE_URL! })
+// or an existing pg Pool
+postgresAdapter(existingPgPool)
+```
+
+```ts
+import { drizzleAdapter } from "payweave/db/drizzle"
+
+// dialect is auto-detected from your own drizzle-orm instance
+// (Postgres, MySQL, or sqlite); override with { dialect } if needed
+drizzleAdapter(db)
+```
+
+```ts
+import { mongodbAdapter } from "payweave/db/mongodb"
+
+mongodbAdapter({ url: process.env.MONGODB_URL!, dbName: "payweave" })
+// or an existing MongoClient
+mongodbAdapter({ client: existingMongoClient, dbName: "payweave" })
+```
+
+All four are synchronous and side-effect-free to construct — the underlying driver is dynamically imported and connected lazily on first query, so the relevant driver package (`better-sqlite3`, `@libsql/client`, `pg`, `drizzle-orm`, or `mongodb`) is an optional peer dependency: install whichever one you actually use.
+
+## Migrations
+
+`payweave push` (the CLI — see [CLI](/docs/cli#push)) applies migrations before syncing plans. Behavior differs by adapter family:
+
+- **sqlite and Postgres** run a real, forward-only SQL migration ledger — `apply()` executes DDL and records a checksum per migration.
+- **Drizzle** is instructions-only: `apply()` never runs DDL itself. It returns `{ applied: [], instructions }` pointing you at `drizzle-kit push`/`generate`+`migrate` — Drizzle already owns migrations for your schema, and Payweave doesn't fight it.
+- **MongoDB** takes a third approach: `apply()` idempotently creates the required collections and indexes directly (there's no schema migration to run), reporting a synthetic migration name for shape parity with the other adapters.
+- **Prisma**, once implemented, will follow the same instructions-only model as Drizzle.
+
+Check migration state at any time with `payweave status` (see [CLI](/docs/cli#status)) or `database.migrations.status()`.

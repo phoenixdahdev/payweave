@@ -1,0 +1,70 @@
+---
+title: CLI
+description: payweave init | push | listen | status — scaffold a project, migrate and sync plans, relay webhooks locally, and validate your setup.
+icon: Terminal
+---
+
+The `payweave` CLI ships with the SDK (`bin: payweave`) — no separate install.
+
+```ts
+payweave --help     // usage
+payweave --version  // CLI version
+```
+
+Every command's exit code is a plain contract: `0` success, `1` failure, `2` a usage error (bad flags, caught before anything runs).
+
+## `init`
+
+Interactive project scaffolding. Requires a TTY.
+
+```bash
+payweave init
+payweave init --force   # or -f — overwrite existing files without asking
+```
+
+Walks you through: which provider(s) to configure (at least one), which database (or none), and detects your framework from `package.json` (Next.js → Express → Fastify → plain Node, in that order — Next is also detected via a `next.config.*` file). It then writes `payweave.ts`, `products.ts`, `.env.example`, a framework-specific webhook route, a client helper, and a schema file for the database you chose. Without `--force`, each file that already exists is confirmed individually (default: don't overwrite); declining any of them stops the command with a summary and exit code `1`.
+
+## `push`
+
+Applies pending migrations, then diffs and syncs your [plans](/docs/plans-and-features) to every configured billing-capable provider.
+
+```bash
+payweave push
+payweave push --config ./config/payweave.ts
+payweave push -y   # skip the confirmation prompt (for CI)
+```
+
+Order of operations: load config → require a `database` (error if none) → apply pending migrations (this step is never gated behind a confirmation — migrations always run) → if no `products` are configured, print "nothing to sync" and exit `0` → compute and print the create/update/unchanged diff per plan → **confirm** (the only gated step — `-y` skips it; otherwise requires a TTY or exits `1`) → call [`sync()`](/docs/plans-and-features#sync) → print the resulting per-plan version and per-provider outcome, plus any skipped providers.
+
+## `listen`
+
+A local webhook relay for development — verifies incoming webhooks the same way your app would, then forwards them.
+
+```bash
+payweave listen --forward-to http://localhost:3000/webhooks/payments
+payweave listen --provider stripe --port 4242
+payweave listen -- npm run dev   # run a command alongside the relay
+```
+
+Flags: `--config <path>`, `--provider <id>` (restrict to one provider), `--forward-to <url>` (omit to call `event.apply()` directly instead of forwarding), `--retry <window>` (e.g. `5m`, `30s`, `1h`, or `none`; how long to keep retrying a failed delivery before dropping it), `--port <n>` (default `4242`; `0` picks an OS-assigned port), `--live` (required to start against a live-mode key — refuses otherwise, and warns loudly throughout if you do).
+
+There's no hosted tunnel or relay service — `listen` runs a plain local HTTP server, and reaching it from the public internet (ngrok, a Cloudflare Tunnel, your provider dashboard's own test-webhook feature, etc.) is up to you. Verification always runs on the raw bytes, exactly as in production; delivery to `--forward-to` is at-least-once within the retry window.
+
+## `status`
+
+Read-only validation of your setup — safe to run anytime, including in CI.
+
+```bash
+payweave status
+payweave status --throw   # exit 1 if any check fails, instead of just reporting
+```
+
+Always runs every check, never stopping at the first failure: config validity, database connectivity, migration status (pending migrations count as a failure), one harmless read-only call per configured provider (e.g. Stripe `products.list`, Paystack `transfers.balance()`, Flutterwave `banks.list("NG")`), and plan sync status. Database and product checks are skipped gracefully if you haven't configured them. Exit code is always `0` unless `--throw` is passed and something failed.
+
+## Config discovery
+
+`push`, `listen`, and `status` all resolve your config the same way (first match wins): an explicit `--config <path>` (a missing path here is a hard error, no fallback), else `payweave.ts` or `payweave.config.ts` at the project root (both existing is an ambiguity error), else `src/payweave.ts`. Loaded via a bundled loader — no build step or `tsx`/`ts-node` required in your project. The export must be the default export or a named `payweave` export.
+
+## Telemetry
+
+Anonymous, opt-out usage telemetry: command name, success/failure, duration, CLI version, Node major version, and — only on failure — an error class name. Never your config, paths, arguments, or any identifying data. Opt out with `PAYWEAVE_TELEMETRY_DISABLED=1` or the standard `DO_NOT_TRACK=1`; it's also automatically disabled under CI and test runners. A one-time notice prints on first run.

@@ -1,0 +1,48 @@
+---
+title: Metered usage
+description: Gate and record usage against a metered feature's limit, with automatic period resets — backed by your database, no separate metering service.
+icon: ChartIncrease
+---
+
+Metered [features](/docs/plans-and-features#feature) (`apiCalls({ limit: 10_000, reset: "month" })`) get two operations: `check()` to gate an action before it happens, and `report()` to record usage after it happens.
+
+## `check()`
+
+```ts
+const result = await payweave.check({
+  customerId: "cus_local_123",
+  featureId: "api-calls",
+  consume: true, // atomically decrement if allowed
+})
+// → { allowed, balance, limit, resetsAt, planId }
+
+if (!result.allowed) {
+  throw new Error("API call limit reached")
+}
+```
+
+Without `consume: true`, `check()` is a read-only peek — it still performs a lazy period reset if the current period has elapsed, but never decrements the balance. With `consume: true`, the check and the decrement are one atomic operation: `allowed` reflects whether the decrement was actually applied, so there's no race between checking and consuming.
+
+Resolution: the feature's home plan group → the customer's active subscription in that group (or the group's default plan, if no active subscription) → that plan's inclusion of the feature. A feature the resolved plan doesn't include returns `allowed: false` — never an error. A plan group with neither an active subscription nor a default plan throws `PayweaveConfigError`, since there's nothing to check against.
+
+## `report()`
+
+```ts
+await payweave.report({
+  customerId: "cus_local_123",
+  featureId: "api-calls",
+  amount: 1, // defaults to 1
+})
+// → { balance, resetsAt }
+```
+
+`report()` is an unconditional decrement — it never throws for being over limit (`check()` is the hard gate; use both together: `check()` before the action, `report()` after, or `check({ consume: true })` alone when the check and the usage are the same event). It does throw if called against a boolean feature, or a feature the customer's resolved plan doesn't include — both point you back at `check()`.
+
+## Period resets
+
+A metered balance resets automatically at the start of each period, computed lazily on the next `check()`/`report()` call rather than on a cron:
+
+- A paying, actively-subscribed customer's periods anchor to their subscription's `currentPeriodStart` (kept in sync by [`event.apply()`](/docs/plans-and-features#event-apply)).
+- A free or default-plan customer's period anchors to their first `check()`/`report()` call.
+
+`resetsAt` on both responses tells you exactly when the current period ends.

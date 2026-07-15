@@ -20,23 +20,42 @@ Payweave is **ESM-only** and requires **Node ≥ 20.19** (native `require(esm)` 
 
 <Step>
 
-## Initialize — the provider is narrowed at compile time
+## Initialize — one client, any provider(s)
+
+`createPayweave` takes one config object keyed by provider. Configure just the ones you use:
 
 ```ts
-import { createPaystack, createFlutterwave } from "payweave"
+import { createPayweave } from "payweave"
 
-const paystack = createPaystack({ secretKey: process.env.PAYSTACK_SECRET_KEY! })
-const flutterwave = createFlutterwave({ secretKey: process.env.FLW_SECRET_KEY! }) // v3 by default
+const payweave = createPayweave({
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+})
 
-paystack.provider // "paystack"
-paystack.environment // "test" | "live" — inferred from the key prefix
-// paystack.flutterwave  ->  compile-time error: property does not exist
+payweave.providers       // ["paystack"]
+payweave.defaultProvider // "paystack"
+payweave.environment     // "test" | "live" — inferred from the key prefix
+payweave.paystack        // PaystackClient — provider-native resources (Surface A)
 ```
 
-Test vs live is a **config change, not a code change** — it is inferred from the key prefix:
+Configure more than one provider and set `defaultProvider` to disambiguate which one the [unified layer](/docs/unified-layer) targets by default:
+
+```ts
+const payweave = createPayweave({
+  stripe: { secretKey: process.env.STRIPE_SECRET_KEY! },
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+  defaultProvider: "paystack", // required once more than one provider is configured
+})
+
+payweave.stripe   // StripeClient
+payweave.paystack // PaystackClient
+// payweave.flutterwave  ->  compile-time error: not configured
+```
+
+Test vs live is a **config change, not a code change** — inferred from the key prefix:
 
 | Provider | Test prefix | Live prefix |
 | --- | --- | --- |
+| Stripe | `sk_test_` / `rk_test_` | `sk_live_` / `rk_live_` |
 | Paystack | `sk_test_` | `sk_live_` |
 | Flutterwave v3 | `FLWSECK_TEST-` | `FLWSECK-` |
 
@@ -51,9 +70,11 @@ A malformed or unrecognized key throws `PayweaveConfigError` at construction, na
 The unified layer always takes **integer minor units**; the adapter converts to each provider's native units for you.
 
 ```ts
-const sdk = createPaystack({ secretKey: process.env.PAYSTACK_SECRET_KEY! })
+const payweave = createPayweave({
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+})
 
-const checkout = await sdk.unified.checkout.create({
+const checkout = await payweave.checkout.create({
   amount: { value: 500_000, currency: "NGN" }, // ₦5,000 in kobo
   customer: { email: "ada@example.com" },
   reference: "order_8123", // → Paystack `reference` / Flutterwave `tx_ref`
@@ -67,7 +88,7 @@ console.log(checkout.checkoutUrl)
 Redirect your customer to `checkoutUrl`. After they return, verify before granting value:
 
 ```ts
-const result = await sdk.unified.verify({ reference: "order_8123" })
+const result = await payweave.verify({ reference: "order_8123" })
 // → { status: "success" | "failed" | "pending" | "abandoned" | "reversed",
 //     amount: { value, currency }, customer, paidAt, channel, raw }
 
@@ -76,7 +97,7 @@ if (result.status === "success") {
 }
 ```
 
-Swap `createPaystack` for `createFlutterwave` and the exact same unified code keeps working.
+Configure a second provider and the exact same unified code keeps working — pass `{ provider: "stripe" }` per call to target a non-default one. Not every unified operation is supported on every provider; see [capabilities](/docs/unified-layer#capabilities).
 
 </Step>
 
@@ -84,7 +105,10 @@ Swap `createPaystack` for `createFlutterwave` and the exact same unified code ke
 
 ## Next steps
 
-- [Providers](/docs/providers) — the provider-native Surface A.
-- [Unified layer](/docs/unified-layer) — normalized, portable operations.
-- [Webhooks](/docs/webhooks) — verify and normalize events correctly.
+- [Providers](/docs/providers) — the provider-native Surface A for Stripe, Paystack, and Flutterwave.
+- [Unified layer](/docs/unified-layer) — normalized, portable operations and the capability matrix.
+- [Webhooks](/docs/webhooks) — verify and normalize events correctly, for any configured provider.
+- [Database](/docs/database) — persist customers, subscriptions, and usage.
+- [Plans & features](/docs/plans-and-features) and [Metered usage](/docs/metered-usage) — billing on top of your database.
+- [CLI](/docs/cli) — scaffold a project, migrate, sync plans, and relay webhooks locally.
 - [Errors & retries](/docs/errors-and-retries) — typed failures and retry behavior.

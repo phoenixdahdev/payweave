@@ -1,0 +1,99 @@
+---
+title: Plans & features
+description: Define plans and features once, push them to your billing providers, and subscribe customers — all backed by your own database.
+icon: Wallet
+---
+
+Plans and features are Payweave's billing layer on top of your [database](/docs/database). Define them once in code; Payweave keeps your providers and your database in sync.
+
+## `feature()`
+
+```ts
+import { feature } from "payweave/products"
+
+const seats = feature({ id: "seats", type: "boolean" })
+const apiCalls = feature({ id: "api-calls", type: "metered" })
+```
+
+A feature id matches `/^[a-z0-9][a-z0-9_-]{0,63}$/`. Calling a feature produces its inclusion in a plan:
+
+- **Boolean** — `seats()` → `{ featureId: "seats", type: "boolean" }`. Just presence/absence on a plan.
+- **Metered** — `apiCalls({ limit: 10_000, reset: "month" })` → adds `limit` (a positive integer) and `reset` (`"day" | "week" | "month" | "year"`), validated immediately.
+
+## `plan()`
+
+```ts
+import { plan } from "payweave/products"
+
+const free = plan({
+  id: "free",
+  group: "tier",
+  default: true,
+  includes: [seats(), apiCalls({ limit: 1_000, reset: "month" })],
+})
+
+const pro = plan({
+  id: "pro",
+  group: "tier", // mutually exclusive with "free" — one active plan per group per customer
+  price: { amount: 29, interval: "month" }, // MAJOR units — converted to minor units for you
+  includes: [seats(), apiCalls({ limit: 100_000, reset: "month" })],
+})
+```
+
+`plan()` validates as you write it: no duplicate feature ids, a helpful hint if you forgot to call a feature (`seats` instead of `seats()`), and `default: true` requires a `group`. Plans that share a `group` are mutually exclusive — a customer can only have one active plan per group. A plan with no `group` becomes its own singleton group. `price.currency` defaults to your config's `defaultCurrency` if omitted.
+
+Wire your plans into the client:
+
+```ts
+const payweave = createPayweave({
+  stripe: { secretKey: process.env.STRIPE_SECRET_KEY! },
+  database: sqliteAdapter({ url: "file:./payweave.db" }),
+  products: [free, pro],
+})
+```
+
+## `sync()`
+
+`payweave.sync()` — also available as `payweave push` (see [CLI](/docs/cli#push)) — pushes your plan definitions to every configured **billing-capable** provider (currently Stripe and Paystack; Flutterwave is skipped until it has a payment-plans resource) and records the pushed version in your database.
+
+It's idempotent: a plan's content is hashed, and an unchanged hash costs zero HTTP calls. On a real change, it adopts an already-tagged provider object if one exists (safe to resume after a crash) or creates a new one — Stripe diffs Product/Price and creates a new Price when pricing changes (archiving the old one, since Stripe prices are immutable); Paystack has no update endpoint, so a change always creates a new Plan, tagged via JSON stashed in its `description` field.
+
+```ts
+const result = await payweave.sync()
+// → { plans: [{ planId: "pro", version: 2, versionChanged: true,
+//               providers: { stripe: "created", paystack: "adopted" } }],
+//     skippedProviders: ["flutterwave"] }
+```
+
+## `subscribe()`
+
+```ts
+const result = await payweave.subscribe({
+  customerId: "cus_local_123",
+  planId: "pro",
+  successUrl: "https://app.example.com/billing/success",
+  cancelUrl: "https://app.example.com/billing/cancel",
+})
+
+if (result.status === "checkout") {
+  // redirect the customer to result.checkoutUrl
+} else {
+  // result.status === "active" — a free/default plan, activated immediately, no redirect
+}
+```
+
+Requires a `database`. Subscribing to a plan whose group already has an active subscription throws — a customer can't be on two plans in the same group at once. The default plan in a group is a no-op if that group is already free. A free, non-default plan activates immediately with zero provider calls. A **paid** plan must already be pushed (`payweave push`) — it creates a local `incomplete` row, ensures a provider customer exists, and starts a Stripe Checkout Session or Paystack transaction. That row only flips to `active` once the resulting webhook event is applied (below).
+
+## Event apply
+
+Every webhook event carries an `.apply()` method (see [Webhooks](/docs/webhooks)) that advances subscription and metered-balance state in your database:
+
+```ts
+const event = payweave.webhooks.constructEvent({ rawBody, headers })
+const result = await event.apply()
+// → { applied: true } | { applied: false, skipped: "already-applied" | "unmapped" | "unresolved" | "stale" }
+```
+
+It's idempotent — claiming, mutating, and marking the event applied happen in a single database transaction, so a crash mid-apply is safe to retry. Correlation back to your local subscription rides metadata stamped by `subscribe()` (`client_reference_id` / `pwv_reference` / `pwv_customer` / `pwv_plan`), not a lookup by provider id. Out-of-order delivery is handled: an event for an already-canceled subscription is left `"unresolved"` rather than resurrecting it, and an event reporting an older billing period than what's stored is `"stale"` and ignored. A plan change (via `customer.subscription.updated` or its Paystack/Flutterwave equivalents) resets all of that customer's metered balances for the new plan.
+
+Events you don't need to handle yourself always come back `"unmapped"` — safe no-ops, never thrown.
