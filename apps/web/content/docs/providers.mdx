@@ -1,75 +1,103 @@
 ---
 title: Providers
-description: Surface A — the provider-native, fully-typed layer for Paystack and Flutterwave v3, with Flutterwave v4 in progress.
+description: Surface A — the provider-native, fully-typed layer for Stripe, Paystack, and Flutterwave v3, with Flutterwave v4 in progress.
 icon: PlugSocket
 ---
 
-**Surface A** exposes every endpoint in each provider's official docs, 1:1, with the provider's own field names and semantics. TypeScript narrows the available namespaces based on the `provider` you configured, so autocomplete only ever shows the right surface.
+**Surface A** exposes every endpoint in each provider's official docs, 1:1, with the provider's own field names and semantics. Configure a provider under `createPayweave({...})` and its namespace appears on the client, fully typed; providers you didn't configure aren't there at all.
 
 ```ts
+const payweave = createPayweave({
+  stripe: { secretKey: process.env.STRIPE_SECRET_KEY! },
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+  defaultProvider: "paystack",
+})
+
 // Paystack — amounts in kobo (its native minor units)
-const tx = await paystack.paystack.transactions.initialize({
+const tx = await payweave.paystack.transactions.initialize({
   email: "ada@example.com",
   amount: 500_000, // ₦5,000
   currency: "NGN",
 })
 console.log(tx.authorization_url)
 
-// Flutterwave v3 — amounts in naira (its native major units)
-const link = await flutterwave.flutterwave.payments.create({
-  tx_ref: "order_8123",
-  amount: 5000, // ₦5,000
-  currency: "NGN",
-  redirect_url: "https://app.example.com/pay/callback",
-  customer: { email: "ada@example.com" },
+// Stripe — amounts in cents (its native minor units)
+const session = await payweave.stripe.checkout.sessions.create({
+  mode: "payment",
+  line_items: [{ price: "price_123", quantity: 1 }],
+  success_url: "https://app.example.com/success",
 })
 ```
 
 List endpoints expose an async iterator so you can page without bookkeeping:
 
 ```ts
-for await (const t of paystack.paystack.transactions.iterate({ perPage: 100 })) {
+for await (const t of payweave.paystack.transactions.iterate({ perPage: 100 })) {
   // ...
 }
 ```
 
-## Paystack (P0 — shipped)
+## Stripe (shipped)
 
-Typed 1:1 from the Paystack API reference. P0 modules:
+Typed 1:1 from the Stripe API reference:
 
-- `transactions` — initialize, verify, list, fetch, charge authorization, timeline, totals, export, partial debit
-- `refunds` — create, list, fetch
-- `customers` — create, list, fetch, update, validate, risk action
-- `transfers` + `transferRecipients` + `transfersControl`
-- `verification` / `misc` — resolve account, validate account, resolve card BIN, list banks/countries/states
-- `plans`, `subscriptions`
+- `checkout.sessions` — create, retrieve, list/iterate, expire, lineItems/iterateLineItems
+- `paymentIntents` — create, retrieve, confirm, capture, cancel, list/iterate
+- `customers` — create, retrieve, update, delete, list/iterate, search/iterateSearch
+- `products`, `prices` — create, retrieve, update, list/iterate, search/iterateSearch (prices have **no delete** endpoint — archive via `update({ active: false })`)
+- `subscriptions` — create, retrieve, update, cancel, resume (paused only), list/iterate
+- `subscriptionItems` — create, retrieve, update, delete, list/iterate
+- `refunds` — create, retrieve, update, cancel, list/iterate
+- `webhookEndpoints` — create, retrieve, update, delete, list/iterate
 
-Paystack-only features (e.g. Dedicated Virtual Accounts) appear only on a Paystack client.
+Config: `secretKey` (`sk_`/`rk_` + `_test_`/`_live_`), `webhookSecret` (`whsec_*`, required to verify Stripe webhooks), `apiVersion` (defaults to a pinned version, sent as `Stripe-Version` on every request), and an optional `accountId` (`acct_*`, sent as `Stripe-Account` for Connect). Requests that mutate state accept an `idempotencyKey`.
 
-## Flutterwave v3 (P0 — shipped, default)
+## Paystack (shipped)
 
-The default surface when `version` is omitted. P0 modules:
+Typed 1:1 from the Paystack API reference:
 
-- `payments` — create a Standard payment link
-- `transactions` — verify by id or `tx_ref`, list, fees, resend webhook, timeline
-- `refunds` — create, list, fetch
+- `transactions` — initialize, verify, list/iterate, fetch, chargeAuthorization, timeline, totals, partialDebit
+- `refunds` — create, list/iterate, fetch
+- `customers` — create, list/iterate, fetch, update, validate, setRiskAction, deactivateAuthorization
+- `transferRecipients` + `transfers` (initiate, list/iterate, fetch, verify, balance)
+- `misc` — listBanks, resolveAccountNumber, listCountries, listStates, resolveCardBin
+- `plans`, `subscriptions` (create, list/iterate, fetch, enable, disable)
+
+Config: just `secretKey` (`sk_test_`/`sk_live_`). Paystack has no separate webhook-signing secret — its HMAC is keyed off the same `secretKey`.
+
+## Flutterwave v3 (shipped, default)
+
+The default surface when `version` is omitted:
+
+- `payments.create` — hosted payment link
+- `transactions` — verify by id, verify by `tx_ref`, list/iterate, fees
+- `refunds` — create, list/iterate, fetch
 - `transfers` + `beneficiaries`
-- `banks` / `misc` — list banks by country, resolve account, balances
-- `charges` — card (with 3DES payload encryption via `encryptionKey`), bank transfer, USSD, mobile money, plus `validateCharge` (OTP/PIN)
+- `banks` — list by country, branches, resolve account
+- `charges` — card (3DES-encrypted via `encryptionKey`), bank transfer, USSD, NG account transfer, plus a `validate` step for OTP/PIN confirmation
+
+Flutterwave has no plans/subscriptions resource — build recurring billing with Payweave's own [plans & features](/docs/plans-and-features) layer instead. Amounts are **major units** (naira) here, unconverted.
 
 ## Flutterwave v4 (in progress)
 
-v4 is a different API generation (OAuth client-credentials auth, new resource ids, restructured payloads), modeled as its own adapter surface — not a re-skin of v3. Opt in explicitly:
+v4 is a different API generation (OAuth client-credentials auth, new resource ids, restructured payloads) — modeled as its own adapter surface, not a re-skin of v3. Opt in explicitly:
 
 ```ts
-const sdk = createFlutterwave({
-  version: "v4",
-  clientId: process.env.FLW_V4_CLIENT_ID!,
-  clientSecret: process.env.FLW_V4_CLIENT_SECRET!,
+const payweave = createPayweave({
+  flutterwave: {
+    version: "v4",
+    clientId: process.env.FLW_V4_CLIENT_ID!,
+    clientSecret: process.env.FLW_V4_CLIENT_SECRET!,
+  },
 })
 ```
 
-OAuth auth and the v4 webhook verifier are already in place; the resource surface (charges, customers, refunds, transfers) is landing next.
+OAuth token exchange (cached and refreshed automatically) and the v4 webhook verifier are already in place; the resource surface (charges, customers, refunds, transfers) hasn't landed yet.
+
+<Callout type="warn">
+  v4's API base URL and token endpoint are still unverified placeholders in the
+  current build — don't point this at production traffic yet.
+</Callout>
 
 ## Escape hatch
 

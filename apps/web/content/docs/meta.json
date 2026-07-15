@@ -9,6 +9,12 @@
     "providers",
     "unified-layer",
     "webhooks",
+    "---Billing---",
+    "database",
+    "plans-and-features",
+    "metered-usage",
+    "---Reference---",
+    "cli",
     "errors-and-retries"
   ]
 }

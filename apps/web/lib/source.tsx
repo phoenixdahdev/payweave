@@ -10,6 +10,10 @@ import {
   WebhookIcon,
   Alert01Icon,
   Book02Icon,
+  DatabaseIcon,
+  Wallet01Icon,
+  ChartIncreaseIcon,
+  TerminalIcon,
 } from "@hugeicons/core-free-icons"
 
 /**
@@ -26,6 +30,10 @@ const icons: Record<string, IconSvgElement> = {
   Exchange: Exchange01Icon,
   Webhook: WebhookIcon,
   Alert: Alert01Icon,
+  Database: DatabaseIcon,
+  Wallet: Wallet01Icon,
+  ChartIncrease: ChartIncreaseIcon,
+  Terminal: TerminalIcon,
 }
 
 export const source = loader({

@@ -1,42 +1,44 @@
 ---
 title: Introduction
-description: Why Payweave exists and what it gives you — one unified, fully-typed TypeScript SDK for Paystack and Flutterwave.
+description: Why Payweave exists and what it gives you — one unified, fully-typed TypeScript SDK for Stripe, Paystack, and Flutterwave, with billing, a database layer, and a CLI built in.
 icon: Sparkles
 ---
 
-**Payweave** is a unified, fully-typed TypeScript SDK for **Paystack** and **Flutterwave** — the two dominant payment providers across Nigeria and much of Africa. One install, one mental model, full endpoint coverage, and webhook verification done correctly out of the box.
+**Payweave** is a unified, fully-typed TypeScript SDK for **Stripe**, **Paystack**, and **Flutterwave** — one client, any provider, with subscriptions, metered usage, and webhook handling built in rather than bolted on.
 
 > One SDK, every provider — woven together.
 
 ## The problem
 
-Paystack and Flutterwave are everywhere, yet neither ships an official, maintained server-side JavaScript/TypeScript SDK. Today, integrating them means:
+Wiring up payments usually means:
 
-- hand-rolling `fetch`/`axios` calls against REST docs,
-- copy-pasting webhook verification snippets (and frequently getting signature validation wrong), and
-- duplicating all of that work the moment you add a second provider for redundancy or coverage.
+- hand-rolling `fetch` calls against each provider's REST docs, one provider at a time,
+- copy-pasting webhook verification snippets (and frequently getting signature validation wrong),
+- writing your own subscription/plan bookkeeping and database schema by hand, and
+- doing it all again the moment you add a second provider, a database, or usage-based billing.
 
-The cost is slow integrations, security bugs in webhook handling, and vendor lock-in through bespoke glue code.
+Payweave collapses that into one config object and one client.
 
 ## Why Payweave
 
-- **One import, any provider.** Initialize with a `provider` and get a fully-typed client for every endpoint that provider supports.
-- **Compile-time provider narrowing.** A Flutterwave client has no `.paystack` property, and vice-versa — enforced by the type system.
-- **Two surfaces, no lock-in.** Provider-native calls when you want full control; a normalized unified layer when you want portability. Every response carries `raw`, so the abstraction never traps you.
-- **Webhooks as a first-class, security-critical citizen.** Correct signature scheme per provider, raw-body verification, constant-time comparison, fail-closed.
-- **Money that can't drift.** Always integer minor units in the unified layer; the adapters convert (kobo ⇄ naira) so you never fat-finger a decimal.
-- **Typed errors that tell you whose fault it is** — yours (validation/auth), the customer's (declined), or transient (network/5xx).
-- **Tiny footprint.** ESM-only, `zod` as the *only* runtime dependency, Node ≥ 20.19.
+- **One client, every provider.** Configure one or more of Stripe, Paystack, and Flutterwave under `createPayweave({...})` and get a single, fully-typed client — see [Getting started](/docs/getting-started).
+- **Two surfaces, no lock-in.** Provider-native calls ([Surface A](/docs/providers)) when you want full control; a normalized [unified layer](/docs/unified-layer) (Surface B) when you want portability. Every response carries `raw`.
+- **Billing that persists.** Bring your own database and get `plan()`/`feature()` definitions, `subscribe()`, `sync()`, metered `check()`/`report()`, and idempotent webhook-driven state updates — see [Database](/docs/database), [Plans & features](/docs/plans-and-features), and [Metered usage](/docs/metered-usage).
+- **Webhooks as a first-class, security-critical citizen.** One endpoint verifies and normalizes events from every configured provider — correct signature scheme per provider, raw-body verification, constant-time comparison, fail-closed. See [Webhooks](/docs/webhooks).
+- **A CLI that ships with it.** `payweave init | push | listen | status` scaffolds a project, migrates + syncs plans to your providers, relays webhooks locally, and validates your setup — see [CLI](/docs/cli).
+- **Money that can't drift.** The unified layer always uses integer minor units; provider adapters convert so you never fat-finger a decimal.
+- **Typed errors that tell you whose fault it is** — yours (validation/auth), the customer's (declined), or transient (network/5xx). See [Errors & retries](/docs/errors-and-retries).
+- **Tiny SDK footprint.** ESM-only, `zod` is the SDK's only runtime dependency, Node ≥ 20.19.
 
 ## Status
 
-Pre-release. Paystack (P0), Flutterwave v3 (P0), webhooks, and the unified layer are implemented and tested. Flutterwave **v4** (OAuth auth + webhook verifier are in place; the resource surface is landing next) and the framework webhook adapters are in progress.
+Pre-release. Stripe, Paystack, and Flutterwave v3 (provider-native resources + webhooks), the unified layer, the database layer (sqlite, Postgres, MongoDB, Drizzle), plans/features/metered usage, and the CLI are implemented and tested. Still landing: the MySQL and Prisma database adapters, Flutterwave v4's resource surface (auth + webhooks are in place), and live provider contract tests.
 
 ## Two API surfaces
 
 Payweave deliberately exposes **both**:
 
-- **Surface A — provider-native.** Every endpoint from the provider's official docs, 1:1, with the provider's own field names. This is what makes it credible as "the official SDK."
-- **Surface B — unified.** A smaller set of high-traffic operations (`checkout`, `verify`, `refunds`, `transfers`, `banks`) with identical signatures across providers, for consumers who want portability.
+- **Surface A — provider-native.** Every endpoint from the provider's official docs, 1:1, with the provider's own field names. This is what makes it credible as "the official SDK" for each provider. See [Providers](/docs/providers).
+- **Surface B — unified.** A smaller set of high-traffic operations (`checkout`, `verify`, `refunds`, `transfers`, `banks`) with identical signatures across the providers that support them. See [Unified layer](/docs/unified-layer) for the exact capability matrix.
 
-Head to [Getting started](/docs/getting-started) to install and make your first checkout.
+Head to [Getting started](/docs/getting-started) to install and initialize your first client.

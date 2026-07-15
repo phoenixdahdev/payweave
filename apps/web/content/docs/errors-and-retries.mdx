@@ -17,7 +17,7 @@ import {
 } from "payweave"
 
 try {
-  await sdk.unified.verify({ reference: "unknown" })
+  await payweave.verify({ reference: "unknown" })
 } catch (err) {
   if (err instanceof PayweaveNotFoundError) {
     // handle a genuinely missing transaction
@@ -53,9 +53,9 @@ All errors extend `PayweaveError` with `provider`, `httpStatus`, `providerCode`,
 - `Retry-After` is honored when present.
 
 ```ts
-const sdk = createPaystack({
-  secretKey: process.env.PAYSTACK_SECRET_KEY!,
-  timeoutMs: 30_000,
+const payweave = createPayweave({
+  paystack: { secretKey: process.env.PAYSTACK_SECRET_KEY! },
+  timeoutMs: 30_000, // root-level default; overridable per-provider
   maxRetries: 2, // idempotent GETs only, unless an idempotency key is present
 })
 ```
