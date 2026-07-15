@@ -12,17 +12,17 @@ const COLUMNS = [
     links: [
       { label: "Documentation", href: "/docs" },
       { label: "Getting started", href: "/docs/getting-started" },
-      { label: "Providers", href: "/#providers" },
+      { label: "Providers", href: "/#threads" },
       { label: "Webhooks", href: "/docs/webhooks" },
     ],
   },
   {
-    title: "SDK",
+    title: "Platform",
     links: [
-      { label: "Unified layer", href: "/docs/unified-layer" },
-      { label: "Errors & retries", href: "/docs/errors-and-retries" },
+      { label: "Database", href: "/docs/database" },
+      { label: "Plans & features", href: "/docs/plans-and-features" },
+      { label: "CLI", href: "/docs/cli" },
       { label: "npm: payweave", href: "https://www.npmjs.com/package/payweave" },
-      { label: "GitHub", href: GITHUB_URL },
     ],
   },
 ]
@@ -36,7 +36,7 @@ export function SiteFooter() {
             <Wordmark />
             <p className="mt-4 text-sm text-muted-foreground">
               One SDK, every provider — woven together. The unified, fully-typed
-              TypeScript SDK for Paystack and Flutterwave.
+              TypeScript SDK for Stripe, Paystack, and Flutterwave.
             </p>
             <Link
               href={GITHUB_URL}

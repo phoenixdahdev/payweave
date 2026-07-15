@@ -39,13 +39,13 @@ function highlight(line: string): React.ReactNode {
       )
     if (t.kind === "keyword")
       return (
-        <span key={i} className="text-brand-2">
+        <span key={i} className="text-thread-teal">
           {t.text}
         </span>
       )
     if (t.kind === "fn")
       return (
-        <span key={i} className="text-brand">
+        <span key={i} className="text-thread-gold">
           {t.text}
         </span>
       )
@@ -96,9 +96,9 @@ export function CodeBlock({
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-destructive/70" />
-          <span className="size-2.5 rounded-full bg-chart-3/70" />
-          <span className="size-2.5 rounded-full bg-chart-2/70" />
+          <span className="size-2.5 rounded-full bg-thread-rust/70" />
+          <span className="size-2.5 rounded-full bg-thread-gold/70" />
+          <span className="size-2.5 rounded-full bg-thread-teal/70" />
           {filename ? (
             <span className="ml-3 font-mono text-xs text-muted-foreground">
               {filename}

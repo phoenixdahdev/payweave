@@ -18,7 +18,7 @@ const GITHUB_URL = "https://github.com/phoenixdahdev/payweave"
 
 const NAV_LINKS = [
   { label: "Docs", href: "/docs" },
-  { label: "Providers", href: "/#providers" },
+  { label: "Providers", href: "/#threads" },
   { label: "Features", href: "/#features" },
 ]
 

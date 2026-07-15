@@ -2,8 +2,9 @@ import { cn } from "@payweave/ui/lib/utils"
 import Image from "next/image"
 
 /**
- * Payweave "weave" mark — two interlocking strands, rendered in the brand
- * indigo→violet gradient. Original artwork (not copied from any source).
+ * Payweave "weave" mark — three interlocking strands (one per provider
+ * thread: gold, rust, teal), converging into one. Original artwork (not
+ * copied from any source).
  */
 export function WeaveMark({ className }: { className?: string }) {
   return (
@@ -13,25 +14,32 @@ export function WeaveMark({ className }: { className?: string }) {
       aria-hidden="true"
       className={cn("size-6", className)}
     >
-      <defs>
-        <linearGradient id="pw-weave" x1="0" y1="0" x2="24" y2="24">
-          <stop offset="0%" stopColor="var(--brand)" />
-          <stop offset="100%" stopColor="var(--brand-2)" />
-        </linearGradient>
-      </defs>
       <path
-        d="M3 8c4.5 0 4.5 8 9 8s4.5-8 9-8"
-        stroke="url(#pw-weave)"
-        strokeWidth="2.4"
+        d="M2 6c3.5 2 3.5 5 5 6"
+        stroke="var(--thread-gold)"
+        strokeWidth="2.1"
         strokeLinecap="round"
       />
       <path
-        d="M3 16c4.5 0 4.5-8 9-8s4.5 8 9 8"
-        stroke="url(#pw-weave)"
-        strokeWidth="2.4"
+        d="M2 12c3.5 0 3.5 0 5 0"
+        stroke="var(--thread-rust)"
+        strokeWidth="2.1"
         strokeLinecap="round"
-        opacity="0.55"
       />
+      <path
+        d="M2 18c3.5-2 3.5-5 5-6"
+        stroke="var(--thread-teal)"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7 12c3-2.4 4-2.4 7 0"
+        stroke="var(--foreground)"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+      <circle cx="19" cy="12" r="2.6" fill="var(--foreground)" />
     </svg>
   )
 }
@@ -39,8 +47,8 @@ export function WeaveMark({ className }: { className?: string }) {
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <Image src="/logo.svg" alt="Payweave" width={24} height={24} />
-      <span className="font-inter text-[15px] font-semibold tracking-tight">
+      <Image src="/logo.png" alt="Payweave" width={24} height={24} />
+      <span className="font-display text-[16px] font-semibold tracking-tight">
         Payweave
       </span>
     </span>
