@@ -30,8 +30,7 @@ import { Wordmark } from "@/components/brand"
 export type NavItem = { name: string; url: string }
 export type NavGroup = { label: string; items: NavItem[] }
 
-// Map each Payweave docs page to a Hugeicons glyph chosen to match EvilCharts'
-// per-concept icon treatment as closely as the free set allows.
+
 const ICONS: Record<string, IconSvgElement> = {
   "/docs": SparklesIcon, // Introduction
   "/docs/getting-started": Rocket01Icon, // Getting started
@@ -43,8 +42,7 @@ const ICONS: Record<string, IconSvgElement> = {
 
 const SPRING_CONFIG = { stiffness: 200, damping: 20 }
 
-// Animated active-item indicator: a faint full-height guide rail with a
-// spring-driven primary line and rotated diamond that slides to the active row.
+
 function GroupIndicator({ center }: { center: number }) {
   const y = useSpring(center, SPRING_CONFIG)
 
@@ -60,14 +58,12 @@ function GroupIndicator({ center }: { center: number }) {
       aria-hidden
       className="pointer-events-none absolute inset-y-0 left-0 w-4"
     >
-      {/* Faint full-height track */}
+
       <div className="bg-path absolute inset-y-1 left-[5.5px] w-px" />
-      {/* Spring-driven primary segment growing to the active row */}
       <motion.div
         className="bg-primary absolute top-1 left-[5.5px] w-px"
         style={{ height: lineHeight }}
       />
-      {/* Spring-driven rotated diamond at the active row */}
       <motion.div
         className="bg-primary absolute left-[3px] size-[6px] rounded-[1px]"
         style={{ top: diamondTop, rotate: 45 }}
@@ -91,8 +87,6 @@ function SidebarGroup({
   const [center, setCenter] = React.useState<number | null>(null)
 
   React.useLayoutEffect(() => {
-    // Measure the active row's vertical centre so the indicator can spring to
-    // it — a genuine DOM-measurement sync, which is what a layout effect is for.
     const el = activeIndex >= 0 ? itemRefs.current[activeIndex] : null
     const next = el ? el.offsetTop + el.offsetHeight / 2 : null
     setCenter(next)
@@ -157,7 +151,6 @@ export function DocsSidebar({
 
   return (
     <>
-      {/* Mobile scrim */}
       <div
         aria-hidden
         onClick={onNavigate}
@@ -169,7 +162,6 @@ export function DocsSidebar({
       <aside
         className={cn(
           "bg-sidebar text-sidebar-foreground z-50 flex w-64 shrink-0 flex-col",
-          // Mobile: off-canvas drawer toggled by the header menu button.
           "fixed inset-y-0 left-0 -translate-x-full transition-transform duration-200 sidebar:sticky sidebar:top-0 sidebar:h-svh sidebar:translate-x-0",
           open && "translate-x-0"
         )}

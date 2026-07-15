@@ -1,4 +1,5 @@
 import { cn } from "@payweave/ui/lib/utils"
+import Image from "next/image"
 
 /**
  * Payweave "weave" mark — two interlocking strands, rendered in the brand
@@ -38,8 +39,8 @@ export function WeaveMark({ className }: { className?: string }) {
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <WeaveMark />
-      <span className="font-heading text-[15px] font-semibold tracking-tight">
+      <Image src="/logo.svg" alt="Payweave" width={24} height={24} />
+      <span className="font-inter text-[15px] font-semibold tracking-tight">
         Payweave
       </span>
     </span>

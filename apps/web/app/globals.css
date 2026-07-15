@@ -1,26 +1,11 @@
-/*
- * Payweave web app design system.
- * Design system adapted from EvilCharts (https://github.com/legions-developer/evilcharts) — MIT.
- * The color tokens (oklch palette, radius, sidebar, chart & code colors), font
- * wiring (Inter default + Geist + JetBrains Mono), Fumadocs theming and Shiki
- * code styling are reused verbatim under the MIT license, with attribution.
- * Only the Payweave brand-accent tokens (--brand/--brand-2, wordmark gradient)
- * and the decorative hero grid are Payweave additions.
- */
 @import "tailwindcss";
-
-/* tw-animate-css (MIT) — the enter/exit animation utilities EvilCharts uses in
-   its docs shell (imported here just as EvilCharts imports it in its globals). */
 @import "tw-animate-css";
-
-/* Fumadocs UI — map its --color-fd-* tokens onto our shadcn variables so /docs
-   shares the exact same palette and fonts as the landing page. */
 @import "fumadocs-ui/css/shadcn.css";
 @import "fumadocs-ui/css/preset.css";
 
 @custom-variant dark (&:is(.dark *));
 
-/* Scan Fumadocs UI + the shared UI package for class names. */
+
 @source "../node_modules/fumadocs-ui/dist/**/*.js";
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 
@@ -65,8 +50,6 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* Payweave brand accent — indigo → violet, used for the wordmark, hero
-     highlights and provider badges only. */
   --color-brand: var(--brand);
   --color-brand-2: var(--brand-2);
 

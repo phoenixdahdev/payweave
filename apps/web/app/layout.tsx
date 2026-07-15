@@ -5,9 +5,6 @@ import { RootProvider } from "fumadocs-ui/provider/next"
 import "./globals.css"
 import { cn } from "@payweave/ui/lib/utils"
 
-// Fonts mirror EvilCharts (https://github.com/legions-developer/evilcharts, MIT):
-// Inter is the default UI font, Geist backs `--font-sans`, JetBrains Mono is the
-// mono font. Variable names match EvilCharts' layout exactly.
 const fontInter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",

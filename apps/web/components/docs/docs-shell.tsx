@@ -1,11 +1,3 @@
-// Adapted from EvilCharts (https://github.com/legions-developer/evilcharts) — MIT
-//
-// Docs shell layout, ported from EvilCharts' app/docs/layout.tsx: a left sidebar
-// on the sidebar background, and the page content rendered as a rounded panel
-// floating on that background with a decorative notch cut into the top-right
-// where the header controls sit. The scroll container uses the `no-scrollbar`
-// utility so no scrollbar is ever visible.
-
 "use client"
 
 import * as React from "react"
