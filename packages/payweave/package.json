@@ -1,6 +1,6 @@
 {
   "name": "payweave",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "One SDK, every provider, woven together — a unified TypeScript SDK for Stripe, Paystack, and Flutterwave, with a database layer, plans/features, metered usage, and a CLI built in.",
   "license": "MIT",
   "type": "module",
@@ -9,8 +9,8 @@
     "node": ">=20.19"
   },
   "repository": {
-      "type": "git",
-      "url": "https://github.com/phoenixdahdev/payweave.git"
+    "type": "git",
+    "url": "https://github.com/phoenixdahdev/payweave.git"
   },
   "files": [
     "dist"
