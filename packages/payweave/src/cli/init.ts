@@ -8,14 +8,18 @@
  *   3. Detect the framework from the project's own `package.json` (+ a
  *      filesystem marker for Next.js) — never prompted; detected, not
  *      chosen.
- *   4. Plan the scaffold (`./templates`): `payweave.ts`, `.env.example`, a
- *      framework-specific webhook route, an optional frontend client file,
- *      `products.ts` (skipped for a payments-only project — no database means
- *      no plans/features surface to define), and (Prisma/Drizzle only) a
- *      schema fragment.
+ *   4. Plan the scaffold (`./templates`). NestJS gets its own shape (see
+ *      "NestJS scaffold" below); every other framework gets `payweave.ts`,
+ *      a framework-specific webhook route, an optional frontend client
+ *      file, `products.ts` (skipped for a payments-only project — no
+ *      database means no plans/features surface to define), and
+ *      (Prisma/Drizzle only) a schema fragment. `.env.example` is common to
+ *      every framework.
  *   5. Write each file, prompting per-file before clobbering an existing one;
- *      `--force` skips every such prompt and always overwrites.
- *   6. Install `payweave` itself via the detected package manager (lockfile-based;
+ *      `--force` skips every such prompt and always overwrites —
+ *      EXCEPT `.env.example`, which is merged, never clobbered (see below).
+ *   6. NestJS only: add `PayweaveModule` to the project's own `AppModule`.
+ *   7. Install `payweave` itself via the detected package manager (lockfile-based;
  *      defaults to npm) — best-effort, `--no-install` to skip.
  *
  * ── Prompt seam ───────────────────────────────────────────────────────────
@@ -47,6 +51,15 @@
  * outcome, not silent partial success, matching `push.ts`'s precedent that a
  * declined confirmation is a failed run.
  *
+ * `.env.example` is the one exception to all of the above: it is never
+ * clobbered, not even with `--force`, and its overwrite never prompts or
+ * counts toward the "declined" exit-1 outcome. Teams fill in real local
+ * values in this file in practice, so replacing it wholesale on a second
+ * `init` run (e.g. after adding a provider) would silently discard that.
+ * When it already exists, {@link templates!mergeEnvExample} appends only the
+ * blocks whose vars aren't already present, and re-running with unchanged
+ * answers is a true no-op.
+ *
  * ── Framework detection ───────────────────────────────────────────────────
  * Targets five frameworks: Next.js App Router, Express, Fastify, NestJS, plus
  * a plain-`http` fallback. Detection is dependency-based (package.json deps +
@@ -58,6 +71,23 @@
  * because Nest's default HTTP adapter IS Express (`@nestjs/platform-express`),
  * so a Nest project very commonly also depends on `express` directly; checking
  * `@nestjs/core` first avoids misdetecting it as plain Express.
+ *
+ * ── NestJS scaffold ────────────────────────────────────────────────────────
+ * A loose root-level `payweave.ts` / `lib/payweave-client.ts` isn't how Nest
+ * projects are structured, so Nest gets a dedicated shape instead
+ * (`./templates/nest.ts`): a self-contained `src/payweave/` module —
+ * `payweave.service.ts` (an `@Injectable` wrapping `createPayweave(...)`),
+ * `payweave-webhook.controller.ts` (DI-wired to that service), and
+ * `payweave.module.ts` tying them together, plus a `README.md` documenting
+ * the folder. `products.ts` (when a database is configured) lives in the
+ * SAME folder rather than at the project root. After writing these files,
+ * {@link findAppModule} locates the project's `app.module.ts` (the `nest new`
+ * convention, `src/app.module.ts`, with a bounded recursive fallback search)
+ * and {@link wirePayweaveModule} adds `PayweaveModule` to its `imports` —
+ * a regex-based text patch, not a full TS-AST edit (see that function's own
+ * doc comment for why). Finding no `app.module.ts` is a warning, not a
+ * command failure: the generated module is still correct, and the user wires
+ * it in with one line by hand.
  *
  * ── Package manager + install ─────────────────────────────────────────────
  * After the scaffold is written, `payweave` itself is installed into the
@@ -71,14 +101,17 @@
  * user installs the dependency themselves.
  */
 import { spawn as nodeSpawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, type Dirent } from "node:fs";
+import { dirname, join, relative } from "node:path";
 
 import { cancel, confirm as clackConfirm, isCancel, multiselect, select } from "@clack/prompts";
 import mri from "mri";
 
 import type { CliCommand, CliIo } from "./command";
 import {
+  mergeEnvExample,
+  NEST_MODULE_PATH,
+  planNestScaffold,
   renderClientFile,
   renderDrizzleSchema,
   renderEnvExample,
@@ -273,22 +306,168 @@ export const defaultPrompts: InitPrompts = {
 
 /**
  * Plan every file the wizard would write for a given set of answers (pure —
- * no filesystem I/O). `products.ts` (the plan()/feature() billing surface)
- * is skipped for `database: "none"` — plans/features/metered usage all
- * require a database adapter, so a payments-only project has no use for it
- * and `payweave.ts` never imports it in that case (see `renderPayweaveConfig`).
+ * no filesystem I/O). NestJS gets an entirely different shape (see this
+ * module's doc comment, "NestJS scaffold") via `planNestScaffold`; every
+ * other framework gets the generic root-level files. `products.ts` (the
+ * plan()/feature() billing surface) is skipped for `database: "none"` —
+ * plans/features/metered usage all require a database adapter, so a
+ * payments-only project has no use for it and `payweave.ts` never imports it
+ * in that case (see `renderPayweaveConfig`). `.env.example` and the
+ * Prisma/Drizzle schema fragment are common to every framework, NestJS
+ * included.
  */
 export function planScaffold(input: ScaffoldInput): readonly ScaffoldFile[] {
-  const files: ScaffoldFile[] = [
-    { relPath: "payweave.ts", contents: renderPayweaveConfig(input) },
-    { relPath: ".env.example", contents: renderEnvExample(input) },
-    renderWebhookRoute(input),
-    renderClientFile(),
-  ];
-  if (input.database !== "none") files.push({ relPath: "products.ts", contents: renderProducts() });
-  if (input.database === "prisma") files.push(renderPrismaSchema());
-  if (input.database === "drizzle") files.push(renderDrizzleSchema());
+  const { database, framework } = input;
+
+  const files: ScaffoldFile[] =
+    framework === "nest"
+      ? [...planNestScaffold(input), { relPath: ".env.example", contents: renderEnvExample(input) }]
+      : [
+          { relPath: "payweave.ts", contents: renderPayweaveConfig(input) },
+          { relPath: ".env.example", contents: renderEnvExample(input) },
+          renderWebhookRoute(framework),
+          renderClientFile(),
+        ];
+
+  if (framework !== "nest" && database !== "none") {
+    files.push({ relPath: "products.ts", contents: renderProducts() });
+  }
+  if (database === "prisma") files.push(renderPrismaSchema());
+  if (database === "drizzle") files.push(renderDrizzleSchema());
   return files;
+}
+
+// ── NestJS: locate + patch the project's own app.module.ts ─────────────────
+
+const APP_MODULE_FILENAME = "app.module.ts";
+const APP_MODULE_WALK_IGNORED_DIRS = new Set(["node_modules", "dist", "build", ".git", ".turbo", "coverage"]);
+const APP_MODULE_WALK_MAX_DEPTH = 4;
+
+function walkForAppModule(dir: string, depth: number): string | undefined {
+  if (depth > APP_MODULE_WALK_MAX_DEPTH) return undefined;
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return undefined;
+  }
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name === APP_MODULE_FILENAME) return join(dir, entry.name);
+  }
+  for (const entry of entries) {
+    if (entry.isDirectory() && !APP_MODULE_WALK_IGNORED_DIRS.has(entry.name)) {
+      const found = walkForAppModule(join(dir, entry.name), depth + 1);
+      if (found !== undefined) return found;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Locate a Nest project's `app.module.ts` — tries the `nest new` convention
+ * (`src/app.module.ts`) first, then falls back to a bounded, ignore-list-aware
+ * recursive search for a file with that exact name (depth 4, skipping
+ * `node_modules`/build output/VCS dirs). Returns `undefined` rather than
+ * throwing when nothing is found; `runInitCommand` treats that as "warn, the
+ * user wires PayweaveModule in by hand" rather than a command failure.
+ */
+export function findAppModule(cwd: string): string | undefined {
+  const conventional = join(cwd, "src", APP_MODULE_FILENAME);
+  if (existsSync(conventional)) return conventional;
+  return walkForAppModule(cwd, 0);
+}
+
+/** The relative import specifier from `fromFile` back to `toFile`, extension stripped, always `./`- or `../`-prefixed. */
+function relativeImportSpecifier(fromFile: string, toFile: string): string {
+  const rel = relative(dirname(fromFile), toFile)
+    .replace(/\\/g, "/")
+    .replace(/\.ts$/, "");
+  return rel.startsWith(".") ? rel : `./${rel}`;
+}
+
+/**
+ * Scan forward from `openIndex` (which MUST point at a `[`, `{`, or `(`) and
+ * return the index of ITS matching closing bracket — tracking combined
+ * `[]`/`{}`/`()` depth (not just `[]`) so a NESTED structure of any kind
+ * doesn't get mistaken for the outer one's close, and skipping over
+ * string/template-literal contents (so a stray bracket character inside a
+ * quoted string is never counted). Returns `undefined` on unbalanced input.
+ *
+ * This is the fix for a real bug: `imports: [ConfigModule.forRoot({ load:
+ * [() => env] }), DatabaseModule, ...]` has a NESTED `[]` (the `load` array)
+ * that closes before the outer `imports` array does — a naive
+ * `[^\]]*` regex stops at that first `]` and inserts `PayweaveModule` INSIDE
+ * `load`, not as an imports-array sibling. `ConfigModule.forRoot({ load:
+ * [...] })` (and similar `SomeModule.forRootAsync({...})` calls) are an
+ * extremely common sight inside a real `imports` array, so this isn't an
+ * edge case to shrug off.
+ */
+function findMatchingBracketEnd(contents: string, openIndex: number): number | undefined {
+  let depth = 0;
+  let quote: string | undefined;
+  for (let i = openIndex; i < contents.length; i++) {
+    const ch = contents[i];
+    if (quote !== undefined) {
+      if (ch === "\\") i++; // skip the escaped character, whatever it is
+      else if (ch === quote) quote = undefined;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+    } else if (ch === "[" || ch === "{" || ch === "(") {
+      depth++;
+    } else if (ch === "]" || ch === "}" || ch === ")") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Insert `import { PayweaveModule } from "<importSpecifier>";` plus
+ * `PayweaveModule` into the `@Module({ imports: [...] })` array of an
+ * existing `app.module.ts`'s contents. A pure string transform — no fs I/O
+ * (`runInitCommand` reads/writes the file around this call). Idempotent:
+ * returns `contents` completely unchanged if `PayweaveModule` already
+ * appears anywhere in the file, so re-running `payweave init` never
+ * double-wires it.
+ *
+ * Regex-based (for locating the `imports:` KEY) plus a bracket-depth scan
+ * (for finding where its array actually ENDS, see
+ * {@link findMatchingBracketEnd}) — not a real TS parser. A full TS AST
+ * library would be a heavy dependency for a best-effort convenience step
+ * (same spirit as the install step: correct in the common/realistic case,
+ * and the generated module still works if the user has to wire it in by
+ * hand instead) — but the array boundary MUST be bracket-depth-aware, not a
+ * naive "stop at the first `]`", or a nested array/object literal inside
+ * `imports` silently corrupts the file (see `findMatchingBracketEnd`'s doc
+ * comment).
+ */
+export function wirePayweaveModule(contents: string, importSpecifier: string): string {
+  if (contents.includes("PayweaveModule")) return contents;
+
+  const importLine = `import { PayweaveModule } from "${importSpecifier}";`;
+  const importStatements = [...contents.matchAll(/^import .+;$/gm)];
+  const withImport =
+    importStatements.length > 0
+      ? (() => {
+          const last = importStatements[importStatements.length - 1]!;
+          const insertAt = last.index! + last[0].length;
+          return `${contents.slice(0, insertAt)}\n${importLine}${contents.slice(insertAt)}`;
+        })()
+      : `${importLine}\n${contents}`;
+
+  const keyMatch = withImport.match(/imports\s*:\s*\[/);
+  if (keyMatch === null || keyMatch.index === undefined) return withImport;
+
+  const openBracket = keyMatch.index + keyMatch[0].length - 1;
+  const closeBracket = findMatchingBracketEnd(withImport, openBracket);
+  if (closeBracket === undefined) return withImport; // unbalanced brackets — bail rather than risk corrupting the file
+
+  const inner = withImport.slice(openBracket + 1, closeBracket).replace(/,\s*$/, "").trim();
+  const newInner = inner.length === 0 ? "PayweaveModule" : `${inner}, PayweaveModule`;
+  return `${withImport.slice(0, openBracket + 1)}${newInner}${withImport.slice(closeBracket)}`;
 }
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
@@ -400,6 +579,22 @@ export async function runInitCommand(
   for (const file of files) {
     const abs = join(cwd, file.relPath);
     const existedBefore = existsSync(abs);
+
+    // `.env.example` is never clobbered — merged instead (see this module's
+    // doc comment, "Overwrite semantics"). Never prompts, never counts
+    // toward `skipped`/the exit-1 outcome, and ignores --force.
+    if (file.relPath === ".env.example" && existedBefore) {
+      const merged = mergeEnvExample({ providers, database, framework }, readFileSync(abs, "utf8"));
+      if (merged === undefined) {
+        io.out(redactLine(`  skip       ${file.relPath} (already up to date)`));
+      } else {
+        writeFileSync(abs, merged, "utf8");
+        written.push(file.relPath);
+        io.out(redactLine(`  update     ${file.relPath} (appended new variables)`));
+      }
+      continue;
+    }
+
     if (existedBefore && !force) {
       let overwrite: boolean;
       try {
@@ -422,6 +617,27 @@ export async function runInitCommand(
 
   io.out("");
   io.out(`payweave init: ${written.length} file(s) written, ${skipped.length} skipped.`);
+
+  if (framework === "nest") {
+    const appModulePath = findAppModule(cwd);
+    if (appModulePath === undefined) {
+      io.err(
+        "payweave init: could not find app.module.ts — add `PayweaveModule` to your root module's " +
+          "imports yourself (see src/payweave/payweave.module.ts).",
+      );
+    } else {
+      const before = readFileSync(appModulePath, "utf8");
+      const importSpecifier = relativeImportSpecifier(appModulePath, join(cwd, NEST_MODULE_PATH));
+      const after = wirePayweaveModule(before, importSpecifier);
+      const relAppModule = relative(cwd, appModulePath);
+      if (after === before) {
+        io.out(redactLine(`  skip       ${relAppModule} (PayweaveModule already wired)`));
+      } else {
+        writeFileSync(appModulePath, after, "utf8");
+        io.out(redactLine(`  update     ${relAppModule} (added PayweaveModule to imports)`));
+      }
+    }
+  }
 
   if (shouldInstall) {
     const manager = detectPackageManager(cwd);
@@ -452,7 +668,9 @@ export async function runInitCommand(
   io.out("");
   io.out("Next steps:");
   io.out("  1. Fill in real values in .env.example, then copy it to .env (or your framework's env file).");
-  if (database === "none") {
+  if (framework === "nest") {
+    io.out("  2. See src/payweave/README.md for what's in the module and what's left to configure.");
+  } else if (database === "none") {
     io.out("  2. Review payweave.ts, then start your server and try the generated webhook route.");
   } else {
     io.out("  2. Review payweave.ts and products.ts, then run `npx payweave push`.");

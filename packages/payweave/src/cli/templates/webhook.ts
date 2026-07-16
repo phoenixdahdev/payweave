@@ -1,30 +1,29 @@
 /**
- * Webhook route handler renderer, one per detected framework.
- * Every variant follows golden rule 6 (webhooks are
- * security-critical): the RAW received bytes are passed to
- * `payweave.webhooks.constructEvent` untouched — never re-serialized,
+ * Webhook route handler renderer, one per detected framework EXCEPT NestJS —
+ * Nest gets a full DI-wired module instead (`./nest.ts`'s
+ * `renderNestWebhookController`, injecting `PayweaveService` rather than
+ * constructing its own client), since a loose root-level handler function
+ * isn't how Nest projects are structured. Every variant here follows golden
+ * rule 6 (webhooks are security-critical): the RAW received bytes are passed
+ * to `payweave.webhooks.constructEvent` untouched — never re-serialized,
  * never parsed as JSON first.
  *
  * The Next.js and plain-`node:http` variants use only Web-standard
  * (`Request`/`Response`) and `node:*` types respectively — no external
- * framework type package is assumed installed. The Express/Fastify/Nest
- * variants import their framework's own types, which the DETECTED project
- * already has installed (that's how framework detection found it) — see
+ * framework type package is assumed installed. The Express/Fastify variants
+ * import their framework's own types, which the DETECTED project already has
+ * installed (that's how framework detection found it) — see
  * `test/cli/init.test.ts` for how each variant's validity is actually
- * asserted. The Nest variant is a single controller class the user adds to
- * their own `AppModule`, mirroring how Express/Fastify hand back a plain
- * function the user wires into their own app rather than generating a full
- * module/bootstrap tree.
+ * asserted.
  */
-import type { FrameworkId, ScaffoldFile, ScaffoldInput } from "./types";
+import type { FrameworkId, ScaffoldFile } from "./types";
 
-const WEBHOOK_ROUTE_PATH: Readonly<Record<FrameworkId, string>> = {
+const WEBHOOK_ROUTE_PATH: Readonly<Record<Exclude<FrameworkId, "nest">, string>> = {
   // App Router only, not Next.js generically; Pages Router scaffolding is
   // out of v1's scope.
   next: "app/api/webhooks/payweave/route.ts",
   express: "payweave-webhook.ts",
   fastify: "payweave-webhook-plugin.ts",
-  nest: "payweave-webhook.controller.ts",
   node: "payweave-webhook-server.ts",
 };
 
@@ -117,39 +116,6 @@ function renderFastify(relPath: string): string {
   ].join("\n");
 }
 
-function renderNest(relPath: string): string {
-  const payweaveImport = importRootPayweave(relPath);
-  return [
-    `import { Controller, Post, Req, Res, HttpStatus } from "@nestjs/common";`,
-    `import type { RawBodyRequest } from "@nestjs/common";`,
-    `import type { Request, Response } from "express";`,
-    `import { payweave } from "${payweaveImport}";`,
-    "",
-    "// Add PayweaveWebhookController to your AppModule's `controllers` array, and",
-    "// enable raw body capture when bootstrapping (main.ts):",
-    "//   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });",
-    "// Payweave verifies the EXACT raw bytes the provider signed (golden rule 6) —",
-    "// req.rawBody is only populated once rawBody: true is set above.",
-    '@Controller("api/webhooks/payweave")',
-    "export class PayweaveWebhookController {",
-    "  @Post()",
-    "  async handle(@Req() req: RawBodyRequest<Request>, @Res() res: Response): Promise<void> {",
-    "    let event;",
-    "    try {",
-    "      event = payweave.webhooks.constructEvent({ rawBody: req.rawBody!, headers: req.headers });",
-    "    } catch {",
-    '      res.status(HttpStatus.BAD_REQUEST).send("invalid webhook signature");',
-    "      return;",
-    "    }",
-    "",
-    "    await event.apply();",
-    "    res.status(HttpStatus.OK).end();",
-    "  }",
-    "}",
-    "",
-  ].join("\n");
-}
-
 function renderNode(relPath: string): string {
   const payweaveImport = importRootPayweave(relPath);
   return [
@@ -192,18 +158,16 @@ function renderNode(relPath: string): string {
   ].join("\n");
 }
 
-/** Render the framework-specific webhook route file. */
-export function renderWebhookRoute(input: ScaffoldInput): ScaffoldFile {
-  const relPath = WEBHOOK_ROUTE_PATH[input.framework];
-  switch (input.framework) {
+/** Render the framework-specific webhook route file. NestJS isn't a valid input — see this module's doc comment. */
+export function renderWebhookRoute(framework: Exclude<FrameworkId, "nest">): ScaffoldFile {
+  const relPath = WEBHOOK_ROUTE_PATH[framework];
+  switch (framework) {
     case "next":
       return { relPath, contents: renderNext(relPath) };
     case "express":
       return { relPath, contents: renderExpress(relPath) };
     case "fastify":
       return { relPath, contents: renderFastify(relPath) };
-    case "nest":
-      return { relPath, contents: renderNest(relPath) };
     case "node":
       return { relPath, contents: renderNode(relPath) };
   }

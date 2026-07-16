@@ -38,17 +38,24 @@ import type { CliIo } from "../../src/cli/command";
 import {
   detectFramework,
   detectPackageManager,
+  findAppModule,
   initCommand,
   planScaffold,
   runInitCommand,
+  wirePayweaveModule,
   type InitPrompts,
   type PackageManager,
   type RunToCompletion,
 } from "../../src/cli/init";
 import {
+  mergeEnvExample,
   renderClientFile,
   renderDrizzleSchema,
   renderEnvExample,
+  renderNestPayweaveModule,
+  renderNestPayweaveService,
+  renderNestReadme,
+  renderNestWebhookController,
   renderPayweaveConfig,
   renderPrismaSchema,
   renderProducts,
@@ -373,18 +380,19 @@ describe("template renderers", () => {
     }
   });
 
-  const FRAMEWORK_PATHS: Record<FrameworkId, string> = {
+  // NestJS is excluded — it doesn't go through renderWebhookRoute at all
+  // (see the "NestJS scaffold renderers" describe block below).
+  const FRAMEWORK_PATHS: Record<Exclude<FrameworkId, "nest">, string> = {
     next: "app/api/webhooks/payweave/route.ts",
     express: "payweave-webhook.ts",
     fastify: "payweave-webhook-plugin.ts",
-    nest: "payweave-webhook.controller.ts",
     node: "payweave-webhook-server.ts",
   };
 
-  it.each(Object.keys(FRAMEWORK_PATHS) as FrameworkId[])(
+  it.each(Object.keys(FRAMEWORK_PATHS) as Exclude<FrameworkId, "nest">[])(
     "renderWebhookRoute: %s writes to the documented path and imports payweave.webhooks.constructEvent",
     (framework) => {
-      const file = renderWebhookRoute({ providers: ["stripe"], database: "none", framework });
+      const file = renderWebhookRoute(framework);
       expect(file.relPath).toBe(FRAMEWORK_PATHS[framework]);
       expect(file.contents).toContain("payweave.webhooks.constructEvent");
       expect(file.contents).toContain("event.apply()");
@@ -393,23 +401,15 @@ describe("template renderers", () => {
   );
 
   it("renderWebhookRoute: Next.js computes the correct relative import depth back to payweave.ts", () => {
-    const file = renderWebhookRoute({ providers: ["stripe"], database: "none", framework: "next" });
+    const file = renderWebhookRoute("next");
     expect(file.contents).toContain('from "../../../../payweave";');
   });
 
   it("renderWebhookRoute: root-level frameworks import payweave from ./payweave", () => {
-    for (const framework of ["express", "fastify", "nest", "node"] as const) {
-      const file = renderWebhookRoute({ providers: ["stripe"], database: "none", framework });
+    for (const framework of ["express", "fastify", "node"] as const) {
+      const file = renderWebhookRoute(framework);
       expect(file.contents).toContain('from "./payweave";');
     }
-  });
-
-  it("renderWebhookRoute: nest generates a controller the user adds to their own AppModule, gated on rawBody: true", () => {
-    const file = renderWebhookRoute({ providers: ["stripe"], database: "none", framework: "nest" });
-    expect(file.contents).toContain("@Controller(");
-    expect(file.contents).toContain("RawBodyRequest");
-    expect(file.contents).toContain("rawBody: true");
-    expect(file.contents).toContain("req.rawBody");
   });
 
   it("renderPrismaSchema: emits the pw_ table fragment, no pw_migrations (database.md §4)", () => {
@@ -433,6 +433,106 @@ describe("template renderers", () => {
     expect(file.contents).not.toContain('from "payweave"');
     expect(file.contents).toContain("fetch(");
     assertParses(file.contents, "lib/payweave-client.ts");
+  });
+
+  it("mergeEnvExample: appends only the blocks with a var not already present", () => {
+    const existing = "# my own notes\nCUSTOM_VAR=already-here\n";
+    const merged = mergeEnvExample({ providers: ["stripe"], database: "none", framework: "node" }, existing);
+    expect(merged).toContain("CUSTOM_VAR=already-here");
+    expect(merged).toContain("STRIPE_SECRET_KEY=");
+    assertNoSecretShapes(merged ?? "", ".env.example (merged)");
+  });
+
+  it("mergeEnvExample: returns undefined when every needed var is already present (true no-op)", () => {
+    const existing = renderEnvExample({ providers: ["stripe"], database: "none", framework: "node" });
+    const merged = mergeEnvExample({ providers: ["stripe"], database: "none", framework: "node" }, existing);
+    expect(merged).toBeUndefined();
+  });
+
+  it("mergeEnvExample: a newly-added provider appends just its own block, not a duplicate of the existing one", () => {
+    const existing = renderEnvExample({ providers: ["stripe"], database: "none", framework: "node" });
+    const merged = mergeEnvExample(
+      { providers: ["stripe", "paystack"], database: "none", framework: "node" },
+      existing,
+    );
+    expect(merged).toContain("PAYSTACK_SECRET_KEY=");
+    expect(merged?.split("STRIPE_SECRET_KEY=")).toHaveLength(2); // appears once — not re-added
+  });
+});
+
+// ── 2b. NestJS scaffold renderers (pure — no filesystem I/O) ────────────────
+
+describe("NestJS scaffold renderers", () => {
+  it("renderNestPayweaveService: wraps createPayweave in an injectable service, reusing the root renderer's provider config shape", () => {
+    const file = renderNestPayweaveService({ providers: ["stripe"], database: "none", framework: "nest" });
+    expect(file.relPath).toBe("src/payweave/payweave.service.ts");
+    expect(file.contents).toContain('import { Injectable } from "@nestjs/common";');
+    expect(file.contents).toContain("@Injectable()");
+    expect(file.contents).toContain("export class PayweaveService {");
+    expect(file.contents).toContain("readonly client = createPayweave({");
+    expect(file.contents).toContain("STRIPE_SECRET_KEY");
+    assertParses(file.contents, "payweave.service.ts (stripe/none)");
+    assertNoSecretShapes(file.contents, "payweave.service.ts (stripe/none)");
+  });
+
+  it("renderNestPayweaveService: multiple providers still requires defaultProvider", () => {
+    const file = renderNestPayweaveService({
+      providers: ["stripe", "paystack"],
+      database: "none",
+      framework: "nest",
+    });
+    expect(file.contents).toContain('defaultProvider: "stripe"');
+    assertParses(file.contents, "payweave.service.ts (multi-provider)");
+  });
+
+  it("renderNestPayweaveService: a configured database imports products from the SAME payweave folder, not the project root", () => {
+    const file = renderNestPayweaveService({ providers: ["stripe"], database: "sqlite", framework: "nest" });
+    expect(file.contents).toContain('import { free, pro } from "./products";');
+    expect(file.contents).toContain("products: [free, pro]");
+    assertParses(file.contents, "payweave.service.ts (sqlite)");
+  });
+
+  it("renderNestPayweaveService: prisma/drizzle point one directory shallower than the root renderer (../lib/*, not ./lib/*)", () => {
+    const prisma = renderNestPayweaveService({ providers: ["stripe"], database: "prisma", framework: "nest" });
+    expect(prisma.contents).toContain('from "../lib/prisma";');
+    const drizzle = renderNestPayweaveService({ providers: ["stripe"], database: "drizzle", framework: "nest" });
+    expect(drizzle.contents).toContain('from "../lib/db";');
+  });
+
+  it("renderNestWebhookController: injects PayweaveService via DI rather than constructing its own client", () => {
+    const file = renderNestWebhookController();
+    expect(file.relPath).toBe("src/payweave/payweave-webhook.controller.ts");
+    expect(file.contents).toContain('import { PayweaveService } from "./payweave.service";');
+    expect(file.contents).toContain("constructor(private readonly payweaveService: PayweaveService)");
+    expect(file.contents).toContain("this.payweaveService.client.webhooks.constructEvent");
+    expect(file.contents).toContain("RawBodyRequest");
+    expect(file.contents).toContain("rawBody: true");
+    expect(file.contents).toContain("req.rawBody");
+    assertParses(file.contents, "payweave-webhook.controller.ts");
+  });
+
+  it("renderNestPayweaveModule: wires the service + controller together and exports the service", () => {
+    const file = renderNestPayweaveModule();
+    expect(file.relPath).toBe("src/payweave/payweave.module.ts");
+    expect(file.contents).toContain("providers: [PayweaveService]");
+    expect(file.contents).toContain("controllers: [PayweaveWebhookController]");
+    expect(file.contents).toContain("exports: [PayweaveService]");
+    assertParses(file.contents, "payweave.module.ts");
+  });
+
+  it("renderNestReadme: documents products.ts + npx payweave push only when a database is configured", () => {
+    const withDb = renderNestReadme({ providers: ["stripe"], database: "sqlite", framework: "nest" });
+    expect(withDb.relPath).toBe("src/payweave/README.md");
+    expect(withDb.contents).toContain("products.ts");
+    expect(withDb.contents).toContain("npx payweave push");
+
+    const withoutDb = renderNestReadme({ providers: ["stripe"], database: "none", framework: "nest" });
+    expect(withoutDb.contents).not.toContain("products.ts");
+  });
+
+  it("renderNestReadme: always documents the rawBody: true bootstrap requirement", () => {
+    const file = renderNestReadme({ providers: ["stripe"], database: "none", framework: "nest" });
+    expect(file.contents).toContain("rawBody: true");
   });
 });
 
@@ -480,6 +580,211 @@ describe("planScaffold", () => {
     );
     expect(paths).toContain("payweave-schema.ts");
     expect(paths).not.toContain("payweave.prisma");
+  });
+
+  it("nest: scaffolds a payweave module instead of the generic root files", () => {
+    const paths = planScaffold({ providers: ["stripe"], database: "none", framework: "nest" }).map(
+      (f) => f.relPath,
+    );
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        "src/payweave/payweave.service.ts",
+        "src/payweave/payweave-webhook.controller.ts",
+        "src/payweave/payweave.module.ts",
+        "src/payweave/README.md",
+        ".env.example",
+      ]),
+    );
+    expect(paths).not.toContain("payweave.ts");
+    expect(paths).not.toContain("lib/payweave-client.ts");
+    expect(paths.some((p) => p.endsWith("products.ts"))).toBe(false);
+  });
+
+  it("nest + a configured database: products.ts lives inside src/payweave/, not at the project root", () => {
+    const paths = planScaffold({ providers: ["stripe"], database: "sqlite", framework: "nest" }).map(
+      (f) => f.relPath,
+    );
+    expect(paths).toContain("src/payweave/products.ts");
+    expect(paths).not.toContain("products.ts");
+  });
+
+  it("nest still gets the root-level Prisma/Drizzle schema fragment", () => {
+    const prismaPaths = planScaffold({ providers: ["stripe"], database: "prisma", framework: "nest" }).map(
+      (f) => f.relPath,
+    );
+    expect(prismaPaths).toContain("payweave.prisma");
+    const drizzlePaths = planScaffold({ providers: ["stripe"], database: "drizzle", framework: "nest" }).map(
+      (f) => f.relPath,
+    );
+    expect(drizzlePaths).toContain("payweave-schema.ts");
+  });
+});
+
+// ── 2c. NestJS app.module.ts auto-wire (pure string transform + fs discovery) ─
+
+describe("wirePayweaveModule", () => {
+  const FRESH_APP_MODULE = [
+    `import { Module } from "@nestjs/common";`,
+    `import { AppController } from "./app.controller";`,
+    `import { AppService } from "./app.service";`,
+    "",
+    "@Module({",
+    "  imports: [],",
+    "  controllers: [AppController],",
+    "  providers: [AppService],",
+    "})",
+    "export class AppModule {}",
+    "",
+  ].join("\n");
+
+  it("adds the import and fills an empty imports array", () => {
+    const result = wirePayweaveModule(FRESH_APP_MODULE, "./payweave/payweave.module");
+    expect(result).toContain('import { PayweaveModule } from "./payweave/payweave.module";');
+    expect(result).toContain("imports: [PayweaveModule]");
+  });
+
+  it("appends to an already-populated imports array", () => {
+    const withExisting = FRESH_APP_MODULE.replace("imports: []", "imports: [ConfigModule]");
+    const result = wirePayweaveModule(withExisting, "./payweave/payweave.module");
+    expect(result).toContain("imports: [ConfigModule, PayweaveModule]");
+  });
+
+  it("handles a trailing comma in an existing imports array without producing a double comma", () => {
+    const withTrailingComma = FRESH_APP_MODULE.replace("imports: []", "imports: [ConfigModule,]");
+    const result = wirePayweaveModule(withTrailingComma, "./payweave/payweave.module");
+    expect(result).toContain("imports: [ConfigModule, PayweaveModule]");
+    expect(result).not.toContain(",,");
+  });
+
+  // Regression: a real run against a production NestJS app.module.ts inserted
+  // PayweaveModule INSIDE ConfigModule.forRoot's `load` array instead of the
+  // outer imports array, because a naive "stop at the first ]" scan hit
+  // `load: [() => env]`'s closing bracket before the outer array's own.
+  // ConfigModule.forRoot({ load: [...] }) (and similar `*.forRootAsync({...})`
+  // calls) are extremely common inside a real imports array, so this is a
+  // realistic case, not a contrived one.
+  it("a nested array inside a forRoot(...) call doesn't get mistaken for the outer imports array's close", () => {
+    const withNestedArray = [
+      `import { Module } from "@nestjs/common";`,
+      `import { ConfigModule } from "@nestjs/config";`,
+      `import { DatabaseModule } from "./database/database.module";`,
+      `import { env } from "./common/env";`,
+      "",
+      "@Module({",
+      "  imports: [ConfigModule.forRoot({ isGlobal: true, load: [() => env] }),",
+      "    DatabaseModule,",
+      "  ],",
+      "})",
+      "export class AppModule {}",
+      "",
+    ].join("\n");
+    const result = wirePayweaveModule(withNestedArray, "./payweave/payweave.module");
+    // The bug: this string showing up ANYWHERE means PayweaveModule ended up
+    // inside `load`'s factory array instead of as an imports-array sibling.
+    expect(result).not.toContain("load: [() => env, PayweaveModule]");
+    expect(result).toContain("load: [() => env]");
+    expect(result).toContain("DatabaseModule, PayweaveModule");
+    assertParses(result, "app.module.ts (nested forRoot call)");
+  });
+
+  it("a nested object literal (forRootAsync-style) doesn't get mistaken for the outer imports array's close", () => {
+    const withNestedObject = [
+      `import { Module } from "@nestjs/common";`,
+      `import { TypeOrmModule } from "@nestjs/typeorm";`,
+      `import { SharedModule } from "./shared/shared.module";`,
+      "",
+      "@Module({",
+      "  imports: [",
+      "    TypeOrmModule.forRootAsync({ useFactory: () => ({ type: \"postgres\" }) }),",
+      "    SharedModule,",
+      "  ],",
+      "})",
+      "export class AppModule {}",
+      "",
+    ].join("\n");
+    const result = wirePayweaveModule(withNestedObject, "./payweave/payweave.module");
+    expect(result).toContain("SharedModule, PayweaveModule");
+    expect(result).not.toContain('"postgres" }), PayweaveModule');
+    assertParses(result, "app.module.ts (nested forRootAsync call)");
+  });
+
+  it("an unbalanced bracket character inside a string literal doesn't throw off the depth count", () => {
+    // "weird]bracket" has a lone `]` with no matching `[` — without
+    // quote-awareness this decrements depth prematurely and the scanner
+    // would think the array closed at the wrong `)`.
+    const withBracketInString = [
+      `import { Module } from "@nestjs/common";`,
+      `import { FilesModule } from "./files/files.module";`,
+      "",
+      "@Module({",
+      '  imports: [FilesModule.register({ path: "weird]bracket" }), FilesModule],',
+      "})",
+      "export class AppModule {}",
+      "",
+    ].join("\n");
+    const result = wirePayweaveModule(withBracketInString, "./payweave/payweave.module");
+    expect(result).toContain('path: "weird]bracket"'); // the string literal itself is untouched
+    expect(result).toContain("}), FilesModule, PayweaveModule");
+    assertParses(result, "app.module.ts (bracket inside string)");
+  });
+
+  it("is idempotent — returns the input completely unchanged when PayweaveModule is already present", () => {
+    const alreadyWired = wirePayweaveModule(FRESH_APP_MODULE, "./payweave/payweave.module");
+    const result = wirePayweaveModule(alreadyWired, "./payweave/payweave.module");
+    expect(result).toBe(alreadyWired);
+  });
+
+  it("inserts the import line immediately after the last existing import statement", () => {
+    const result = wirePayweaveModule(FRESH_APP_MODULE, "./payweave/payweave.module");
+    const lines = result.split("\n");
+    const lastOriginalImportIndex = lines.indexOf('import { AppService } from "./app.service";');
+    expect(lines[lastOriginalImportIndex + 1]).toBe('import { PayweaveModule } from "./payweave/payweave.module";');
+  });
+
+  it("still adds the import even with no imports: [] array present to update", () => {
+    const noImportsArray = [
+      `import { Module } from "@nestjs/common";`,
+      "",
+      "@Module({",
+      "  controllers: [],",
+      "})",
+      "export class AppModule {}",
+      "",
+    ].join("\n");
+    const result = wirePayweaveModule(noImportsArray, "./payweave/payweave.module");
+    expect(result).toContain('import { PayweaveModule } from "./payweave/payweave.module";');
+  });
+
+  it("output still parses as valid TypeScript", () => {
+    const result = wirePayweaveModule(FRESH_APP_MODULE, "./payweave/payweave.module");
+    assertParses(result, "app.module.ts (wired)");
+  });
+});
+
+describe("findAppModule", () => {
+  it("finds the nest new convention: src/app.module.ts", () => {
+    const dir = makeTmpDir();
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(join(dir, "src/app.module.ts"), "export class AppModule {}\n", "utf8");
+    expect(findAppModule(dir)).toBe(join(dir, "src/app.module.ts"));
+  });
+
+  it("falls back to a recursive search when app.module.ts isn't at the conventional path", () => {
+    const dir = makeTmpDir();
+    mkdirSync(join(dir, "apps/api/src"), { recursive: true });
+    writeFileSync(join(dir, "apps/api/src/app.module.ts"), "export class AppModule {}\n", "utf8");
+    expect(findAppModule(dir)).toBe(join(dir, "apps/api/src/app.module.ts"));
+  });
+
+  it("ignores node_modules while walking", () => {
+    const dir = makeTmpDir();
+    mkdirSync(join(dir, "node_modules/some-dep"), { recursive: true });
+    writeFileSync(join(dir, "node_modules/some-dep/app.module.ts"), "// not the real one\n", "utf8");
+    expect(findAppModule(dir)).toBeUndefined();
+  });
+
+  it("returns undefined when nothing is found", () => {
+    expect(findAppModule(makeTmpDir())).toBeUndefined();
   });
 });
 
@@ -720,6 +1025,154 @@ describe("runInitCommand: install step", () => {
   });
 });
 
+// ── 3c. NestJS scaffold — end-to-end via runInitCommand ─────────────────────
+
+describe("runInitCommand: NestJS scaffold", () => {
+  const FRESH_APP_MODULE = [
+    `import { Module } from "@nestjs/common";`,
+    `import { AppController } from "./app.controller";`,
+    `import { AppService } from "./app.service";`,
+    "",
+    "@Module({",
+    "  imports: [],",
+    "  controllers: [AppController],",
+    "  providers: [AppService],",
+    "})",
+    "export class AppModule {}",
+    "",
+  ].join("\n");
+
+  function makeNestProject(dir: string): void {
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ dependencies: { "@nestjs/core": "11.0.0" } }), "utf8");
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(join(dir, "src/app.module.ts"), FRESH_APP_MODULE, "utf8");
+  }
+
+  it("scaffolds the payweave module instead of the generic root files", async () => {
+    const dir = makeTmpDir();
+    makeNestProject(dir);
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    for (const relPath of [
+      "src/payweave/payweave.service.ts",
+      "src/payweave/payweave-webhook.controller.ts",
+      "src/payweave/payweave.module.ts",
+      "src/payweave/README.md",
+      ".env.example",
+    ]) {
+      expect(existsSync(join(dir, relPath)), `${relPath} should exist`).toBe(true);
+    }
+    expect(existsSync(join(dir, "payweave.ts"))).toBe(false);
+    expect(existsSync(join(dir, "lib/payweave-client.ts"))).toBe(false);
+  });
+
+  it("wires PayweaveModule into the project's own app.module.ts", async () => {
+    const dir = makeTmpDir();
+    makeNestProject(dir);
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io, out } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    const appModule = readFileSync(join(dir, "src/app.module.ts"), "utf8");
+    expect(appModule).toContain('import { PayweaveModule } from "./payweave/payweave.module";');
+    expect(appModule).toContain("imports: [PayweaveModule]");
+    assertParses(appModule, "app.module.ts (wired)");
+    expect(out()).toContain("added PayweaveModule to imports");
+  });
+
+  it("re-running init does not double-wire app.module.ts", async () => {
+    const dir = makeTmpDir();
+    makeNestProject(dir);
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    await runInitCommand(["--no-install", "--force"], capture().io, { cwd: dir, prompts });
+    const { io, out } = capture();
+    const code = await runInitCommand(["--no-install", "--force"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    const appModule = readFileSync(join(dir, "src/app.module.ts"), "utf8");
+    expect(appModule.split("PayweaveModule").length - 1).toBe(2); // import line + array entry, once each
+    expect(out()).toContain("already wired");
+  });
+
+  it("warns but does not fail the command when app.module.ts can't be found", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ dependencies: { "@nestjs/core": "11.0.0" } }), "utf8");
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io, err } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    expect(err()).toContain("could not find app.module.ts");
+  });
+
+  it("a configured database puts products.ts inside src/payweave/, imported by payweave.service.ts", async () => {
+    const dir = makeTmpDir();
+    makeNestProject(dir);
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "sqlite" });
+    const { io } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    expect(existsSync(join(dir, "src/payweave/products.ts"))).toBe(true);
+    expect(existsSync(join(dir, "products.ts"))).toBe(false);
+    expect(readFileSync(join(dir, "src/payweave/payweave.service.ts"), "utf8")).toContain('from "./products"');
+  });
+});
+
+// ── 3d. .env.example merge — never clobbered, appended instead ──────────────
+
+describe("runInitCommand: .env.example merge", () => {
+  it("creates .env.example fresh when it doesn't exist yet", async () => {
+    const dir = makeTmpDir();
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    expect(readFileSync(join(dir, ".env.example"), "utf8")).toContain("STRIPE_SECRET_KEY=");
+  });
+
+  it("appends missing vars to an existing .env.example instead of overwriting it", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, ".env.example"), "# my own notes\nCUSTOM_VAR=already-here\n", "utf8");
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io, out } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    const content = readFileSync(join(dir, ".env.example"), "utf8");
+    expect(content).toContain("CUSTOM_VAR=already-here");
+    expect(content).toContain("STRIPE_SECRET_KEY=");
+    expect(out()).toContain("appended new variables");
+  });
+
+  it("never prompts confirmOverwrite for .env.example", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, ".env.example"), "FOO=bar\n", "utf8");
+    const { prompts, confirmOverwriteCalls } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io } = capture();
+    await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(confirmOverwriteCalls).not.toContain(".env.example");
+  });
+
+  it("re-running with unchanged answers is a true no-op", async () => {
+    const dir = makeTmpDir();
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    await runInitCommand(["--no-install", "--force"], capture().io, { cwd: dir, prompts });
+    const before = readFileSync(join(dir, ".env.example"), "utf8");
+    const { io, out } = capture();
+    await runInitCommand(["--no-install", "--force"], io, { cwd: dir, prompts });
+    expect(readFileSync(join(dir, ".env.example"), "utf8")).toBe(before);
+    expect(out()).toContain("already up to date");
+  });
+
+  it("--force does not force-overwrite .env.example — it still only appends", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, ".env.example"), "CUSTOM_VAR=keep-me\n", "utf8");
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { io } = capture();
+    await runInitCommand(["--force", "--no-install"], io, { cwd: dir, prompts });
+    expect(readFileSync(join(dir, ".env.example"), "utf8")).toContain("CUSTOM_VAR=keep-me");
+  });
+});
+
 // ── 4. Scaffold validity ─────────────────────────────────────────────────────
 //
 // `postgres`/`mysql`/`mongodb`/`prisma` adapters are STILL PLACEHOLDERS as of
@@ -825,6 +1278,42 @@ describe("scaffold validity", () => {
     expect(diagnostics, diagnostics.join("\n")).toHaveLength(0);
   }, 30_000);
 
+  it("NestJS + Stripe + Paystack + SQLite: every generated file parses, end-to-end through runInitCommand", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ dependencies: { "@nestjs/core": "11.0.0" } }), "utf8");
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(
+      join(dir, "src/app.module.ts"),
+      [`import { Module } from "@nestjs/common";`, "", "@Module({ imports: [] })", "export class AppModule {}", ""].join(
+        "\n",
+      ),
+      "utf8",
+    );
+    const { prompts } = fakePrompts({ providers: ["stripe", "paystack"], database: "sqlite" });
+    const { io } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
+    expect(code).toBe(0);
+    expect(detectFramework(dir)).toBe("nest");
+
+    // @nestjs/common and express aren't installed in THIS monorepo (same
+    // reason the Express/Fastify webhook routes above only get a syntax
+    // check) — a real project would have them since that's how detection
+    // found "nest" in the first place. Parse-validity + secret-shape
+    // discipline is what's provable here; the createPayweave(...) call SHAPE
+    // itself is covered by "every provider x database combination" below,
+    // which renderNestPayweaveService reuses verbatim.
+    for (const relPath of [
+      "src/payweave/payweave.service.ts",
+      "src/payweave/payweave-webhook.controller.ts",
+      "src/payweave/payweave.module.ts",
+      "src/payweave/products.ts",
+      "src/app.module.ts",
+    ]) {
+      assertParses(readFileSync(join(dir, relPath), "utf8"), relPath);
+    }
+    assertNoSecretShapes(readFileSync(join(dir, "src/payweave/payweave.service.ts"), "utf8"), "payweave.service.ts");
+  });
+
   it("every provider x database combination renders parseable, secret-free payweave.ts + products.ts", () => {
     const providerCombos: readonly (readonly ProviderId[])[] = [
       ["stripe"],
@@ -869,6 +1358,7 @@ describe("scaffold validity", () => {
     const inputs = [
       { providers: ["stripe", "paystack", "flutterwave"] as const, database: "postgres" as const, framework: "next" as const },
       { providers: ["stripe"] as const, database: "mongodb" as const, framework: "express" as const },
+      { providers: ["stripe", "paystack"] as const, database: "sqlite" as const, framework: "nest" as const },
     ];
     for (const input of inputs) {
       const files = planScaffold(input);
