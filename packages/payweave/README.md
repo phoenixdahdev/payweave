@@ -11,7 +11,14 @@ one client, full endpoint coverage, and webhook verification done correctly out 
 ![Module: ESM only](https://img.shields.io/badge/module-ESM--only-f7df1e.svg)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520.19-339933.svg)
 
-> **Status:** pre-release.
+> **Status:** pre-release, [`payweave@0.1.0`](https://www.npmjs.com/package/payweave) on npm.
+> Stripe, Paystack, and Flutterwave v3 (provider-native + webhooks), the unified
+> layer, the database layer (sqlite, Postgres, MongoDB, Drizzle), plans/features/
+> metered usage, and the CLI are implemented and tested. Still landing: the MySQL
+> and Prisma database adapters, Flutterwave v4's resource surface, and the
+> framework adapters (`payweave/express`, `payweave/next`, `payweave/fastify`).
+>
+> Full docs: [payweave.dev/docs](https://payweave.dev/docs) · [GitHub](https://github.com/phoenixdahdev/payweave)
 
 ---
 
@@ -186,19 +193,28 @@ tracking without hand-rolling billing state:
 import { createPayweave, feature, plan } from "payweave";
 import { sqliteAdapter } from "payweave/db/sqlite";
 
+// feature() defines once; call the result to include it in a plan.
+const seats = feature({ id: "seats", type: "boolean" });
+const apiCalls = feature({ id: "api-calls", type: "metered" });
+
+const free = plan({
+  id: "free",
+  group: "tier",
+  default: true,
+  includes: [seats(), apiCalls({ limit: 1_000, reset: "month" })],
+});
+
+const pro = plan({
+  id: "pro",
+  group: "tier", // shares "tier" with `free` — mutually exclusive per customer
+  price: { amount: 29, currency: "USD", interval: "month" }, // MAJOR units at definition time; converted for you
+  includes: [seats(), apiCalls({ limit: 100_000, reset: "month" })],
+});
+
 const payweave = createPayweave({
   stripe: { secretKey: process.env.STRIPE_SECRET_KEY! },
   database: sqliteAdapter({ url: "file:./payweave.db" }),
-  products: [
-    plan("free", { includes: [feature("seats", { type: "boolean" })] }),
-    plan("pro", {
-      price: { amount: 29, currency: "USD", interval: "month" },
-      includes: [
-        feature("seats", { type: "boolean" }),
-        feature("api-calls", { type: "metered", limit: 10_000, resetInterval: "month" }),
-      ],
-    }),
-  ],
+  products: [free, pro],
 });
 
 await payweave.sync();                                       // push plans/prices to Stripe
