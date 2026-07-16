@@ -8,11 +8,15 @@
  *   3. Detect the framework from the project's own `package.json` (+ a
  *      filesystem marker for Next.js) — never prompted; detected, not
  *      chosen.
- *   4. Plan the scaffold (`./templates`): `payweave.ts`, `products.ts`,
- *      `.env.example`, a framework-specific webhook route, an optional
- *      frontend client file, and (Prisma/Drizzle only) a schema fragment.
+ *   4. Plan the scaffold (`./templates`): `payweave.ts`, `.env.example`, a
+ *      framework-specific webhook route, an optional frontend client file,
+ *      `products.ts` (skipped for a payments-only project — no database means
+ *      no plans/features surface to define), and (Prisma/Drizzle only) a
+ *      schema fragment.
  *   5. Write each file, prompting per-file before clobbering an existing one;
  *      `--force` skips every such prompt and always overwrites.
+ *   6. Install `payweave` itself via the detected package manager (lockfile-based;
+ *      defaults to npm) — best-effort, `--no-install` to skip.
  *
  * ── Prompt seam ───────────────────────────────────────────────────────────
  * Every interactive decision goes through {@link InitPrompts} — mirrors
@@ -44,16 +48,29 @@
  * declined confirmation is a failed run.
  *
  * ── Framework detection ───────────────────────────────────────────────────
- * Targets four frameworks: Next.js App Router, Express, Fastify, plus a
- * plain-`http` fallback. Detection is dependency-based (package.json deps +
+ * Targets five frameworks: Next.js App Router, Express, Fastify, NestJS, plus
+ * a plain-`http` fallback. Detection is dependency-based (package.json deps +
  * filesystem markers): `dependencies`/`devDependencies`, with one
  * filesystem-marker fallback for Next.js (`next.config.{js,mjs,ts}`) for the
  * case where a project has a next config committed before `next` itself
  * lands in package.json (e.g. a very fresh scaffold). Precedence: Next.js >
- * Express > Fastify > plain http, checked in that order since a Next.js API
- * project is far more likely to co-depend on Express (e.g. a custom server)
- * than the reverse.
+ * NestJS > Express > Fastify > plain http — NestJS is checked before Express
+ * because Nest's default HTTP adapter IS Express (`@nestjs/platform-express`),
+ * so a Nest project very commonly also depends on `express` directly; checking
+ * `@nestjs/core` first avoids misdetecting it as plain Express.
+ *
+ * ── Package manager + install ─────────────────────────────────────────────
+ * After the scaffold is written, `payweave` itself is installed into the
+ * target project via the detected package manager (lockfile-based:
+ * `pnpm-lock.yaml`/`yarn.lock`/`bun.lock(b)`/`package-lock.json`, defaulting to
+ * npm when none is found) — `npx payweave init` only downloads the CLI itself
+ * temporarily to run the wizard; it does not, on its own, add `payweave` as a
+ * dependency of the project being scaffolded. `--no-install` skips this step.
+ * A failed install is a warning, not a command failure (see `runInitCommand`'s
+ * doc comment) — the generated files are still correct and usable once the
+ * user installs the dependency themselves.
  */
+import { spawn as nodeSpawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -99,6 +116,7 @@ const FRAMEWORK_LABEL: Readonly<Record<FrameworkId, string>> = {
   next: "Next.js (App Router)",
   express: "Express",
   fastify: "Fastify",
+  nest: "NestJS",
   node: "plain node:http (no framework detected)",
 };
 
@@ -121,14 +139,70 @@ function readMergedDependencies(cwd: string): Record<string, string> {
   }
 }
 
-/** Detect the project's framework (see this module's doc comment). */
+/**
+ * Detect the project's framework (see this module's doc comment).
+ * NestJS is checked before Express/Fastify: a Nest project's default HTTP
+ * adapter is Express (`@nestjs/platform-express`) and it's common to also
+ * depend on `express` directly for its types, so checking `@nestjs/core`
+ * first avoids misdetecting a Nest project as plain Express.
+ */
 export function detectFramework(cwd: string): FrameworkId {
   const deps = readMergedDependencies(cwd);
   if ("next" in deps || NEXT_CONFIG_FILES.some((file) => existsSync(join(cwd, file)))) return "next";
+  if ("@nestjs/core" in deps) return "nest";
   if ("express" in deps) return "express";
   if ("fastify" in deps) return "fastify";
   return "node";
 }
+
+// ── Package manager detection + install ──────────────────────────────────────
+
+/** A package manager `payweave init` can detect and shell out to. */
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
+
+const PACKAGE_MANAGER_LOCKFILES: readonly (readonly [file: string, manager: PackageManager])[] = [
+  ["pnpm-lock.yaml", "pnpm"],
+  ["yarn.lock", "yarn"],
+  ["bun.lock", "bun"],
+  ["bun.lockb", "bun"],
+  ["package-lock.json", "npm"],
+];
+
+/** Detect the project's package manager from its lockfile. Defaults to npm when none is found. */
+export function detectPackageManager(cwd: string): PackageManager {
+  for (const [file, manager] of PACKAGE_MANAGER_LOCKFILES) {
+    if (existsSync(join(cwd, file))) return manager;
+  }
+  return "npm";
+}
+
+/** The "add a dependency" invocation for each package manager — `npm install <pkg>` is npm's add form. */
+function installCommand(manager: PackageManager): readonly [command: string, args: readonly string[]] {
+  switch (manager) {
+    case "npm":
+      return ["npm", ["install", "payweave"]];
+    case "pnpm":
+      return ["pnpm", ["add", "payweave"]];
+    case "yarn":
+      return ["yarn", ["add", "payweave"]];
+    case "bun":
+      return ["bun", ["add", "payweave"]];
+  }
+}
+
+/** Injectable subprocess runner for the install step — mirrors `listen.ts`'s `SpawnLike` seam. */
+export type RunToCompletion = (
+  command: string,
+  args: readonly string[],
+  options: { readonly cwd: string },
+) => Promise<{ readonly code: number | null }>;
+
+const defaultRunToCompletion: RunToCompletion = (command, args, options) =>
+  new Promise((resolve) => {
+    const child = nodeSpawn(command, args, { cwd: options.cwd, stdio: "inherit" });
+    child.once("exit", (code) => resolve({ code }));
+    child.once("error", () => resolve({ code: 1 })); // e.g. ENOENT — package manager binary not on PATH
+  });
 
 // ── Prompt seam ───────────────────────────────────────────────────────────────
 
@@ -197,15 +271,21 @@ export const defaultPrompts: InitPrompts = {
 
 // ── Scaffold planning ────────────────────────────────────────────────────────
 
-/** Plan every file the wizard would write for a given set of answers (pure — no filesystem I/O). */
+/**
+ * Plan every file the wizard would write for a given set of answers (pure —
+ * no filesystem I/O). `products.ts` (the plan()/feature() billing surface)
+ * is skipped for `database: "none"` — plans/features/metered usage all
+ * require a database adapter, so a payments-only project has no use for it
+ * and `payweave.ts` never imports it in that case (see `renderPayweaveConfig`).
+ */
 export function planScaffold(input: ScaffoldInput): readonly ScaffoldFile[] {
   const files: ScaffoldFile[] = [
     { relPath: "payweave.ts", contents: renderPayweaveConfig(input) },
-    { relPath: "products.ts", contents: renderProducts() },
     { relPath: ".env.example", contents: renderEnvExample(input) },
     renderWebhookRoute(input),
     renderClientFile(),
   ];
+  if (input.database !== "none") files.push({ relPath: "products.ts", contents: renderProducts() });
   if (input.database === "prisma") files.push(renderPrismaSchema());
   if (input.database === "drizzle") files.push(renderDrizzleSchema());
   return files;
@@ -239,28 +319,41 @@ export interface InitCommandOptions {
   prompts?: InitPrompts;
   /** Injectable interactivity signal for the guard when `prompts` is NOT supplied. Defaults to `process.stdin.isTTY === true`. */
   isInteractive?: boolean;
+  /** Injectable subprocess runner for the install step. Defaults to the real `node:child_process` spawn. */
+  runToCompletion?: RunToCompletion;
 }
 
 /**
  * `payweave init`'s `run` body (see this module's doc comment for
  * the full flow, prompt-seam, overwrite-semantics, and framework-detection
- * reasoning). Parses its own flag: `--force`/`-f` (skip every overwrite
- * prompt, always write).
+ * reasoning). Parses its own flags: `--force`/`-f` (skip every overwrite
+ * prompt, always write) and `--no-install` (skip the automatic
+ * `<package manager> install payweave` step — on by default, mirroring
+ * `create-next-app`/`create-t3-app`).
  *
  * Exit codes: 0 — every planned file was written (created or, with
  * `--force`, overwritten) with no conflicts left unresolved; 1 — the wizard
  * could not run (non-interactive with no injected prompts, a cancelled/failed
  * prompt, or zero providers selected), OR at least one existing file was
- * declined and left untouched.
+ * declined and left untouched. A failed install does NOT affect the exit
+ * code — the scaffold itself is what this command promises; installing the
+ * dependency is a best-effort courtesy on top (a clear message tells the user
+ * how to run it themselves if it fails).
  */
 export async function runInitCommand(
   argv: readonly string[],
   io: CliIo,
   options: InitCommandOptions = {},
 ): Promise<number> {
-  const args = mri([...argv], { boolean: ["force"], alias: { f: "force" } });
+  const args = mri([...argv], {
+    boolean: ["force", "install"],
+    alias: { f: "force" },
+    default: { install: true },
+  });
   const cwd = options.cwd ?? process.cwd();
   const force = args["force"] === true;
+  const shouldInstall = args["install"] !== false;
+  const runToCompletion = options.runToCompletion ?? defaultRunToCompletion;
 
   if (options.prompts === undefined) {
     const interactive = options.isInteractive ?? process.stdin.isTTY === true;
@@ -330,6 +423,22 @@ export async function runInitCommand(
   io.out("");
   io.out(`payweave init: ${written.length} file(s) written, ${skipped.length} skipped.`);
 
+  if (shouldInstall) {
+    const manager = detectPackageManager(cwd);
+    const [command, cmdArgs] = installCommand(manager);
+    io.out("");
+    io.out(`Installing payweave with ${manager}...`);
+    const { code } = await runToCompletion(command, cmdArgs, { cwd });
+    if (code === 0) {
+      io.out(`payweave installed via ${manager}.`);
+    } else {
+      io.err(
+        `payweave init: could not install payweave automatically (${command} exited with code ${code}) — ` +
+          `run \`${command} ${cmdArgs.join(" ")}\` yourself.`,
+      );
+    }
+  }
+
   if (skipped.length > 0) {
     io.err(
       redactLine(
@@ -343,7 +452,11 @@ export async function runInitCommand(
   io.out("");
   io.out("Next steps:");
   io.out("  1. Fill in real values in .env.example, then copy it to .env (or your framework's env file).");
-  io.out("  2. Review payweave.ts and products.ts, then run `npx payweave push`.");
+  if (database === "none") {
+    io.out("  2. Review payweave.ts, then start your server and try the generated webhook route.");
+  } else {
+    io.out("  2. Review payweave.ts and products.ts, then run `npx payweave push`.");
+  }
   return 0;
 }
 

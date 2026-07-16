@@ -37,10 +37,13 @@ import ts from "typescript";
 import type { CliIo } from "../../src/cli/command";
 import {
   detectFramework,
+  detectPackageManager,
   initCommand,
   planScaffold,
   runInitCommand,
   type InitPrompts,
+  type PackageManager,
+  type RunToCompletion,
 } from "../../src/cli/init";
 import {
   renderClientFile,
@@ -225,6 +228,12 @@ describe("detectFramework", () => {
     expect(detectFramework(detectFixture("init-detect-fastify"))).toBe("fastify");
   });
 
+  it("detects NestJS from a package.json dependency, even alongside express (precedence)", () => {
+    // The fixture also depends on express (Nest's own default HTTP adapter) —
+    // this proves @nestjs/core is checked BEFORE express, not the reverse.
+    expect(detectFramework(detectFixture("init-detect-nest"))).toBe("nest");
+  });
+
   it("falls back to the plain node:http target when nothing matches", () => {
     expect(detectFramework(detectFixture("init-detect-generic"))).toBe("node");
   });
@@ -238,6 +247,31 @@ describe("detectFramework", () => {
     const dir = makeTmpDir();
     writeFileSync(join(dir, "package.json"), "{ not valid json", "utf8");
     expect(detectFramework(dir)).toBe("node");
+  });
+});
+
+describe("detectPackageManager", () => {
+  it.each<[string, PackageManager]>([
+    ["pnpm-lock.yaml", "pnpm"],
+    ["yarn.lock", "yarn"],
+    ["bun.lock", "bun"],
+    ["bun.lockb", "bun"],
+    ["package-lock.json", "npm"],
+  ])("detects %s as %s", (lockfile, manager) => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, lockfile), "", "utf8");
+    expect(detectPackageManager(dir)).toBe(manager);
+  });
+
+  it("defaults to npm when no lockfile is present", () => {
+    expect(detectPackageManager(makeTmpDir())).toBe("npm");
+  });
+
+  it("prefers pnpm-lock.yaml over package-lock.json when both are somehow present", () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, "pnpm-lock.yaml"), "", "utf8");
+    writeFileSync(join(dir, "package-lock.json"), "{}", "utf8");
+    expect(detectPackageManager(dir)).toBe("pnpm");
   });
 });
 
@@ -343,6 +377,7 @@ describe("template renderers", () => {
     next: "app/api/webhooks/payweave/route.ts",
     express: "payweave-webhook.ts",
     fastify: "payweave-webhook-plugin.ts",
+    nest: "payweave-webhook.controller.ts",
     node: "payweave-webhook-server.ts",
   };
 
@@ -363,10 +398,18 @@ describe("template renderers", () => {
   });
 
   it("renderWebhookRoute: root-level frameworks import payweave from ./payweave", () => {
-    for (const framework of ["express", "fastify", "node"] as const) {
+    for (const framework of ["express", "fastify", "nest", "node"] as const) {
       const file = renderWebhookRoute({ providers: ["stripe"], database: "none", framework });
       expect(file.contents).toContain('from "./payweave";');
     }
+  });
+
+  it("renderWebhookRoute: nest generates a controller the user adds to their own AppModule, gated on rawBody: true", () => {
+    const file = renderWebhookRoute({ providers: ["stripe"], database: "none", framework: "nest" });
+    expect(file.contents).toContain("@Controller(");
+    expect(file.contents).toContain("RawBodyRequest");
+    expect(file.contents).toContain("rawBody: true");
+    expect(file.contents).toContain("req.rawBody");
   });
 
   it("renderPrismaSchema: emits the pw_ table fragment, no pw_migrations (database.md §4)", () => {
@@ -394,13 +437,12 @@ describe("template renderers", () => {
 });
 
 describe("planScaffold", () => {
-  it("always includes payweave.ts, products.ts, .env.example, a webhook route, and the client file", () => {
+  it("always includes payweave.ts, .env.example, a webhook route, and the client file", () => {
     const files = planScaffold({ providers: ["stripe"], database: "none", framework: "node" });
     const paths = files.map((f) => f.relPath);
     expect(paths).toEqual(
       expect.arrayContaining([
         "payweave.ts",
-        "products.ts",
         ".env.example",
         "payweave-webhook-server.ts",
         "lib/payweave-client.ts",
@@ -408,6 +450,20 @@ describe("planScaffold", () => {
     );
     expect(paths).not.toContain("payweave.prisma");
     expect(paths).not.toContain("payweave-schema.ts");
+  });
+
+  it("includes products.ts when a database is configured", () => {
+    const paths = planScaffold({ providers: ["stripe"], database: "sqlite", framework: "node" }).map(
+      (f) => f.relPath,
+    );
+    expect(paths).toContain("products.ts");
+  });
+
+  it("omits products.ts for database: \"none\" — no database means no plans/features surface", () => {
+    const paths = planScaffold({ providers: ["stripe"], database: "none", framework: "node" }).map(
+      (f) => f.relPath,
+    );
+    expect(paths).not.toContain("products.ts");
   });
 
   it("adds payweave.prisma only for the prisma database choice", () => {
@@ -441,7 +497,7 @@ describe("runInitCommand", () => {
     const dir = makeTmpDir();
     const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
     const { io } = capture();
-    const code = await runInitCommand([], io, { cwd: dir, prompts, isInteractive: false });
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts, isInteractive: false });
     expect(code).toBe(0);
     expect(existsSync(join(dir, "payweave.ts"))).toBe(true);
   });
@@ -450,7 +506,7 @@ describe("runInitCommand", () => {
     const dir = makeTmpDir();
     const { prompts } = fakePrompts({ providers: ["stripe"], database: "sqlite" });
     const { io, out } = capture();
-    const code = await runInitCommand([], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(0);
     for (const relPath of [
       "payweave.ts",
@@ -470,7 +526,7 @@ describe("runInitCommand", () => {
     writeFileSync(join(dir, "payweave.ts"), "// stale content\n", "utf8");
     const { prompts, confirmOverwriteCalls } = fakePrompts({ providers: ["stripe"], database: "none" });
     const { io } = capture();
-    const code = await runInitCommand(["--force"], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["--force", "--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(0);
     expect(confirmOverwriteCalls).toEqual([]);
     const content = readFileSync(join(dir, "payweave.ts"), "utf8");
@@ -483,7 +539,7 @@ describe("runInitCommand", () => {
     writeFileSync(join(dir, "payweave.ts"), "// stale\n", "utf8");
     const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
     const { io } = capture();
-    const code = await runInitCommand(["-f"], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["-f", "--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(0);
     expect(readFileSync(join(dir, "payweave.ts"), "utf8")).not.toContain("stale");
   });
@@ -493,11 +549,11 @@ describe("runInitCommand", () => {
     writeFileSync(join(dir, "payweave.ts"), "// keep me\n", "utf8");
     const { prompts, confirmOverwriteCalls } = fakePrompts({
       providers: ["stripe"],
-      database: "none",
+      database: "sqlite",
       confirmOverwrite: async () => false,
     });
     const { io, err } = capture();
-    const code = await runInitCommand([], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(1);
     expect(confirmOverwriteCalls).toContain("payweave.ts");
     expect(err()).toContain("payweave.ts");
@@ -516,7 +572,7 @@ describe("runInitCommand", () => {
       confirmOverwrite: async () => true,
     });
     const { io } = capture();
-    const code = await runInitCommand([], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(0);
     expect(readFileSync(join(dir, "payweave.ts"), "utf8")).not.toContain("stale");
   });
@@ -586,6 +642,84 @@ describe("runInitCommand", () => {
   });
 });
 
+// ── 3b. Install step — package manager detection + the injected subprocess seam ─
+
+describe("runInitCommand: install step", () => {
+  function fakeRunner(exitCode: number | null): {
+    runToCompletion: RunToCompletion;
+    calls: Array<{ command: string; args: readonly string[]; cwd: string }>;
+  } {
+    const calls: Array<{ command: string; args: readonly string[]; cwd: string }> = [];
+    return {
+      calls,
+      runToCompletion: async (command, args, options) => {
+        calls.push({ command, args, cwd: options.cwd });
+        return { code: exitCode };
+      },
+    };
+  }
+
+  it("installs via the detected package manager by default and reports success", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, "pnpm-lock.yaml"), "", "utf8");
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { runToCompletion, calls } = fakeRunner(0);
+    const { io, out } = capture();
+    const code = await runInitCommand([], io, { cwd: dir, prompts, runToCompletion });
+    expect(code).toBe(0);
+    expect(calls).toEqual([{ command: "pnpm", args: ["add", "payweave"], cwd: dir }]);
+    expect(out()).toContain("Installing payweave with pnpm");
+    expect(out()).toContain("payweave installed via pnpm");
+  });
+
+  it("uses npm's install-form add command when no lockfile is present", async () => {
+    const dir = makeTmpDir();
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { runToCompletion, calls } = fakeRunner(0);
+    const { io } = capture();
+    await runInitCommand([], io, { cwd: dir, prompts, runToCompletion });
+    expect(calls).toEqual([{ command: "npm", args: ["install", "payweave"], cwd: dir }]);
+  });
+
+  it("--no-install skips the step entirely — the runner is never called", async () => {
+    const dir = makeTmpDir();
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { runToCompletion, calls } = fakeRunner(0);
+    const { io, out } = capture();
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts, runToCompletion });
+    expect(code).toBe(0);
+    expect(calls).toEqual([]);
+    expect(out()).not.toContain("Installing payweave");
+  });
+
+  it("a failed install warns clearly but does not fail the overall command — the scaffold is what's promised", async () => {
+    const dir = makeTmpDir();
+    const { prompts } = fakePrompts({ providers: ["stripe"], database: "none" });
+    const { runToCompletion } = fakeRunner(1);
+    const { io, err } = capture();
+    const code = await runInitCommand([], io, { cwd: dir, prompts, runToCompletion });
+    expect(code).toBe(0);
+    expect(existsSync(join(dir, "payweave.ts"))).toBe(true);
+    expect(err()).toContain("could not install payweave automatically");
+    expect(err()).toContain("npm install payweave");
+  });
+
+  it("still attempts install even when a file conflict makes the overall command exit 1", async () => {
+    const dir = makeTmpDir();
+    writeFileSync(join(dir, "payweave.ts"), "// keep me\n", "utf8");
+    const { prompts } = fakePrompts({
+      providers: ["stripe"],
+      database: "none",
+      confirmOverwrite: async () => false,
+    });
+    const { runToCompletion, calls } = fakeRunner(0);
+    const { io } = capture();
+    const code = await runInitCommand([], io, { cwd: dir, prompts, runToCompletion });
+    expect(code).toBe(1); // the declined overwrite still fails the command...
+    expect(calls).toHaveLength(1); // ...but install is orthogonal and still ran.
+  });
+});
+
 // ── 4. Scaffold validity ─────────────────────────────────────────────────────
 //
 // `postgres`/`mysql`/`mongodb`/`prisma` adapters are STILL PLACEHOLDERS as of
@@ -633,7 +767,7 @@ describe("scaffold validity", () => {
     // Drive the wizard with framework detection forced by placing a next
     // marker in the temp project (mirrors a real Next.js project).
     writeFileSync(join(dir, "next.config.mjs"), "export default {};\n", "utf8");
-    const code = await runInitCommand([], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(0);
     expect(detectFramework(dir)).toBe(framework);
 
@@ -667,7 +801,7 @@ describe("scaffold validity", () => {
     const dir = makeTmpDir();
     const { prompts } = fakePrompts({ providers: ["paystack", "flutterwave"], database: "none" });
     const { io } = capture();
-    const code = await runInitCommand([], io, { cwd: dir, prompts });
+    const code = await runInitCommand(["--no-install"], io, { cwd: dir, prompts });
     expect(code).toBe(0);
     expect(detectFramework(dir)).toBe("node");
 
@@ -681,9 +815,11 @@ describe("scaffold validity", () => {
     expect(loaded.client.defaultProvider).toBe("paystack");
     expect(loaded.client.environment).toBe("test");
 
+    // No products.ts to typecheck here — database: "none" means the wizard
+    // correctly omits it (nothing to define plans/features against).
+    expect(existsSync(join(dir, "products.ts"))).toBe(false);
     const diagnostics = typecheckFiles([
       join(dir, "payweave.ts"),
-      join(dir, "products.ts"),
       join(dir, "payweave-webhook-server.ts"),
     ]);
     expect(diagnostics, diagnostics.join("\n")).toHaveLength(0);

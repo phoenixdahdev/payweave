@@ -26,12 +26,12 @@ export type DatabaseChoice =
   | "mongodb";
 
 /**
- * The four detection targets: Next.js App Router, Express,
- * Fastify — falls back to a plain http example. Next.js scaffolding only
+ * The five detection targets: Next.js App Router, Express, Fastify,
+ * NestJS — falls back to a plain http example. Next.js scaffolding only
  * targets the App Router convention, not "Next.js" generically — see
  * `../init.ts`'s `detectFramework` doc comment.
  */
-export type FrameworkId = "next" | "express" | "fastify" | "node";
+export type FrameworkId = "next" | "express" | "fastify" | "nest" | "node";
 
 /** Answers the wizard collected, plus the detected framework — input to every renderer. */
 export interface ScaffoldInput {
