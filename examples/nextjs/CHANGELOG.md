@@ -1,5 +1,12 @@
 # payweave-example-nextjs
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [222e51a]
+  - payweave@0.2.0
+
 ## 0.0.2
 
 ### Patch Changes
