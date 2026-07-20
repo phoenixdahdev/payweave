@@ -1,5 +1,12 @@
 # payweave-example-nestjs
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [07f2435]
+  - payweave@0.3.0
+
 ## 0.0.3
 
 ### Patch Changes
