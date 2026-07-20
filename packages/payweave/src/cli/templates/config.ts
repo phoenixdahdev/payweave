@@ -3,8 +3,12 @@
  */
 import type { DatabaseChoice, ProviderId, ScaffoldInput } from "./types";
 
-/** Per-provider config block, matching the documented `payweave.ts` example shape. */
-const PROVIDER_CONFIG_BLOCK: Readonly<Record<ProviderId, readonly string[]>> = {
+/**
+ * Per-provider config block, matching the documented `payweave.ts` example
+ * shape. Exported so `./nest.ts` can reuse it verbatim inside a class field
+ * (it just prepends indentation) instead of duplicating provider config.
+ */
+export const PROVIDER_CONFIG_BLOCK: Readonly<Record<ProviderId, readonly string[]>> = {
   stripe: [
     "  stripe: {",
     "    secretKey: process.env.STRIPE_SECRET_KEY!,",
@@ -30,8 +34,11 @@ const PROVIDER_CONFIG_BLOCK: Readonly<Record<ProviderId, readonly string[]>> = {
 /**
  * Import line(s) for the chosen database adapter.
  * Absent for `"none"` — a payments-only project imports nothing extra.
+ * Exported so `./nest.ts` can override just the prisma/drizzle entries (the
+ * only ones with a path that depends on where the importing file lives)
+ * rather than duplicating the other four.
  */
-const DATABASE_IMPORT: Readonly<Partial<Record<DatabaseChoice, string>>> = {
+export const DATABASE_IMPORT: Readonly<Partial<Record<DatabaseChoice, string>>> = {
   prisma:
     'import { prismaAdapter } from "payweave/db/prisma";\n' +
     'import { prisma } from "./lib/prisma"; // TODO: point this at your existing PrismaClient',
@@ -45,7 +52,7 @@ const DATABASE_IMPORT: Readonly<Partial<Record<DatabaseChoice, string>>> = {
 };
 
 /** The `database:` factory call for the chosen adapter. */
-const DATABASE_FACTORY: Readonly<Partial<Record<DatabaseChoice, string>>> = {
+export const DATABASE_FACTORY: Readonly<Partial<Record<DatabaseChoice, string>>> = {
   prisma: "prismaAdapter(prisma)",
   drizzle: "drizzleAdapter(db)",
   postgres: "postgresAdapter({ connectionString: process.env.DATABASE_URL! })",
