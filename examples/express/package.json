@@ -10,14 +10,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "payweave": "workspace:*",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "payweave": "workspace:*"
   },
   "devDependencies": {
     "@payweave/typescript-config": "workspace:*",
-    "typescript": "^6.0.3",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.1.1",
-    "tsx": "^4.23.1"
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "6.0.3"
   }
 }

@@ -129,7 +129,7 @@
     "release": "changeset publish"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "peerDependencies": {
     "@libsql/client": "^0.17.4",
@@ -161,27 +161,27 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@clack/prompts": "^1.7.0",
-    "@libsql/client": "^0.17.4",
-    "@microsoft/api-extractor": "^7.52.0",
+    "@clack/prompts": "^1.8.1",
+    "@libsql/client": "^0.18.0",
+    "@microsoft/api-extractor": "^7.59.3",
     "@payweave/eslint-config": "workspace:*",
     "@payweave/typescript-config": "workspace:*",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "26.1.1",
-    "@types/pg": "^8.15.6",
-    "@vitest/coverage-v8": "^4.0.0",
-    "better-sqlite3": "^12.11.1",
-    "drizzle-kit": "0.31.10",
-    "drizzle-orm": "0.45.2",
-    "eslint": "^10.7.0",
-    "expect-type": "^1.2.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "26.6.4",
+    "@types/pg": "^8.23.1",
+    "@vitest/coverage-v8": "^5.0.3",
+    "better-sqlite3": "^13.0.3",
+    "drizzle-kit": "0.31.11",
+    "drizzle-orm": "0.45.3",
+    "eslint": "^10.11.0",
+    "expect-type": "^1.4.0",
     "jiti": "^2.7.0",
-    "mongodb": "^7.5.0",
+    "mongodb": "^7.7.0",
     "mri": "^1.2.0",
-    "msw": "^2.7.0",
-    "pg": "^8.22.0",
-    "tsup": "^8.5.0",
-    "typescript": "^6.0.3",
-    "vitest": "^4.0.0"
+    "msw": "^3.0.1",
+    "pg": "^8.23.1",
+    "tsup": "^8.5.1",
+    "typescript": "6.0.3",
+    "vitest": "^5.0.3"
   }
 }
